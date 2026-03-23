@@ -459,7 +459,7 @@ const server = http.createServer((req, res) => {
         for (const [provider, pconf] of Object.entries(config.models?.providers || {})) {
           for (const m of (pconf.models || [])) {
             available.push({
-              id: `${provider}/${m.id}`,
+              id: m.id.startsWith(provider + '/') ? m.id : `${provider}/${m.id}`,
               name: m.name || m.id,
               provider,
               reasoning: m.reasoning || false,
