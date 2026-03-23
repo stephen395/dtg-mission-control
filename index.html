@@ -553,10 +553,36 @@ async function fetchModels() {
 
 function renderModelsPanel() {
   if (!modelsData) return;
-  const { agents, available } = modelsData;
+  const { agents, available, providers } = modelsData;
   const panel = document.getElementById('modelsPanel');
 
-  panel.innerHTML = Object.entries(agents).map(([id, agent]) => {
+  // Provider credits section
+  const providerHTML = providers ? `
+    <div class="card" style="margin-bottom:24px">
+      <div class="card-header"><div class="card-title">Provider Credits</div></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">
+        ${Object.entries(providers).map(([pid, p]) => {
+          const cr = p.credits;
+          let creditText = 'Unknown';
+          let creditColor = 'var(--text-muted)';
+          if (cr) {
+            if (cr.unit === 'free') { creditText = cr.remaining; creditColor = 'var(--accent-green)'; }
+            else if (cr.remaining !== undefined && typeof cr.remaining === 'number') { creditText = '$' + cr.remaining + ' / $' + cr.limit + (cr.reset ? ' (' + cr.reset + ' reset)' : ''); creditColor = cr.remaining > 0 ? 'var(--accent-green)' : 'var(--accent-red)'; }
+            else if (typeof cr.remaining === 'string') { creditText = cr.remaining; creditColor = 'var(--accent-yellow)'; }
+          }
+          const modelCount = available.filter(m => m.provider === pid).length;
+          return `<div style="background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;padding:14px">
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px">${pid}</div>
+            <div style="font-size:12px;color:${creditColor};margin-bottom:4px">${creditText}</div>
+            <div style="font-size:11px;color:var(--text-muted)">${modelCount} model${modelCount!==1?'s':''}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  ` : '';
+
+  // Agent model config sections
+  const agentHTML = Object.entries(agents).map(([id, agent]) => {
     const currentFallbacks = agent.fallbacks || [];
     const usedModels = new Set([agent.primary, ...currentFallbacks]);
     const unusedModels = available.filter(m => !usedModels.has(m.id));
@@ -566,14 +592,12 @@ function renderModelsPanel() {
       <div class="model-agent-header">
         <div class="model-agent-title">${id === 'main' ? '&#x1F573;&#xFE0F;' : '&#x1F41F;'} ${agent.name}</div>
       </div>
-
       <div class="model-row">
         <div class="model-row-label">Primary</div>
         <select class="model-select" data-role="primary" data-agent="${id}">
           ${available.map(m => `<option value="${m.id}" ${m.id === agent.primary ? 'selected' : ''}>${m.name} (${m.provider}) ${m.free ? '— FREE' : '— $'}</option>`).join('')}
         </select>
       </div>
-
       <div class="model-row" style="align-items:flex-start">
         <div class="model-row-label" style="margin-top:10px">Fallbacks</div>
         <div style="flex:1;max-width:480px">
@@ -598,7 +622,6 @@ function renderModelsPanel() {
           </div>
         </div>
       </div>
-
       <div style="display:flex;align-items:center;margin-top:16px">
         <button class="btn-save-models" onclick="saveModels('${id}')">Save ${agent.name}</button>
         <span class="save-status" id="saveStatus-${id}"></span>
@@ -606,7 +629,43 @@ function renderModelsPanel() {
     </div>`;
   }).join('');
 
-  // Wire up fallback drag-and-drop
+  // Add model form
+  const providerOptions = providers ? Object.keys(providers).map(p => `<option value="${p}">${p}</option>`).join('') : '';
+  const addModelHTML = `
+    <div class="card" style="margin-top:24px">
+      <div class="card-header"><div class="card-title">Add New Model</div></div>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px">Add a model to an existing provider. The provider must already have an API key configured.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:600px">
+        <div>
+          <div class="agent-field-label" style="margin-bottom:4px">Provider</div>
+          <select class="model-select" id="newModelProvider" style="width:100%">${providerOptions}</select>
+        </div>
+        <div>
+          <div class="agent-field-label" style="margin-bottom:4px">Model ID</div>
+          <input class="model-select" id="newModelId" placeholder="e.g. gpt-4o-mini" style="width:100%">
+        </div>
+        <div>
+          <div class="agent-field-label" style="margin-bottom:4px">Display Name</div>
+          <input class="model-select" id="newModelName" placeholder="e.g. GPT-4o Mini" style="width:100%">
+        </div>
+        <div>
+          <div class="agent-field-label" style="margin-bottom:4px">Context Window</div>
+          <input class="model-select" id="newModelCtx" type="number" value="131072" style="width:100%">
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:16px">
+        <label style="font-size:12px;color:var(--text-secondary);display:flex;align-items:center;gap:6px">
+          <input type="checkbox" id="newModelReasoning"> Reasoning model
+        </label>
+      </div>
+      <div style="display:flex;align-items:center;margin-top:16px">
+        <button class="btn-save-models" onclick="addNewModel()">Add Model</button>
+        <span class="save-status" id="addModelStatus"></span>
+      </div>
+    </div>
+  `;
+
+  panel.innerHTML = providerHTML + agentHTML + addModelHTML;
   setupFallbackDnD();
 }
 
@@ -679,6 +738,36 @@ async function saveModels(agentId) {
     statusEl.style.color = 'var(--accent-red)';
   }
   btn.disabled = false;
+}
+
+async function addNewModel() {
+  const provider = document.getElementById('newModelProvider').value;
+  const modelId = document.getElementById('newModelId').value.trim();
+  const name = document.getElementById('newModelName').value.trim();
+  const contextWindow = parseInt(document.getElementById('newModelCtx').value) || 131072;
+  const reasoning = document.getElementById('newModelReasoning').checked;
+  const statusEl = document.getElementById('addModelStatus');
+
+  if (!modelId) { statusEl.textContent = 'Model ID is required'; statusEl.style.color = 'var(--accent-red)'; return; }
+
+  statusEl.textContent = 'Adding...'; statusEl.style.color = 'var(--text-muted)';
+  try {
+    await fetchWithFallback('/models'); // resolve API_URL
+    const resp = await fetch(API_URL + '/models/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ provider, modelId, name: name || modelId, reasoning, contextWindow, maxTokens: 8192 })
+    });
+    const result = await resp.json();
+    if (result.ok) {
+      statusEl.textContent = 'Added ' + result.added; statusEl.style.color = 'var(--accent-green)';
+      document.getElementById('newModelId').value = '';
+      document.getElementById('newModelName').value = '';
+      await fetchModels();
+    } else { throw new Error(result.error); }
+  } catch (err) {
+    statusEl.textContent = 'Error: ' + err.message; statusEl.style.color = 'var(--accent-red)';
+  }
 }
 
 // Fetch immediately and every 30s

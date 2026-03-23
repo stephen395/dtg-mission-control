@@ -120,6 +120,20 @@ function getRecentActivity(filePath, maxItems = 10) {
 
 // ── Main Data Collection ──
 
+// Simple HTTPS fetch helper for credit checks
+function fetchUrl(url, headers = {}) {
+  return new Promise((resolve, reject) => {
+    const mod = url.startsWith('https') ? require('https') : require('http');
+    const req = mod.get(url, { headers, timeout: 5000 }, (res) => {
+      let body = '';
+      res.on('data', c => body += c);
+      res.on('end', () => { try { resolve(JSON.parse(body)); } catch { resolve(body); } });
+    });
+    req.on('error', reject);
+    req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
+  });
+}
+
 // Check if OpenClaw gateway is running
 let gatewayAlive = false;
 function checkGateway() {
@@ -357,48 +371,134 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // ── GET /models — return current model config + available models ──
+  // ── GET /models — return current model config + available models + provider credits ──
   if ((url === '/models' || url === '/api/models') && req.method === 'GET') {
-    try {
-      const config = readJSON(path.join(OC_DIR, 'openclaw.json'));
-      // All available models from all providers
-      const available = [];
-      for (const [provider, pconf] of Object.entries(config.models?.providers || {})) {
-        for (const m of (pconf.models || [])) {
-          available.push({
-            id: `${provider}/${m.id}`,
-            name: m.name || m.id,
-            provider,
-            reasoning: m.reasoning || false,
-            cost: m.cost || {},
-            free: (!m.cost?.input && !m.cost?.output) || (m.cost?.input === 0 && m.cost?.output === 0)
-          });
-        }
-      }
-      // Per-agent config
-      const agents = {};
-      // Main agent uses defaults
-      agents.main = {
-        name: 'FallingCave',
-        primary: config.agents?.defaults?.model?.primary || '',
-        fallbacks: config.agents?.defaults?.model?.fallbacks || []
-      };
-      // Fish has own model block
-      for (const a of (config.agents?.list || [])) {
-        if (a.id === 'fish' && a.model) {
-          agents.fish = {
-            name: 'Fish',
-            primary: a.model.primary || '',
-            fallbacks: a.model.fallbacks || []
+    (async () => {
+      try {
+        const config = readJSON(path.join(OC_DIR, 'openclaw.json'));
+        // Build provider info with credit status
+        const providers = {};
+        for (const [pid, pconf] of Object.entries(config.models?.providers || {})) {
+          providers[pid] = {
+            id: pid,
+            baseUrl: pconf.baseUrl,
+            hasKey: !!pconf.apiKey,
+            credits: null // filled below
           };
         }
+        // Check OpenRouter credits
+        if (providers['openrouter']?.hasKey) {
+          try {
+            const orKey = config.models.providers.openrouter.apiKey;
+            const orResp = await fetchUrl('https://openrouter.ai/api/v1/auth/key', { 'Authorization': 'Bearer ' + orKey });
+            if (orResp?.data) {
+              providers['openrouter'].credits = {
+                limit: orResp.data.limit,
+                remaining: orResp.data.limit_remaining,
+                reset: orResp.data.limit_reset,
+                usage: orResp.data.usage,
+                unit: '$'
+              };
+            }
+          } catch {}
+        }
+        // Mark free providers
+        for (const pid of ['google-ai-studio', 'ollama']) {
+          if (providers[pid]) providers[pid].credits = { remaining: 'unlimited', unit: 'free' };
+        }
+        if (providers['nvidia']) providers['nvidia'].credits = { remaining: 'free credits', unit: 'free' };
+        if (providers['anthropic']) providers['anthropic'].credits = { remaining: 'check console.anthropic.com', unit: '$' };
+
+        // All available models
+        const available = [];
+        for (const [provider, pconf] of Object.entries(config.models?.providers || {})) {
+          for (const m of (pconf.models || [])) {
+            available.push({
+              id: `${provider}/${m.id}`,
+              name: m.name || m.id,
+              provider,
+              reasoning: m.reasoning || false,
+              contextWindow: m.contextWindow || 0,
+              maxTokens: m.maxTokens || 0,
+              cost: m.cost || {},
+              free: (!m.cost?.input && !m.cost?.output) || (m.cost?.input === 0 && m.cost?.output === 0)
+            });
+          }
+        }
+        // Per-agent config
+        const agents = {};
+        agents.main = {
+          name: 'FallingCave',
+          primary: config.agents?.defaults?.model?.primary || '',
+          fallbacks: config.agents?.defaults?.model?.fallbacks || []
+        };
+        for (const a of (config.agents?.list || [])) {
+          if (a.id === 'fish' && a.model) {
+            agents.fish = {
+              name: 'Fish',
+              primary: a.model.primary || '',
+              fallbacks: a.model.fallbacks || []
+            };
+          }
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ agents, available, providers }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message }));
       }
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ agents, available }));
-    } catch (err) {
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: err.message }));
-    }
+    })();
+    return;
+  }
+
+  // ── POST /models/add — add a new model to a provider ──
+  if ((url === '/models/add' || url === '/api/models/add') && req.method === 'POST') {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', () => {
+      try {
+        const { provider, modelId, name, reasoning, contextWindow, maxTokens } = JSON.parse(body);
+        if (!provider || !modelId) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Required: provider, modelId' }));
+          return;
+        }
+        const configPath = path.join(OC_DIR, 'openclaw.json');
+        const config = readJSON(configPath);
+        if (!config?.models?.providers?.[provider]) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Provider not found: ' + provider }));
+          return;
+        }
+        // Check if model already exists
+        const existing = config.models.providers[provider].models.find(m => m.id === modelId);
+        if (existing) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Model already exists: ' + modelId }));
+          return;
+        }
+        config.models.providers[provider].models.push({
+          id: modelId,
+          name: name || modelId,
+          reasoning: reasoning || false,
+          input: ['text'],
+          cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+          contextWindow: contextWindow || 131072,
+          maxTokens: maxTokens || 8192
+        });
+        // Also add to agents.defaults.models so it's available for selection
+        const fullId = `${provider}/${modelId}`;
+        if (!config.agents.defaults.models[fullId]) {
+          config.agents.defaults.models[fullId] = {};
+        }
+        fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, added: fullId }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
     return;
   }
 
