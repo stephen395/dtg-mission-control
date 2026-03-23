@@ -120,6 +120,22 @@ function getRecentActivity(filePath, maxItems = 10) {
 
 // ── Main Data Collection ──
 
+// Check if OpenClaw gateway is running
+let gatewayAlive = false;
+function checkGateway() {
+  const req = require('http').get('http://127.0.0.1:18789/health', { timeout: 2000 }, (res) => {
+    let body = '';
+    res.on('data', c => body += c);
+    res.on('end', () => {
+      try { gatewayAlive = JSON.parse(body).ok === true; } catch { gatewayAlive = false; }
+    });
+  });
+  req.on('error', () => { gatewayAlive = false; });
+  req.on('timeout', () => { req.destroy(); gatewayAlive = false; });
+}
+checkGateway();
+setInterval(checkGateway, 15000); // re-check every 15s
+
 function collectDashboardData() {
   const data = {
     timestamp: new Date().toISOString(),
@@ -228,12 +244,11 @@ function collectDashboardData() {
         totalSessions++;
       }
 
-      // Determine status — if updated in last 30 minutes, consider "online"
+      // Status: online if gateway is alive (agents are running), offline if gateway is down
       if (latestUpdate > 0) {
         agentData.lastActive = new Date(latestUpdate).toISOString();
-        const thirtyMinAgo = Date.now() - 30 * 60 * 1000;
-        agentData.status = latestUpdate > thirtyMinAgo ? 'online' : 'offline';
       }
+      agentData.status = gatewayAlive ? 'online' : 'offline';
 
       // Extract skills from most recent session
       const sessions = Object.values(sessionsIndex);
@@ -248,6 +263,7 @@ function collectDashboardData() {
 
   // ── KPIs ──
   data.kpi = {
+    gatewayAlive: gatewayAlive,
     activeAgents: Object.values(data.agents).filter(a => a.status === 'online').length,
     totalAgents: agentDirs.length,
     totalMessagesToday: Object.values(data.agents).reduce((sum, a) => sum + a.todayMessages, 0),
