@@ -167,9 +167,33 @@ function collectDashboardData() {
   }
 
   // ── Per-Agent Data ──
+  // Scan actual skill directories for each agent
+  const BUNDLED_SKILLS_DIR = path.join(require('os').homedir(), 'AppData', 'Local', 'Packages', 'Claude_pzs8sxrjxfjjc', 'LocalCache', 'Roaming', 'npm', 'node_modules', 'openclaw', 'skills');
+
+  function scanSkillDirs(...dirs) {
+    const skills = new Set();
+    for (const dir of dirs) {
+      try {
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        for (const e of entries) {
+          if (e.isDirectory()) {
+            // Verify it has a SKILL.md
+            const skillFile = path.join(dir, e.name, 'SKILL.md');
+            if (fs.existsSync(skillFile)) skills.add(e.name);
+          }
+        }
+      } catch {}
+    }
+    return [...skills].sort();
+  }
+
   const agentDirs = [
-    { id: 'main', name: 'FallingCave', emoji: '🕳️', color: 'purple', sessionsDir: path.join(OC_DIR, 'agents', 'main', 'sessions') },
-    { id: 'fish', name: 'Fish', emoji: '🐟', color: 'cyan', sessionsDir: path.join(OC_DIR, 'agents', 'fish', 'sessions') }
+    { id: 'main', name: 'FallingCave', emoji: '🕳️', color: 'purple',
+      sessionsDir: path.join(OC_DIR, 'agents', 'main', 'sessions'),
+      skillDirs: [path.join(OC_DIR, 'agents', 'main', 'agent', 'skills')] },
+    { id: 'fish', name: 'Fish', emoji: '🐟', color: 'cyan',
+      sessionsDir: path.join(OC_DIR, 'agents', 'fish', 'sessions'),
+      skillDirs: [path.join(OC_DIR, 'agents', 'fish', 'agent', 'skills'), path.join(OC_DIR, 'workspaces', 'fish', 'skills')] }
   ];
 
   let totalMessages = 0;
@@ -250,12 +274,8 @@ function collectDashboardData() {
       }
       agentData.status = gatewayAlive ? 'online' : 'offline';
 
-      // Extract skills from most recent session
-      const sessions = Object.values(sessionsIndex);
-      const mostRecent = sessions.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))[0];
-      if (mostRecent?.skillsSnapshot?.skills) {
-        agentData.skills = mostRecent.skillsSnapshot.skills.map(s => s.name);
-      }
+      // Scan actual skill directories on disk (not session snapshot which can be stale)
+      agentData.skills = scanSkillDirs(...agent.skillDirs);
     }
 
     data.agents[agent.id] = agentData;
