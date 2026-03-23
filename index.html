@@ -65,7 +65,21 @@
   .tab-btn { padding: 8px 20px; border: none; border-radius: 6px; font-size: 13px; font-weight: 500; color: var(--text-secondary); background: transparent; cursor: pointer; transition: all 0.2s; font-family: inherit; }
   .tab-btn:hover { color: var(--text-primary); }
   .tab-btn.active { background: var(--accent-orange); color: #fff; }
-  .live-dot { display: inline-block; width: 8px; height: 8px; background: var(--accent-green); border-radius: 50%; margin-left: 12px; animation: pulse 2s infinite; }
+  .live-dot { display: inline-block; width: 8px; height: 8px; background: var(--accent-green); border-radius: 50%; margin-left: 12px; animation: pulse 2s infinite; cursor: pointer; }
+  .live-dot.error { background: var(--accent-red); }
+  .api-config { position: fixed; bottom: 16px; right: 16px; z-index: 100; }
+  .api-config button { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted); width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 16px; transition: all 0.2s; }
+  .api-config button:hover { border-color: var(--accent-orange); color: var(--text-primary); }
+  .api-modal { display: none; position: fixed; inset: 0; z-index: 9998; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; }
+  .api-modal.show { display: flex; }
+  .api-modal-box { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; width: 400px; }
+  .api-modal-box h3 { font-size: 16px; margin-bottom: 12px; }
+  .api-modal-box input { width: 100%; background: var(--bg-primary); border: 1px solid var(--border); color: var(--text-primary); padding: 10px; border-radius: 6px; font-size: 13px; margin-bottom: 12px; font-family: inherit; }
+  .api-modal-box .btn-row { display: flex; gap: 8px; justify-content: flex-end; }
+  .api-modal-box button { padding: 8px 16px; border-radius: 6px; border: none; font-size: 13px; cursor: pointer; font-family: inherit; }
+  .api-modal-box .btn-save { background: var(--accent-orange); color: #fff; }
+  .api-modal-box .btn-cancel { background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border); }
+  .api-status { font-size: 11px; margin-bottom: 12px; padding: 6px 10px; border-radius: 6px; }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 
   .main { padding: 24px 32px; }
@@ -689,6 +703,111 @@ function updateDonut() {
   document.querySelectorAll('.kanban-col-count').forEach((el,i) => el.textContent=v[i]);
   drawDonut();
 }
+
+// ══════════════════════════════════════
+// ── LIVE DATA FETCH ──
+// ══════════════════════════════════════
+const API_URL = localStorage.getItem('dtg_api_url') || 'http://localhost:3100';
+let liveData = null;
+let fetchError = null;
+
+async function fetchLiveData() {
+  try {
+    const resp = await fetch(API_URL + '/api/dashboard', { signal: AbortSignal.timeout(5000) });
+    if (!resp.ok) throw new Error('API returned ' + resp.status);
+    liveData = await resp.json();
+    fetchError = null;
+    applyLiveData();
+  } catch (err) {
+    fetchError = err.message;
+    console.warn('Live data fetch failed:', err.message, '— using static data');
+  }
+}
+
+function applyLiveData() {
+  if (!liveData) return;
+  const d = liveData;
+
+  // ── KPI Cards ──
+  const kpiValues = document.querySelectorAll('.kpi-value');
+  // Active Agents
+  kpiValues[0].textContent = d.kpi.totalAgents;
+  kpiValues[0].nextElementSibling && (document.querySelectorAll('.kpi-sub')[0].textContent =
+    Object.values(d.agents).map(a => a.name).join(' + '));
+  // Open Tasks (keep static for now — kanban is local)
+  // Audits Completed (keep static — no audit tracking in files yet)
+  // Messages Today
+  kpiValues[3].textContent = d.kpi.totalMessagesToday;
+  kpiValues[3].nextElementSibling && (document.querySelectorAll('.kpi-sub')[2].textContent =
+    Object.values(d.agents).map(a => `${a.name}: ${a.todayMessages}`).join(' | '));
+  // System Health
+  const healthKpi = kpiValues[4];
+  if (healthKpi) {
+    const online = Object.values(d.agents).filter(a => a.status === 'online').length;
+    const total = Object.values(d.agents).length;
+    healthKpi.textContent = online === total ? '100%' : Math.round(online/total*100) + '%';
+    healthKpi.className = 'kpi-value ' + (online === total ? 'green' : 'orange');
+    const sub = document.querySelectorAll('.kpi-sub')[3];
+    if (sub) sub.textContent = online === total ? 'All systems healthy' : `${online}/${total} agents online`;
+  }
+
+  // ── Agent Activity Snapshot ──
+  const activityList = document.querySelector('.agent-activity-list') ||
+    document.querySelector('#tab-dashboard .card:nth-child(2) > div:last-child');
+  // We'll skip rewriting the activity HTML for now — it's complex DOM.
+  // The agent cards on the Agents tab are more important.
+
+  // ── Agent Cards (Agents Tab) ──
+  const agentCards = document.querySelectorAll('.agent-card');
+  const agentOrder = ['main', 'fish'];
+  agentOrder.forEach((agentId, idx) => {
+    const agent = d.agents[agentId];
+    if (!agent || !agentCards[idx]) return;
+    const card = agentCards[idx];
+
+    // Status badge
+    const badge = card.querySelector('.status-badge');
+    if (badge) {
+      badge.className = 'status-badge ' + (agent.status === 'online' ? 'online' : 'offline');
+      badge.innerHTML = `<div class="status-dot ${agent.status}"></div>${agent.status === 'online' ? 'Connected' : 'Offline'}`;
+    }
+
+    // Last active
+    const fields = card.querySelectorAll('.agent-field-value');
+    const lastActiveField = Array.from(fields).find(f => f.textContent.includes('/2026'));
+    if (lastActiveField && agent.lastActive) {
+      lastActiveField.textContent = new Date(agent.lastActive).toLocaleString();
+    }
+
+    // Session + message counts
+    const counters = card.querySelectorAll('.agent-tasks-count');
+    if (counters[0]) counters[0].textContent = agent.sessions.length;
+    if (counters[1]) counters[1].textContent = agent.todayMessages;
+  });
+
+  // ── Update timestamp ──
+  const updateEl = document.getElementById('agentUpdateTime');
+  if (updateEl) updateEl.textContent = new Date().toLocaleTimeString();
+
+  // ── Statistics ──
+  const statValues = document.querySelectorAll('.stat-value');
+  if (statValues.length >= 3) {
+    statValues[0].textContent = Object.values(d.agents).reduce((s,a) => s + a.sessions.length, 0); // total sessions
+    statValues[1].textContent = d.kpi.totalMessagesToday; // messages today
+    // Most active
+    const mostActive = Object.values(d.agents).sort((a,b) => b.todayMessages - a.todayMessages)[0];
+    if (statValues[3]) statValues[3].textContent = mostActive?.name || '—';
+  }
+
+  // ── Live indicator ──
+  const liveDot = document.querySelector('.live-dot');
+  if (liveDot) liveDot.title = `Last updated: ${new Date().toLocaleTimeString()} | API: ${API_URL}`;
+}
+
+// Fetch immediately and then every 30 seconds
+fetchLiveData();
+setInterval(fetchLiveData, 30000);
+
 </script>
 </div><!-- end app-wrap -->
 
@@ -727,6 +846,67 @@ if (sessionStorage.getItem('dtg_unlocked') === '1') {
 document.getElementById('lockPass').addEventListener('keydown', e => {
   if (e.key === 'Enter') tryUnlock();
 });
+</script>
+
+<!-- API Settings -->
+<div class="api-config">
+  <button onclick="document.getElementById('apiModal').classList.add('show')" title="API Settings">&#x2699;</button>
+</div>
+<div class="api-modal" id="apiModal">
+  <div class="api-modal-box">
+    <h3>API Connection</h3>
+    <div class="api-status" id="apiStatus" style="background:var(--bg-secondary);color:var(--text-muted);">Checking...</div>
+    <input type="text" id="apiUrlInput" placeholder="http://localhost:3100">
+    <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">
+      This is the URL where your server.js is running. For local: http://localhost:3100<br>
+      For VPS: https://your-vps-domain:3100
+    </p>
+    <div class="btn-row">
+      <button class="btn-cancel" onclick="document.getElementById('apiModal').classList.remove('show')">Cancel</button>
+      <button class="btn-save" onclick="saveApiUrl()">Save & Test</button>
+    </div>
+  </div>
+</div>
+<script>
+  document.getElementById('apiUrlInput').value = localStorage.getItem('dtg_api_url') || 'http://localhost:3100';
+  async function saveApiUrl() {
+    const url = document.getElementById('apiUrlInput').value.replace(/\/+$/, '');
+    const statusEl = document.getElementById('apiStatus');
+    statusEl.textContent = 'Testing...';
+    statusEl.style.background = 'var(--bg-secondary)';
+    statusEl.style.color = 'var(--text-muted)';
+    try {
+      const resp = await fetch(url + '/api/health', { signal: AbortSignal.timeout(5000) });
+      if (resp.ok) {
+        localStorage.setItem('dtg_api_url', url);
+        statusEl.textContent = 'Connected! Reloading...';
+        statusEl.style.background = '#133022';
+        statusEl.style.color = '#22c55e';
+        setTimeout(() => location.reload(), 1000);
+      } else throw new Error('Status ' + resp.status);
+    } catch (err) {
+      statusEl.textContent = 'Failed: ' + err.message;
+      statusEl.style.background = '#3b1518';
+      statusEl.style.color = '#ef4444';
+    }
+  }
+  // Check status on load
+  (async () => {
+    const statusEl = document.getElementById('apiStatus');
+    try {
+      const resp = await fetch((localStorage.getItem('dtg_api_url') || 'http://localhost:3100') + '/api/health', { signal: AbortSignal.timeout(3000) });
+      if (resp.ok) {
+        const data = await resp.json();
+        statusEl.textContent = `Connected — uptime: ${Math.round(data.uptime)}s`;
+        statusEl.style.background = '#133022'; statusEl.style.color = '#22c55e';
+      } else throw new Error();
+    } catch {
+      statusEl.textContent = 'Not connected — dashboard showing static data';
+      statusEl.style.background = '#3b2e15'; statusEl.style.color = '#eab308';
+      const dot = document.querySelector('.live-dot');
+      if (dot) dot.classList.add('error');
+    }
+  })();
 </script>
 </body>
 </html>
