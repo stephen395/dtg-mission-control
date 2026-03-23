@@ -707,7 +707,7 @@ function updateDonut() {
 // ══════════════════════════════════════
 // ── LIVE DATA FETCH ──
 // ══════════════════════════════════════
-const API_URL = localStorage.getItem('dtg_api_url') || 'http://localhost:3100';
+const API_URL = localStorage.getItem('dtg_api_url') || 'https://remote-pc8.tail93ed18.ts.net/api';
 let liveData = null;
 let fetchError = null;
 
@@ -856,9 +856,9 @@ document.getElementById('lockPass').addEventListener('keydown', e => {
   <div class="api-modal-box">
     <h3>API Connection</h3>
     <div class="api-status" id="apiStatus" style="background:var(--bg-secondary);color:var(--text-muted);">Checking...</div>
-    <input type="text" id="apiUrlInput" placeholder="http://localhost:3100">
+    <input type="text" id="apiUrlInput" placeholder="https://remote-pc8.tail93ed18.ts.net/api">
     <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">
-      This is the URL where your server.js is running. For local: http://localhost:3100<br>
+      This is the URL where your server.js is running. For local: https://remote-pc8.tail93ed18.ts.net/api<br>
       For VPS: https://your-vps-domain:3100
     </p>
     <div class="btn-row">
@@ -868,7 +868,7 @@ document.getElementById('lockPass').addEventListener('keydown', e => {
   </div>
 </div>
 <script>
-  document.getElementById('apiUrlInput').value = localStorage.getItem('dtg_api_url') || 'http://localhost:3100';
+  document.getElementById('apiUrlInput').value = localStorage.getItem('dtg_api_url') || 'https://remote-pc8.tail93ed18.ts.net/api';
   async function saveApiUrl() {
     const url = document.getElementById('apiUrlInput').value.replace(/\/+$/, '');
     const statusEl = document.getElementById('apiStatus');
@@ -894,7 +894,7 @@ document.getElementById('lockPass').addEventListener('keydown', e => {
   (async () => {
     const statusEl = document.getElementById('apiStatus');
     try {
-      const resp = await fetch((localStorage.getItem('dtg_api_url') || 'http://localhost:3100') + '/api/health', { signal: AbortSignal.timeout(3000) });
+      const resp = await fetch((localStorage.getItem('dtg_api_url') || 'https://remote-pc8.tail93ed18.ts.net/api') + '/api/health', { signal: AbortSignal.timeout(3000) });
       if (resp.ok) {
         const data = await resp.json();
         statusEl.textContent = `Connected — uptime: ${Math.round(data.uptime)}s`;

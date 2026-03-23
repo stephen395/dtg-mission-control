@@ -1,0 +1,22 @@
+{
+  "TCP": {
+    "443": {
+      "HTTPS": true
+    }
+  },
+  "Web": {
+    "remote-pc8.tail93ed18.ts.net:443": {
+      "Handlers": {
+        "/googlechat": {
+          "Proxy": "http://127.0.0.1:18789/googlechat"
+        },
+        "/api/": {
+          "Proxy": "http://127.0.0.1:3100/api/"
+        }
+      }
+    }
+  },
+  "AllowFunnel": {
+    "remote-pc8.tail93ed18.ts.net:443": true
+  }
+}

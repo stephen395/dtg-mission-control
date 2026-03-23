@@ -300,7 +300,10 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  if (req.url === '/api/dashboard' && req.method === 'GET') {
+  // Normalize path — strip leading /api if present (Tailscale Funnel doubles it)
+  const url = req.url.replace(/^\/api/, '');
+
+  if ((url === '/dashboard' || url === '/api/dashboard') && req.method === 'GET') {
     try {
       const data = collectDashboardData();
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -312,7 +315,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  if (req.url === '/api/health' && req.method === 'GET') {
+  if ((url === '/health' || url === '/api/health') && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ status: 'ok', uptime: process.uptime() }));
     return;
