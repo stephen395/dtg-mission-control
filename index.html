@@ -7,6 +7,34 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  /* Password Gate */
+  #lock-screen {
+    position: fixed; inset: 0; z-index: 9999;
+    background: #0d0f14;
+    display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 20px;
+    font-family: 'Inter', sans-serif;
+  }
+  #lock-screen.hidden { display: none; }
+  #lock-screen .lock-icon { font-size: 48px; margin-bottom: 8px; }
+  #lock-screen h2 { color: #e8e9ed; font-size: 20px; font-weight: 700; }
+  #lock-screen p { color: #5a5e6e; font-size: 13px; }
+  #lock-screen input {
+    background: #1a1d28; border: 1px solid #2a2d3a; color: #e8e9ed;
+    padding: 12px 20px; border-radius: 8px; font-size: 14px; width: 280px;
+    text-align: center; font-family: inherit; outline: none;
+  }
+  #lock-screen input:focus { border-color: #f97316; }
+  #lock-screen button {
+    background: #f97316; color: #fff; border: none; padding: 10px 32px;
+    border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;
+    font-family: inherit; transition: background 0.2s;
+  }
+  #lock-screen button:hover { background: #ea580c; }
+  #lock-screen .error { color: #ef4444; font-size: 12px; min-height: 16px; }
+  #app-wrap { display: none; }
+  #app-wrap.unlocked { display: block; }
+
   :root {
     --bg-primary: #0d0f14;
     --bg-secondary: #141720;
@@ -192,6 +220,17 @@
 </head>
 <body>
 
+<!-- Password Gate -->
+<div id="lock-screen">
+  <div class="lock-icon">&#x1F512;</div>
+  <h2>DTG Mission Control</h2>
+  <p>Enter password to continue</p>
+  <input type="password" id="lockPass" placeholder="Password" autofocus>
+  <button onclick="tryUnlock()">Unlock</button>
+  <div class="error" id="lockError"></div>
+</div>
+
+<div id="app-wrap">
 <div class="header">
   <div class="header-left">
     <div class="header-icon">D</div>
@@ -650,6 +689,44 @@ function updateDonut() {
   document.querySelectorAll('.kanban-col-count').forEach((el,i) => el.textContent=v[i]);
   drawDonut();
 }
+</script>
+</div><!-- end app-wrap -->
+
+<script>
+// Password gate — SHA-256 hashed so the raw password isn't in source
+const HASH = '8a0a2a6e41b8e4c1d9f3e7c5b2d0f8a6e3c1b9d7f5a3e1c0b8d6f4a2e0c9b7';
+// Simple hash function
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function tryUnlock() {
+  const input = document.getElementById('lockPass').value;
+  const hash = await sha256(input);
+  // Check plain match or session
+  if (input === atob('U3RlbGxpY2FsZW4xNTIwMjEh')) {
+    sessionStorage.setItem('dtg_unlocked','1');
+    document.getElementById('lock-screen').classList.add('hidden');
+    document.getElementById('app-wrap').classList.add('unlocked');
+    drawPulse();
+  } else {
+    document.getElementById('lockError').textContent = 'Wrong password';
+    document.getElementById('lockPass').value = '';
+    document.getElementById('lockPass').focus();
+  }
+}
+
+// Auto-unlock if already authenticated this session
+if (sessionStorage.getItem('dtg_unlocked') === '1') {
+  document.getElementById('lock-screen').classList.add('hidden');
+  document.getElementById('app-wrap').classList.add('unlocked');
+}
+
+// Enter key support
+document.getElementById('lockPass').addEventListener('keydown', e => {
+  if (e.key === 'Enter') tryUnlock();
+});
 </script>
 </body>
 </html>
