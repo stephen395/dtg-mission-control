@@ -235,16 +235,31 @@ document.querySelectorAll('[data-nav]').forEach(link => {
 // ══════════════════════════════════════
 // ── ALL DATA FROM API — ZERO HARDCODING ──
 // ══════════════════════════════════════
-const API_URL = localStorage.getItem('dtg_api_url') || 'https://remote-pc8.tail93ed18.ts.net/api';
+// Try localhost first (same machine), then Funnel URL (remote access)
+const API_ENDPOINTS = [
+  localStorage.getItem('dtg_api_url'),
+  'http://localhost:3100/api',
+  'https://remote-pc8.tail93ed18.ts.net/api'
+].filter(Boolean);
+let API_URL = API_ENDPOINTS[0];
 let liveData = null;
+
+async function fetchWithFallback(path) {
+  for (const base of API_ENDPOINTS) {
+    try {
+      const resp = await fetch(base + path, { signal: AbortSignal.timeout(5000) });
+      if (resp.ok) { API_URL = base; return resp; }
+    } catch {}
+  }
+  throw new Error('All API endpoints unreachable');
+}
 
 async function fetchAndRender() {
   try {
-    const resp = await fetch(API_URL + '/dashboard', { signal: AbortSignal.timeout(8000) });
-    if (!resp.ok) throw new Error('API ' + resp.status);
+    const resp = await fetchWithFallback('/dashboard');
     liveData = await resp.json();
     document.getElementById('liveDot').classList.remove('error');
-    document.getElementById('liveDot').title = 'Live — updated ' + new Date().toLocaleTimeString();
+    document.getElementById('liveDot').title = `Live (${API_URL}) — updated ${new Date().toLocaleTimeString()}`;
     renderAll();
   } catch (err) {
     console.warn('API fetch failed:', err.message);
@@ -547,10 +562,14 @@ document.getElementById('lockPass').addEventListener('keydown', e => { if (e.key
   (async () => {
     const statusEl = document.getElementById('apiStatus');
     try {
-      const resp = await fetch(API_URL + '/health', { signal: AbortSignal.timeout(3000) });
-      if (resp.ok) { const d = await resp.json(); statusEl.textContent = `Connected — uptime: ${Math.round(d.uptime)}s`; statusEl.style.background = '#133022'; statusEl.style.color = '#22c55e'; }
-      else throw new Error();
-    } catch { statusEl.textContent = 'Not connected — no data shown'; statusEl.style.background = '#3b1518'; statusEl.style.color = '#ef4444'; }
+      const resp = await fetchWithFallback('/health');
+      const d = await resp.json();
+      statusEl.textContent = `Connected via ${API_URL} — uptime: ${Math.round(d.uptime)}s`;
+      statusEl.style.background = '#133022'; statusEl.style.color = '#22c55e';
+    } catch {
+      statusEl.textContent = 'Not connected — no data shown';
+      statusEl.style.background = '#3b1518'; statusEl.style.color = '#ef4444';
+    }
   })();
 </script>
 </body>
