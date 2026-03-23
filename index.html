@@ -235,11 +235,13 @@ document.querySelectorAll('[data-nav]').forEach(link => {
 // ══════════════════════════════════════
 // ── ALL DATA FROM API — ZERO HARDCODING ──
 // ══════════════════════════════════════
-// Try localhost first (same machine), then Funnel URL (remote access)
+// Try same-origin first (if served from server.js), then localhost, then Funnel
+const isSameOrigin = location.hostname !== 'stephen395.github.io';
 const API_ENDPOINTS = [
   localStorage.getItem('dtg_api_url'),
-  'http://localhost:3100/api',
-  'https://remote-pc8.tail93ed18.ts.net/api'
+  isSameOrigin ? (location.origin + '/api') : null,
+  'https://remote-pc8.tail93ed18.ts.net/api',
+  'http://localhost:3100/api'
 ].filter(Boolean);
 let API_URL = API_ENDPOINTS[0];
 let liveData = null;

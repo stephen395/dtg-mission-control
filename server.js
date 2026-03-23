@@ -321,12 +321,27 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // Serve the dashboard HTML itself at root
+  if ((url === '/' || url === '') && req.method === 'GET') {
+    const htmlPath = path.join(__dirname, 'index.html');
+    try {
+      const html = fs.readFileSync(htmlPath, 'utf-8');
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(html);
+    } catch {
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end('index.html not found');
+    }
+    return;
+  }
+
   res.writeHead(404, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({ error: 'Not found' }));
 });
 
 server.listen(PORT, () => {
-  console.log(`DTG Mission Control API running on http://localhost:${PORT}`);
+  console.log(`DTG Mission Control running on http://localhost:${PORT}`);
+  console.log(`  Dashboard UI:   http://localhost:${PORT}/`);
   console.log(`  Dashboard data: http://localhost:${PORT}/api/dashboard`);
   console.log(`  Health check:   http://localhost:${PORT}/api/health`);
   console.log(`  OpenClaw dir:   ${OC_DIR}`);
