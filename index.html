@@ -122,6 +122,35 @@
   .api-modal-box .btn-save { background: var(--accent-orange); color: #fff; }
   .api-modal-box .btn-cancel { background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border); }
   .api-status { font-size: 11px; margin-bottom: 12px; padding: 6px 10px; border-radius: 6px; }
+  /* Models tab */
+  .model-agent-section { margin-bottom: 32px; }
+  .model-agent-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .model-agent-title { font-size: 16px; font-weight: 700; }
+  .model-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .model-row-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; width: 80px; flex-shrink: 0; }
+  .model-select { background: var(--bg-primary); border: 1px solid var(--border); color: var(--text-primary); padding: 8px 12px; border-radius: 8px; font-size: 13px; font-family: inherit; flex: 1; max-width: 400px; cursor: pointer; }
+  .model-select:focus { border-color: var(--accent-orange); outline: none; }
+  .fallback-list { list-style: none; padding: 0; margin: 0; }
+  .fallback-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 6px; cursor: grab; max-width: 480px; }
+  .fallback-item:hover { border-color: #3a3d4a; }
+  .fallback-item.dragging { opacity: 0.5; border-color: var(--accent-orange); }
+  .fallback-grip { color: var(--text-muted); font-size: 14px; cursor: grab; user-select: none; }
+  .fallback-num { font-size: 11px; color: var(--text-muted); width: 16px; }
+  .fallback-name { font-size: 13px; color: var(--text-primary); flex: 1; }
+  .fallback-cost { font-size: 10px; padding: 2px 6px; border-radius: 4px; }
+  .fallback-cost.free { background: #133022; color: var(--accent-green); }
+  .fallback-cost.paid { background: #3b2e15; color: var(--accent-yellow); }
+  .fallback-remove { color: var(--text-muted); cursor: pointer; font-size: 16px; background: none; border: none; padding: 0 4px; }
+  .fallback-remove:hover { color: var(--accent-red); }
+  .add-fallback-row { display: flex; gap: 8px; margin-top: 8px; max-width: 480px; }
+  .add-fallback-row select { flex: 1; }
+  .btn-add { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary); padding: 8px 14px; border-radius: 8px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .btn-add:hover { border-color: var(--accent-orange); color: var(--text-primary); }
+  .btn-save-models { background: var(--accent-orange); color: #fff; border: none; padding: 10px 24px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; margin-top: 12px; }
+  .btn-save-models:hover { background: #ea580c; }
+  .btn-save-models:disabled { opacity: 0.5; cursor: not-allowed; }
+  .save-status { font-size: 12px; margin-left: 12px; }
+
   @media (max-width: 1100px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } .agents-grid { grid-template-columns: 1fr; } }
   @media (max-width: 800px) { .two-col { grid-template-columns: 1fr; } }
 </style>
@@ -149,6 +178,7 @@
   <nav class="tab-nav">
     <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
     <button class="tab-btn" data-tab="agents">Agents</button>
+    <button class="tab-btn" data-tab="models">Models</button>
   </nav>
 </div>
 
@@ -206,6 +236,11 @@
       <div id="statsPanel"><div class="no-data">Loading...</div></div>
     </div>
   </div>
+</div>
+
+<!-- ══ MODELS ══ -->
+<div id="tab-models" class="tab-content">
+  <div id="modelsPanel"><div class="no-data">Loading models...</div></div>
 </div>
 
 </div>
@@ -501,8 +536,154 @@ function escHtml(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// ══════════════════════════════════════
+// ── MODELS TAB ──
+// ══════════════════════════════════════
+let modelsData = null;
+
+async function fetchModels() {
+  try {
+    const resp = await fetchWithFallback('/models');
+    modelsData = await resp.json();
+    renderModelsPanel();
+  } catch (err) {
+    document.getElementById('modelsPanel').innerHTML = `<div class="no-data">Cannot load models: ${err.message}</div>`;
+  }
+}
+
+function renderModelsPanel() {
+  if (!modelsData) return;
+  const { agents, available } = modelsData;
+  const panel = document.getElementById('modelsPanel');
+
+  panel.innerHTML = Object.entries(agents).map(([id, agent]) => {
+    const currentFallbacks = agent.fallbacks || [];
+    const usedModels = new Set([agent.primary, ...currentFallbacks]);
+    const unusedModels = available.filter(m => !usedModels.has(m.id));
+
+    return `
+    <div class="model-agent-section card" data-agent="${id}">
+      <div class="model-agent-header">
+        <div class="model-agent-title">${id === 'main' ? '&#x1F573;&#xFE0F;' : '&#x1F41F;'} ${agent.name}</div>
+      </div>
+
+      <div class="model-row">
+        <div class="model-row-label">Primary</div>
+        <select class="model-select" data-role="primary" data-agent="${id}">
+          ${available.map(m => `<option value="${m.id}" ${m.id === agent.primary ? 'selected' : ''}>${m.name} (${m.provider}) ${m.free ? '— FREE' : '— $'}</option>`).join('')}
+        </select>
+      </div>
+
+      <div class="model-row" style="align-items:flex-start">
+        <div class="model-row-label" style="margin-top:10px">Fallbacks</div>
+        <div style="flex:1;max-width:480px">
+          <ul class="fallback-list" data-agent="${id}">
+            ${currentFallbacks.map((fb, i) => {
+              const info = available.find(m => m.id === fb) || { name: fb, free: false };
+              return `<li class="fallback-item" draggable="true" data-model="${fb}">
+                <span class="fallback-grip">&#x2630;</span>
+                <span class="fallback-num">${i+1}.</span>
+                <span class="fallback-name">${info.name || fb}</span>
+                <span class="fallback-cost ${info.free ? 'free' : 'paid'}">${info.free ? 'FREE' : 'PAID'}</span>
+                <button class="fallback-remove" onclick="removeFallback('${id}',${i})">&#x2715;</button>
+              </li>`;
+            }).join('')}
+          </ul>
+          <div class="add-fallback-row">
+            <select class="model-select" id="addFb-${id}">
+              <option value="">+ Add fallback...</option>
+              ${unusedModels.map(m => `<option value="${m.id}">${m.name} (${m.provider}) ${m.free ? '— FREE' : '— $'}</option>`).join('')}
+            </select>
+            <button class="btn-add" onclick="addFallback('${id}')">Add</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;margin-top:16px">
+        <button class="btn-save-models" onclick="saveModels('${id}')">Save ${agent.name}</button>
+        <span class="save-status" id="saveStatus-${id}"></span>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Wire up fallback drag-and-drop
+  setupFallbackDnD();
+}
+
+function removeFallback(agentId, idx) {
+  modelsData.agents[agentId].fallbacks.splice(idx, 1);
+  renderModelsPanel();
+}
+
+function addFallback(agentId) {
+  const sel = document.getElementById('addFb-' + agentId);
+  if (!sel.value) return;
+  modelsData.agents[agentId].fallbacks.push(sel.value);
+  renderModelsPanel();
+}
+
+function setupFallbackDnD() {
+  document.querySelectorAll('.fallback-list').forEach(list => {
+    let dragItem = null;
+    list.querySelectorAll('.fallback-item').forEach(item => {
+      item.addEventListener('dragstart', () => { dragItem = item; item.classList.add('dragging'); });
+      item.addEventListener('dragend', () => { item.classList.remove('dragging'); dragItem = null; });
+      item.addEventListener('dragover', e => { e.preventDefault(); });
+      item.addEventListener('drop', e => {
+        e.preventDefault();
+        if (!dragItem || dragItem === item) return;
+        const agentId = list.dataset.agent;
+        const items = [...list.querySelectorAll('.fallback-item')];
+        const fromIdx = items.indexOf(dragItem);
+        const toIdx = items.indexOf(item);
+        const fb = modelsData.agents[agentId].fallbacks;
+        const [moved] = fb.splice(fromIdx, 1);
+        fb.splice(toIdx, 0, moved);
+        renderModelsPanel();
+      });
+    });
+  });
+}
+
+async function saveModels(agentId) {
+  const section = document.querySelector(`.model-agent-section[data-agent="${agentId}"]`);
+  const primary = section.querySelector('[data-role="primary"]').value;
+  const fallbacks = modelsData.agents[agentId].fallbacks;
+  const statusEl = document.getElementById('saveStatus-' + agentId);
+  const btn = section.querySelector('.btn-save-models');
+
+  btn.disabled = true;
+  statusEl.textContent = 'Saving...';
+  statusEl.style.color = 'var(--text-muted)';
+
+  try {
+    const resp = await fetchWithFallback('/models');  // just to get the right base URL
+    // Use the resolved API_URL
+    const saveResp = await fetch(API_URL + '/models', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agentId, primary, fallbacks })
+    });
+    const result = await saveResp.json();
+    if (result.ok) {
+      statusEl.textContent = 'Saved! Takes effect on next session.';
+      statusEl.style.color = 'var(--accent-green)';
+      // Update local data
+      modelsData.agents[agentId].primary = primary;
+      await fetchModels(); // refresh
+    } else {
+      throw new Error(result.error || 'Unknown error');
+    }
+  } catch (err) {
+    statusEl.textContent = 'Error: ' + err.message;
+    statusEl.style.color = 'var(--accent-red)';
+  }
+  btn.disabled = false;
+}
+
 // Fetch immediately and every 30s
 fetchAndRender();
+fetchModels();
 setInterval(fetchAndRender, 30000);
 </script>
 

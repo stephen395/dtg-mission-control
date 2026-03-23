@@ -327,7 +327,7 @@ function collectDashboardData() {
 const server = http.createServer((req, res) => {
   // CORS headers for GitHub Pages
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
@@ -354,6 +354,93 @@ const server = http.createServer((req, res) => {
   if ((url === '/health' || url === '/api/health') && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ status: 'ok', uptime: process.uptime() }));
+    return;
+  }
+
+  // ── GET /models — return current model config + available models ──
+  if ((url === '/models' || url === '/api/models') && req.method === 'GET') {
+    try {
+      const config = readJSON(path.join(OC_DIR, 'openclaw.json'));
+      // All available models from all providers
+      const available = [];
+      for (const [provider, pconf] of Object.entries(config.models?.providers || {})) {
+        for (const m of (pconf.models || [])) {
+          available.push({
+            id: `${provider}/${m.id}`,
+            name: m.name || m.id,
+            provider,
+            reasoning: m.reasoning || false,
+            cost: m.cost || {},
+            free: (!m.cost?.input && !m.cost?.output) || (m.cost?.input === 0 && m.cost?.output === 0)
+          });
+        }
+      }
+      // Per-agent config
+      const agents = {};
+      // Main agent uses defaults
+      agents.main = {
+        name: 'FallingCave',
+        primary: config.agents?.defaults?.model?.primary || '',
+        fallbacks: config.agents?.defaults?.model?.fallbacks || []
+      };
+      // Fish has own model block
+      for (const a of (config.agents?.list || [])) {
+        if (a.id === 'fish' && a.model) {
+          agents.fish = {
+            name: 'Fish',
+            primary: a.model.primary || '',
+            fallbacks: a.model.fallbacks || []
+          };
+        }
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ agents, available }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
+  // ── POST /models — update model config for an agent ──
+  if ((url === '/models' || url === '/api/models') && req.method === 'POST') {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', () => {
+      try {
+        const { agentId, primary, fallbacks } = JSON.parse(body);
+        if (!agentId || !primary || !Array.isArray(fallbacks)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Required: agentId, primary, fallbacks[]' }));
+          return;
+        }
+        const configPath = path.join(OC_DIR, 'openclaw.json');
+        const config = readJSON(configPath);
+        if (!config) throw new Error('Cannot read openclaw.json');
+
+        if (agentId === 'main') {
+          config.agents.defaults.model.primary = primary;
+          config.agents.defaults.model.fallbacks = fallbacks;
+        } else if (agentId === 'fish') {
+          const fishAgent = config.agents.list.find(a => a.id === 'fish');
+          if (!fishAgent) throw new Error('Fish agent not found in config');
+          if (!fishAgent.model) fishAgent.model = {};
+          fishAgent.model.primary = primary;
+          fishAgent.model.fallbacks = fallbacks;
+        } else {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Unknown agentId: ' + agentId }));
+          return;
+        }
+
+        fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, agentId, primary, fallbacks }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
     return;
   }
 
