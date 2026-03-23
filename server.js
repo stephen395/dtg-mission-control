@@ -336,6 +336,51 @@ function collectDashboardData() {
   return data;
 }
 
+// ── Model Usage Tracking ──
+// Parses all session JSONL files to count which models processed which messages
+function collectModelUsage() {
+  const stats = {}; // modelId -> { sessions, messages, agents: Set }
+  const agentSessions = [
+    { agent: 'main', dir: path.join(OC_DIR, 'agents', 'main', 'sessions') },
+    { agent: 'fish', dir: path.join(OC_DIR, 'agents', 'fish', 'sessions') }
+  ];
+
+  for (const { agent, dir } of agentSessions) {
+    let files;
+    try { files = fs.readdirSync(dir).filter(f => f.endsWith('.jsonl')); } catch { continue; }
+
+    for (const file of files) {
+      let currentModel = 'unknown';
+      try {
+        const content = fs.readFileSync(path.join(dir, file), 'utf-8');
+        for (const line of content.split('\n')) {
+          if (!line.trim()) continue;
+          let d;
+          try { d = JSON.parse(line); } catch { continue; }
+
+          if (d.type === 'model_change') {
+            currentModel = (d.provider || '') + '/' + (d.modelId || '');
+            if (!stats[currentModel]) stats[currentModel] = { sessions: 0, messages: 0, agents: new Set() };
+            stats[currentModel].sessions++;
+            stats[currentModel].agents.add(agent);
+          } else if (d.type === 'message' && d.message?.role === 'assistant') {
+            if (!stats[currentModel]) stats[currentModel] = { sessions: 0, messages: 0, agents: new Set() };
+            stats[currentModel].messages++;
+            stats[currentModel].agents.add(agent);
+          }
+        }
+      } catch {}
+    }
+  }
+
+  // Convert Sets to arrays for JSON
+  const result = {};
+  for (const [model, s] of Object.entries(stats)) {
+    result[model] = { sessions: s.sessions, messages: s.messages, agents: [...s.agents] };
+  }
+  return result;
+}
+
 // ── HTTP Server ──
 
 const server = http.createServer((req, res) => {
@@ -441,8 +486,9 @@ const server = http.createServer((req, res) => {
             };
           }
         }
+        const usage = collectModelUsage();
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ agents, available, providers }));
+        res.end(JSON.stringify({ agents, available, providers, usage }));
       } catch (err) {
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: err.message }));

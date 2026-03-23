@@ -557,6 +557,7 @@ function renderModelsPanel() {
   const panel = document.getElementById('modelsPanel');
 
   // Provider credits section
+  const usage = modelsData.usage || {};
   const providerHTML = providers ? `
     <div class="card" style="margin-bottom:24px">
       <div class="card-header"><div class="card-title">Provider Credits</div></div>
@@ -570,14 +571,54 @@ function renderModelsPanel() {
             else if (cr.remaining !== undefined && typeof cr.remaining === 'number') { creditText = '$' + cr.remaining + ' / $' + cr.limit + (cr.reset ? ' (' + cr.reset + ' reset)' : ''); creditColor = cr.remaining > 0 ? 'var(--accent-green)' : 'var(--accent-red)'; }
             else if (typeof cr.remaining === 'string') { creditText = cr.remaining; creditColor = 'var(--accent-yellow)'; }
           }
-          const modelCount = available.filter(m => m.provider === pid).length;
+          // Sum usage for this provider
+          const providerModels = available.filter(m => m.provider === pid);
+          let providerMsgs = 0;
+          for (const m of providerModels) { providerMsgs += (usage[m.id]?.messages || 0); }
           return `<div style="background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;padding:14px">
             <div style="font-size:13px;font-weight:600;margin-bottom:4px">${pid}</div>
             <div style="font-size:12px;color:${creditColor};margin-bottom:4px">${creditText}</div>
-            <div style="font-size:11px;color:var(--text-muted)">${modelCount} model${modelCount!==1?'s':''}</div>
+            <div style="font-size:11px;color:var(--text-muted)">${providerModels.length} model${providerModels.length!==1?'s':''} | ${providerMsgs} msgs</div>
           </div>`;
         }).join('')}
       </div>
+    </div>
+    <div class="card" style="margin-bottom:24px">
+      <div class="card-header"><div class="card-title">Model Usage (All Time)</div></div>
+      ${Object.keys(usage).length === 0 ? '<div class="no-data">No usage data yet</div>' : `
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr>
+          <th style="text-align:left;padding:10px 8px;color:var(--text-muted);font-size:11px;text-transform:uppercase;border-bottom:1px solid var(--border)">Model</th>
+          <th style="text-align:left;padding:10px 8px;color:var(--text-muted);font-size:11px;text-transform:uppercase;border-bottom:1px solid var(--border)">Messages</th>
+          <th style="text-align:left;padding:10px 8px;color:var(--text-muted);font-size:11px;text-transform:uppercase;border-bottom:1px solid var(--border)">Sessions</th>
+          <th style="text-align:left;padding:10px 8px;color:var(--text-muted);font-size:11px;text-transform:uppercase;border-bottom:1px solid var(--border)">Agents</th>
+          <th style="text-align:left;padding:10px 8px;color:var(--text-muted);font-size:11px;text-transform:uppercase;border-bottom:1px solid var(--border)">Share</th>
+        </tr></thead>
+        <tbody>
+          ${(() => {
+            const sorted = Object.entries(usage).sort((a,b) => b[1].messages - a[1].messages);
+            const totalMsgs = sorted.reduce((s, [,u]) => s + u.messages, 0);
+            return sorted.map(([model, u]) => {
+              const info = available.find(m => m.id === model);
+              const pct = totalMsgs > 0 ? Math.round(u.messages / totalMsgs * 100) : 0;
+              return `<tr>
+                <td style="padding:10px 8px;border-bottom:1px solid #1e2130;color:var(--text-primary);font-weight:500">${info?.name || model}</td>
+                <td style="padding:10px 8px;border-bottom:1px solid #1e2130;color:var(--accent-cyan);font-weight:600">${u.messages}</td>
+                <td style="padding:10px 8px;border-bottom:1px solid #1e2130;color:var(--text-secondary)">${u.sessions}</td>
+                <td style="padding:10px 8px;border-bottom:1px solid #1e2130;color:var(--text-secondary)">${u.agents.join(', ')}</td>
+                <td style="padding:10px 8px;border-bottom:1px solid #1e2130">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <div style="flex:1;height:6px;background:var(--bg-primary);border-radius:3px;overflow:hidden;max-width:100px">
+                      <div style="height:100%;width:${pct}%;background:var(--accent-orange);border-radius:3px"></div>
+                    </div>
+                    <span style="font-size:11px;color:var(--text-muted)">${pct}%</span>
+                  </div>
+                </td>
+              </tr>`;
+            }).join('');
+          })()}
+        </tbody>
+      </table>`}
     </div>
   ` : '';
 
