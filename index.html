@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DTG Mission Control - Virtual Office</title>
+<title>DTG Mission Control</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -14,7 +14,7 @@
   #lock-screen .lock-icon { font-size: 48px; margin-bottom: 8px; image-rendering: pixelated; }
   #lock-screen h2 { color: #e8e9ed; font-size: 14px; font-weight: 700; letter-spacing: 2px; }
   #lock-screen p { color: #5a5e6e; font-size: 9px; }
-  #lock-screen input { background: #1a1d28; border: 2px solid #2a2d3a; color: #e8e9ed; padding: 12px 20px; border-radius: 4px; font-size: 12px; width: 280px; text-align: center; font-family: 'Press Start 2P', monospace; outline: none; image-rendering: pixelated; }
+  #lock-screen input { background: #1a1d28; border: 2px solid #2a2d3a; color: #e8e9ed; padding: 12px 20px; border-radius: 4px; font-size: 12px; width: 280px; text-align: center; font-family: 'Press Start 2P', monospace; outline: none; }
   #lock-screen input:focus { border-color: #f97316; box-shadow: 0 0 0 2px rgba(249,115,22,0.3); }
   #lock-screen button { background: #f97316; color: #fff; border: 2px solid #ea580c; padding: 10px 32px; border-radius: 4px; font-size: 10px; font-weight: 600; cursor: pointer; font-family: 'Press Start 2P', monospace; }
   #lock-screen button:hover { background: #ea580c; transform: translateY(-1px); }
@@ -24,111 +24,93 @@
   #app-wrap.unlocked { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
   :root {
-    --bg-primary: #0d0f14; --bg-secondary: #141720; --bg-card: #1a1d28; --bg-card-hover: #1f2330;
+    --bg-primary: #0d0f14; --bg-secondary: #141720; --bg-card: #1a1d28;
     --border: #2a2d3a; --text-primary: #e8e9ed; --text-secondary: #8b8f9e; --text-muted: #5a5e6e;
     --accent-orange: #f97316; --accent-green: #22c55e; --accent-red: #ef4444; --accent-blue: #3b82f6;
-    --accent-purple: #a855f7; --accent-yellow: #eab308; --accent-cyan: #06b6d4; --accent-teal: #14b8a6;
-    --accent-gray: #6b7280;
+    --accent-purple: #a855f7; --accent-yellow: #eab308; --accent-cyan: #06b6d4;
   }
   body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; overflow: hidden; }
 
   /* Top Bar */
-  .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 20px; background: #0a0c10; border-bottom: 2px solid #1e2130; z-index: 100; flex-shrink: 0; }
-  .top-bar-left { display: flex; align-items: center; gap: 12px; }
-  .top-bar-logo { font-family: 'Press Start 2P', monospace; font-size: 10px; color: var(--accent-orange); letter-spacing: 1px; }
-  .top-bar-title { font-family: 'Press Start 2P', monospace; font-size: 8px; color: var(--text-secondary); }
-  .top-bar-right { display: flex; align-items: center; gap: 16px; }
+  .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 24px; background: #0a0c10; border-bottom: 2px solid #1e2130; z-index: 100; flex-shrink: 0; }
+  .top-bar-left { display: flex; align-items: center; gap: 14px; }
+  .top-bar-logo { font-family: 'Press Start 2P', monospace; font-size: 11px; color: var(--accent-orange); letter-spacing: 1px; }
+  .top-bar-title { font-family: 'Press Start 2P', monospace; font-size: 8px; color: var(--text-muted); }
+  .top-bar-right { display: flex; align-items: center; gap: 18px; }
   .top-bar-clock { font-family: 'Press Start 2P', monospace; font-size: 9px; color: var(--accent-cyan); }
-  .top-bar-status { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--text-muted); }
-  .live-dot { display: inline-block; width: 8px; height: 8px; background: var(--accent-green); border-radius: 50%; animation: pulse 2s infinite; }
+  .live-badge { display: flex; align-items: center; gap: 6px; background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); padding: 3px 10px; border-radius: 12px; }
+  .live-dot { display: inline-block; width: 7px; height: 7px; background: var(--accent-green); border-radius: 50%; animation: pulse 2s infinite; }
   .live-dot.error { background: var(--accent-red); }
+  .live-label { font-family: 'Press Start 2P', monospace; font-size: 7px; color: var(--accent-green); }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
-  @keyframes typingBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
-  @keyframes screenFlicker { 0% { opacity: 0.2; } 100% { opacity: 0.5; } }
 
-  /* Main Layout */
-  .main-layout { display: flex; flex: 1; overflow: hidden; }
+  /* Scene Grid */
+  .scene-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 12px; flex: 1; min-height: 0; overflow: auto; }
 
-  /* Left Sidebar */
-  .sidebar-left { width: 220px; background: #0e1018; border-right: 2px solid #1e2130; display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
-  .sidebar-section { padding: 12px; border-bottom: 1px solid #1e2130; }
-  .sidebar-title { font-family: 'Press Start 2P', monospace; font-size: 7px; color: var(--accent-orange); margin-bottom: 10px; letter-spacing: 1px; text-transform: uppercase; }
-  /* Filter tabs */
-  .filter-tabs { display: flex; gap: 4px; margin-bottom: 10px; }
-  .filter-tab { flex: 1; padding: 5px 0; text-align: center; font-size: 8px; font-family: 'Press Start 2P', monospace; color: var(--text-muted); background: transparent; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; transition: all 0.15s; }
-  .filter-tab:hover { background: #1a1d28; color: var(--text-secondary); }
-  .filter-tab.active { background: var(--accent-orange); color: #fff; border-color: var(--accent-orange); }
+  .scene-cell { background: #10121a; border: 2px solid #1e2130; border-radius: 8px; display: flex; flex-direction: column; position: relative; overflow: hidden; cursor: pointer; transition: border-color 0.3s, box-shadow 0.3s; }
+  .scene-cell { box-shadow: 0 0 8px color-mix(in srgb, var(--agent-color) 10%, transparent), inset 0 0 30px rgba(0,0,0,0.3); }
+  .scene-cell:hover { border-color: var(--agent-color); box-shadow: 0 0 24px color-mix(in srgb, var(--agent-color) 30%, transparent), inset 0 0 30px rgba(0,0,0,0.2); }
+  .scene-cell.agent-online { border-color: color-mix(in srgb, var(--agent-color) 50%, transparent); box-shadow: 0 0 16px color-mix(in srgb, var(--agent-color) 20%, transparent), inset 0 0 20px rgba(0,0,0,0.2); }
+  .scene-cell[data-agent="cody"] { --agent-color: #a855f7; }
+  .scene-cell[data-agent="fish"] { --agent-color: #06b6d4; }
+  .scene-cell[data-agent="goku"] { --agent-color: #f97316; }
+  .scene-cell[data-agent="lake"] { --agent-color: #3b82f6; }
 
-  .agent-list-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 4px; cursor: pointer; margin-bottom: 2px; transition: background 0.15s; position: relative; }
-  .agent-list-item:hover { background: #1a1d28; }
-  .agent-list-item:hover .pin-btn { opacity: 1; }
-  .agent-list-item.selected { background: #1f2330; border: 1px solid var(--border); }
-  .pin-btn { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 12px; opacity: 0; transition: opacity 0.15s, color 0.15s; padding: 2px 4px; }
-  .pin-btn:hover { color: var(--accent-orange); }
-  .pin-btn.pinned { opacity: 1; color: var(--accent-orange); }
-  .agent-status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-  .agent-status-dot.online { background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); }
-  .agent-status-dot.idle { background: var(--accent-yellow); box-shadow: 0 0 6px var(--accent-yellow); }
-  .agent-status-dot.working { background: var(--accent-blue); box-shadow: 0 0 6px var(--accent-blue); }
-  .agent-status-dot.offline { background: var(--accent-red); }
-  .agent-list-name { font-size: 11px; font-weight: 600; flex: 1; }
-  .agent-list-role { font-size: 8px; color: var(--text-muted); }
-  .agent-list-channel { font-size: 8px; color: var(--text-muted); font-family: 'Press Start 2P', monospace; font-size: 6px; }
+  /* Scene header */
+  .scene-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: rgba(0,0,0,0.3); border-bottom: 1px solid #1a1d28; }
+  .scene-agent-name { font-family: 'Press Start 2P', monospace; font-size: 9px; color: var(--agent-color); }
+  .scene-status-badge { display: flex; align-items: center; gap: 5px; }
+  .scene-status-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .scene-status-dot.online { background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); }
+  .scene-status-dot.working { background: var(--accent-blue); box-shadow: 0 0 6px var(--accent-blue); }
+  .scene-status-dot.idle { background: var(--accent-yellow); box-shadow: 0 0 6px var(--accent-yellow); }
+  .scene-status-dot.offline { background: var(--accent-red); }
+  .scene-status-label { font-family: 'Press Start 2P', monospace; font-size: 6px; color: var(--text-muted); text-transform: uppercase; }
 
-  /* Pinned agent cards on right sidebar */
-  .pinned-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 10px; margin-bottom: 8px; }
-  .pinned-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-  .pinned-card-avatar { width: 28px; height: 28px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 14px; image-rendering: pixelated; overflow: hidden; }
-  .pinned-card-avatar canvas { image-rendering: pixelated; width: 100%; height: 100%; }
-  .pinned-card-name { font-size: 11px; font-weight: 700; }
-  .pinned-card-status { font-size: 8px; padding: 1px 6px; border-radius: 8px; margin-left: auto; }
-  .pinned-card-desk { height: 60px; background: #111318; border-radius: 4px; margin-bottom: 6px; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; }
-  .pinned-card-desk canvas { image-rendering: pixelated; }
-  .pinned-card-task { font-size: 9px; color: var(--text-secondary); line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-  .pinned-card-task .task-label { color: var(--text-muted); font-size: 7px; font-family: 'Press Start 2P', monospace; display: block; margin-bottom: 2px; }
-  .pinned-unpin { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 10px; padding: 2px; }
-  .pinned-unpin:hover { color: var(--accent-red); }
+  /* Canvas wrapper */
+  .scene-canvas-wrap { flex: 1; min-height: 200px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; background: #080a12; }
+  .scene-canvas-wrap canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
+  .scene-canvas-wrap::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px); pointer-events: none; z-index: 1; }
 
-  /* Stats mini cards */
-  .stat-mini { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #1a1d28; }
-  .stat-mini:last-child { border: none; }
-  .stat-mini-label { font-size: 9px; color: var(--text-muted); }
-  .stat-mini-value { font-size: 10px; font-weight: 700; font-family: 'Press Start 2P', monospace; font-size: 8px; }
+  /* Speech bubble */
+  .scene-speech { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); background: rgba(26,29,40,0.92); border: 1px solid #2a2d3a; border-radius: 6px; padding: 4px 10px; max-width: 85%; font-size: 9px; color: var(--text-secondary); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0; transition: opacity 0.5s; pointer-events: none; z-index: 2; }
+  .scene-speech.visible { opacity: 1; }
 
-  /* Canvas Area */
-  .canvas-area { flex: 1; position: relative; overflow: hidden; background: #0d0f14; }
-  #officeCanvas { display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
+  /* Scene footer */
+  .scene-footer { display: flex; align-items: center; justify-content: space-between; padding: 6px 12px; background: rgba(0,0,0,0.25); border-top: 1px solid #1a1d28; }
+  .scene-role { font-size: 9px; color: var(--text-muted); }
+  .scene-model { font-family: 'Press Start 2P', monospace; font-size: 6px; color: var(--text-muted); opacity: 0.7; }
 
-  /* Right Sidebar - Activity Feed */
-  .sidebar-right { width: 280px; background: #0e1018; border-left: 2px solid #1e2130; display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; }
-  .feed-header { padding: 12px; border-bottom: 1px solid #1e2130; }
-  .feed-title { font-family: 'Press Start 2P', monospace; font-size: 7px; color: var(--accent-orange); letter-spacing: 1px; }
-  .feed-scroll { flex: 1; overflow-y: auto; padding: 8px 12px; }
-  .feed-item { display: flex; gap: 8px; padding: 8px 0; border-bottom: 1px solid #151822; }
-  .feed-item:last-child { border: none; }
-  .feed-dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
-  .feed-body { flex: 1; min-width: 0; }
-  .feed-agent { font-size: 10px; font-weight: 600; }
-  .feed-time { font-size: 8px; color: var(--text-muted); margin-left: 6px; }
-  .feed-msg { font-size: 10px; color: var(--text-secondary); margin-top: 2px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-  .feed-channel { font-size: 8px; color: var(--text-muted); margin-top: 2px; }
+  /* Activity Ticker */
+  .ticker-bar { background: #0a0c10; border-top: 2px solid #1e2130; padding: 8px 0; overflow: hidden; flex-shrink: 0; position: relative; }
+  .ticker-bar::before, .ticker-bar::after { content: ''; position: absolute; top: 0; bottom: 0; width: 40px; z-index: 2; pointer-events: none; }
+  .ticker-bar::before { left: 0; background: linear-gradient(to right, #0a0c10, transparent); }
+  .ticker-bar::after { right: 0; background: linear-gradient(to left, #0a0c10, transparent); }
+  .ticker-label { position: absolute; left: 0; top: 0; bottom: 0; width: 100px; background: #0a0c10; z-index: 3; display: flex; align-items: center; padding-left: 12px; font-family: 'Press Start 2P', monospace; font-size: 6px; color: var(--accent-orange); letter-spacing: 1px; }
+  .ticker-scroll { display: flex; gap: 0; animation: tickerScroll 60s linear infinite; padding-left: 110px; white-space: nowrap; }
+  .ticker-item { display: inline-flex; align-items: center; gap: 6px; padding: 0 20px; font-size: 10px; color: var(--text-secondary); white-space: nowrap; }
+  .ticker-agent { font-weight: 700; }
+  .ticker-sep { color: var(--text-muted); opacity: 0.4; }
+  @keyframes tickerScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 
   /* Agent Popup */
-  .agent-popup { position: absolute; z-index: 200; background: var(--bg-card); border: 2px solid var(--border); border-radius: 8px; padding: 16px; min-width: 280px; box-shadow: 0 8px 32px rgba(0,0,0,0.6); display: none; pointer-events: auto; }
-  .agent-popup.visible { display: block; }
-  .agent-popup-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-  .agent-popup-avatar { width: 32px; height: 32px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-family: 'Press Start 2P', monospace; image-rendering: pixelated; overflow: hidden; }
-  .agent-popup-avatar canvas { image-rendering: pixelated; width: 100%; height: 100%; }
-  .agent-popup-name { font-size: 14px; font-weight: 700; }
-  .agent-popup-status { font-size: 10px; padding: 2px 8px; border-radius: 10px; }
-  .agent-popup-close { position: absolute; top: 8px; right: 10px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 16px; }
-  .agent-popup-close:hover { color: var(--text-primary); }
-  .agent-popup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-  .agent-popup-field { }
-  .agent-popup-label { font-size: 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
-  .agent-popup-value { font-size: 11px; color: var(--text-secondary); }
-  .agent-popup-skills { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
-  .agent-popup-skill { padding: 2px 8px; border-radius: 4px; font-size: 9px; background: #1e2130; color: var(--text-secondary); border: 1px solid var(--border); }
+  .popup-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 500; display: none; align-items: center; justify-content: center; }
+  .popup-overlay.visible { display: flex; }
+  .popup-box { background: var(--bg-card); border: 2px solid var(--border); border-radius: 10px; padding: 20px; width: 420px; max-width: 90vw; max-height: 80vh; overflow-y: auto; box-shadow: 0 12px 48px rgba(0,0,0,0.7); position: relative; }
+  .popup-close { position: absolute; top: 10px; right: 14px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px; }
+  .popup-close:hover { color: var(--text-primary); }
+  .popup-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .popup-avatar { width: 40px; height: 40px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-family: 'Press Start 2P', monospace; font-size: 14px; color: #fff; }
+  .popup-name { font-size: 16px; font-weight: 700; }
+  .popup-status { font-size: 10px; padding: 2px 10px; border-radius: 10px; margin-left: 8px; }
+  .popup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .popup-field-label { font-size: 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+  .popup-field-value { font-size: 11px; color: var(--text-secondary); }
+  .popup-skills { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; }
+  .popup-skill { padding: 2px 8px; border-radius: 4px; font-size: 9px; background: #1e2130; color: var(--text-secondary); border: 1px solid var(--border); }
+  .popup-sessions { margin-top: 12px; }
+  .popup-sessions h4 { font-size: 10px; color: var(--text-muted); margin-bottom: 6px; font-family: 'Press Start 2P', monospace; font-size: 7px; }
+  .popup-session-item { padding: 6px 8px; background: var(--bg-primary); border-radius: 4px; margin-bottom: 4px; font-size: 10px; color: var(--text-secondary); }
 
   /* API Settings */
   .api-config { position: fixed; bottom: 12px; right: 12px; z-index: 100; }
@@ -149,12 +131,12 @@
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: #2a2d3a; border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: #3a3d4a; }
 
   /* Responsive */
-  @media (max-width: 1100px) { .sidebar-right { width: 240px; } .sidebar-left { width: 190px; } }
-  @media (max-width: 900px) { .sidebar-right { display: none; } .sidebar-left { width: 180px; } }
-  @media (max-width: 700px) { .sidebar-left { display: none; } }
+  @media (max-width: 700px) {
+    .scene-grid { grid-template-columns: 1fr; }
+    .scene-canvas-wrap { min-height: 140px; }
+  }
 </style>
 </head>
 <body>
@@ -173,68 +155,75 @@
   <!-- Top Bar -->
   <div class="top-bar">
     <div class="top-bar-left">
-      <div class="top-bar-logo">DTG AGENTS TEAM</div>
-      <div class="top-bar-title">VIRTUAL OFFICE</div>
+      <div class="top-bar-logo">DTG MISSION CONTROL</div>
+      <div class="top-bar-title">AGENT DASHBOARD</div>
     </div>
     <div class="top-bar-right">
-      <div class="top-bar-status">
-        <span class="live-dot" id="liveDot" title="Connecting..."></span>
-        <span id="connectionText" style="font-size:9px;">Connecting...</span>
+      <div class="live-badge">
+        <span class="live-dot" id="liveDot"></span>
+        <span class="live-label" id="connectionText">CONNECTING</span>
       </div>
       <div class="top-bar-clock" id="topClock">--:--:--</div>
     </div>
   </div>
 
-  <!-- Main Layout -->
-  <div class="main-layout">
-    <!-- Left Sidebar -->
-    <div class="sidebar-left">
-      <div class="sidebar-section">
-        <div class="sidebar-title">TEAM STATUS</div>
-        <div class="filter-tabs" id="filterTabs">
-          <button class="filter-tab active" data-filter="all" onclick="setFilter('all')">ALL</button>
-          <button class="filter-tab" data-filter="working" onclick="setFilter('working')">WORK</button>
-          <button class="filter-tab" data-filter="idle" onclick="setFilter('idle')">IDLE</button>
-          <button class="filter-tab" data-filter="offline" onclick="setFilter('offline')">OFF</button>
-        </div>
-        <div id="agentList"></div>
+  <!-- Scene Grid -->
+  <div class="scene-grid" id="sceneGrid">
+    <div class="scene-cell" data-agent="cody" onclick="openPopup('cody')">
+      <div class="scene-header">
+        <span class="scene-agent-name">CODY</span>
+        <div class="scene-status-badge"><span class="scene-status-dot offline" id="dot-cody"></span><span class="scene-status-label" id="label-cody">OFFLINE</span></div>
       </div>
-      <div class="sidebar-section">
-        <div class="sidebar-title">OFFICE STATS</div>
-        <div id="officeStats"></div>
-      </div>
-      <div class="sidebar-section">
-        <div class="sidebar-title">CHANNELS</div>
-        <div id="channelList"></div>
-      </div>
+      <div class="scene-canvas-wrap"><canvas id="canvas-cody" width="300" height="200"></canvas><div class="scene-speech" id="speech-cody"></div></div>
+      <div class="scene-footer"><span class="scene-role">Mission Control / Delegator</span><span class="scene-model" id="model-cody">Unknown</span></div>
     </div>
+    <div class="scene-cell" data-agent="goku" onclick="openPopup('goku')">
+      <div class="scene-header">
+        <span class="scene-agent-name">GOKU</span>
+        <div class="scene-status-badge"><span class="scene-status-dot offline" id="dot-goku"></span><span class="scene-status-label" id="label-goku">OFFLINE</span></div>
+      </div>
+      <div class="scene-canvas-wrap"><canvas id="canvas-goku" width="300" height="200"></canvas><div class="scene-speech" id="speech-goku"></div></div>
+      <div class="scene-footer"><span class="scene-role">Coder / Tool Builder</span><span class="scene-model" id="model-goku">qwen3-coder:480b</span></div>
+    </div>
+    <div class="scene-cell" data-agent="lake" onclick="openPopup('lake')">
+      <div class="scene-header">
+        <span class="scene-agent-name">LAKE</span>
+        <div class="scene-status-badge"><span class="scene-status-dot offline" id="dot-lake"></span><span class="scene-status-label" id="label-lake">OFFLINE</span></div>
+      </div>
+      <div class="scene-canvas-wrap"><canvas id="canvas-lake" width="300" height="200"></canvas><div class="scene-speech" id="speech-lake"></div></div>
+      <div class="scene-footer"><span class="scene-role">Research / Intelligence</span><span class="scene-model" id="model-lake">glm-5</span></div>
+    </div>
+    <div class="scene-cell" data-agent="fish" onclick="openPopup('fish')">
+      <div class="scene-header">
+        <span class="scene-agent-name">FISH</span>
+        <div class="scene-status-badge"><span class="scene-status-dot offline" id="dot-fish"></span><span class="scene-status-label" id="label-fish">OFFLINE</span></div>
+      </div>
+      <div class="scene-canvas-wrap"><canvas id="canvas-fish" width="300" height="200"></canvas><div class="scene-speech" id="speech-fish"></div></div>
+      <div class="scene-footer"><span class="scene-role">Discord + Google Chat</span><span class="scene-model" id="model-fish">claude-sonnet-4</span></div>
+    </div>
+  </div>
 
-    <!-- Canvas Area -->
-    <div class="canvas-area" id="canvasArea">
-      <canvas id="officeCanvas"></canvas>
-      <div class="agent-popup" id="agentPopup">
-        <button class="agent-popup-close" onclick="closePopup()">&times;</button>
-        <div id="agentPopupContent"></div>
-      </div>
+  <!-- Activity Ticker -->
+  <div class="ticker-bar">
+    <div class="ticker-label">ACTIVITY</div>
+    <div class="ticker-scroll" id="tickerScroll">
+      <span class="ticker-item"><span class="ticker-agent" style="color:#a855f7">Cody</span> Standing by for orders</span>
+      <span class="ticker-sep">&bull;</span>
+      <span class="ticker-item"><span class="ticker-agent" style="color:#f97316">Goku</span> Forge is warming up</span>
+      <span class="ticker-sep">&bull;</span>
+      <span class="ticker-item"><span class="ticker-agent" style="color:#3b82f6">Lake</span> Scanning intel feeds</span>
+      <span class="ticker-sep">&bull;</span>
+      <span class="ticker-item"><span class="ticker-agent" style="color:#06b6d4">Fish</span> Monitoring channels</span>
+      <span class="ticker-sep">&bull;</span>
     </div>
+  </div>
+</div>
 
-    <!-- Right Sidebar -->
-    <div class="sidebar-right">
-      <div class="feed-header">
-        <div class="feed-title">PINNED AGENTS</div>
-      </div>
-      <div class="feed-scroll" id="pinnedAgents">
-        <div style="color:var(--text-muted);font-size:9px;text-align:center;padding:20px;font-family:'Press Start 2P',monospace;">Pin agents from the left panel</div>
-      </div>
-      <div style="border-top:1px solid #1e2130;">
-        <div class="feed-header">
-          <div class="feed-title">ACTIVITY FEED</div>
-        </div>
-        <div class="feed-scroll" id="activityFeed" style="max-height:250px;">
-          <div style="color:var(--text-muted);font-size:10px;text-align:center;padding:20px;">Loading...</div>
-        </div>
-      </div>
-    </div>
+<!-- Agent Popup -->
+<div class="popup-overlay" id="popupOverlay" onclick="if(event.target===this)closePopup()">
+  <div class="popup-box">
+    <button class="popup-close" onclick="closePopup()">&times;</button>
+    <div id="popupContent"></div>
   </div>
 </div>
 
@@ -302,7 +291,6 @@ async function fetchWithFallback(path) {
   throw new Error('All API endpoints unreachable');
 }
 
-// API Settings
 document.getElementById('apiUrlInput').value = localStorage.getItem('dtg_api_url') || 'https://remote-pc8.tail93ed18.ts.net/api';
 async function saveApiUrl() {
   const url = document.getElementById('apiUrlInput').value.replace(/\/+$/, '');
@@ -321,25 +309,22 @@ async function saveApiUrl() {
 }
 
 // =============================================
-// AGENT DEFINITIONS (preserved)
+// AGENT DEFINITIONS
 // =============================================
-const AGENT_DEFS = {
-  cody: { id: 'cody', apiId: null, name: 'Cody', role: 'Mission Control / Delegator', emoji: '\u{1F573}\u{FE0F}', color: '#a855f7', colorName: 'purple', channel: '#cody-control', room: 'mission-control', defaultModel: 'Unknown', defaultSkills: ['delegation', 'task-routing', 'mission-planning'] },
-  main: { id: 'main', apiId: 'main', name: 'FallingCave', role: 'Discord Bot (AWS)', emoji: '\u{1F573}\u{FE0F}', color: '#a855f7', colorName: 'purple', channel: '#falling-cave', room: 'server-room', defaultModel: 'claude-sonnet-4', defaultSkills: ['ddg-search', 'dtg-billread'] },
-  fish: { id: 'fish', apiId: 'fish', name: 'Fish', role: 'Discord + Google Chat Bot', emoji: '\u{1F41F}', color: '#06b6d4', colorName: 'cyan', channel: '#fish', room: 'comms-center', defaultModel: 'claude-sonnet-4', defaultSkills: ['hubspot', 'email'] },
-  goku: { id: 'goku', apiId: null, name: 'Goku', role: 'Coder / Tool Builder', emoji: '\u{1F4BB}', color: '#f97316', colorName: 'orange', channel: '#goku-forge', room: 'code-lab', defaultModel: 'qwen3-coder:480b', defaultSkills: ['coding', 'tool-building', 'debugging'] },
-  lake: { id: 'lake', apiId: null, name: 'Lake', role: 'Research / Intelligence', emoji: '\u{1F50D}', color: '#3b82f6', colorName: 'blue', channel: '#lake-intel', room: 'intel-room', defaultModel: 'glm-5', defaultSkills: ['research', 'analysis', 'web-search'] },
-  blockhead: { id: 'blockhead', apiId: null, name: 'Blockhead', role: 'Tencent VPS Bot', emoji: '\u{1F4E6}', color: '#6b7280', colorName: 'gray', channel: '#blockhead', room: 'server-room', defaultModel: 'Unknown', defaultSkills: ['discord-bot'] }
+const AGENTS = {
+  cody: { name: 'Cody', role: 'Mission Control / Delegator', color: '#a855f7', channel: '#cody-control', defaultModel: 'Unknown', defaultSkills: ['delegation', 'task-routing', 'mission-planning'] },
+  goku: { name: 'Goku', role: 'Coder / Tool Builder', color: '#f97316', channel: '#goku-forge', defaultModel: 'qwen3-coder:480b', defaultSkills: ['coding', 'tool-building', 'debugging'] },
+  lake: { name: 'Lake', role: 'Research / Intelligence', color: '#3b82f6', channel: '#lake-intel', defaultModel: 'glm-5', defaultSkills: ['research', 'analysis', 'web-search'] },
+  fish: { name: 'Fish', role: 'Discord + Google Chat', color: '#06b6d4', channel: '#fish', defaultModel: 'claude-sonnet-4', defaultSkills: ['hubspot', 'email', 'discord', 'google-chat'] }
 };
 
 let agentStates = {};
-
 function mergeAgentData(apiData) {
-  agentStates = {};
-  for (const [key, def] of Object.entries(AGENT_DEFS)) {
-    const apiAgent = def.apiId ? apiData?.agents?.[def.apiId] : null;
+  for (const [key, def] of Object.entries(AGENTS)) {
+    const apiAgent = apiData?.agents?.[key] || null;
     agentStates[key] = {
       ...def,
+      id: key,
       status: apiAgent ? apiAgent.status : 'offline',
       currentModel: apiAgent?.currentModel || def.defaultModel,
       skills: apiAgent?.skills || def.defaultSkills,
@@ -352,990 +337,1274 @@ function mergeAgentData(apiData) {
 }
 
 // =============================================
-// SPRITE ASSET LOADER
+// SCENE RENDERING ENGINE
 // =============================================
-const ASSETS_BASE = 'assets/';
-const spriteImages = {};
-let assetsLoaded = false;
-let assetsToLoad = 0;
-let assetsLoadedCount = 0;
+const NATIVE_W = 300;
+const NATIVE_H = 200;
+let frame = 0;
+let canvases = {};
+let contexts = {};
+let particles = { cody: [], fish: [], goku: [], lake: [] };
+let speechTimers = {};
 
-// Agent-to-character-sprite mapping (char_0 through char_5)
-const AGENT_CHAR_MAP = {
-  cody: 3,      // char_3 - purple toned
-  main: 3,      // char_3 - same purple (FallingCave)
-  fish: 1,      // char_1 - blue toned
-  goku: 2,      // char_2 - warm toned
-  lake: 0,      // char_0 - blue themed
-  blockhead: 5  // char_5 - neutral/gray
-};
-
-// Character sprite sheet layout: 112x96
-// 7 frames x 16px = 112 wide
-// 3 directions x 32px = 96 tall (8px top padding per frame, 24px sprite)
-// Row 0=down, Row 1=up, Row 2=right
-// Frames: walk1, walk2(idle), walk3, type1, type2, read1, read2
-const CHAR_FRAME_W = 16;
-const CHAR_FRAME_H = 32;
-const CHAR_DIRECTIONS = { down: 0, up: 1, right: 2 };
-
-function loadImage(key, src) {
-  assetsToLoad++;
-  const img = new Image();
-  img.onload = () => {
-    spriteImages[key] = img;
-    assetsLoadedCount++;
-    if (assetsLoadedCount >= assetsToLoad) {
-      assetsLoaded = true;
-      if (officeCtx) renderOffice();
-    }
-  };
-  img.onerror = () => {
-    console.warn('Failed to load:', src);
-    assetsLoadedCount++;
-    if (assetsLoadedCount >= assetsToLoad) {
-      assetsLoaded = true;
-      if (officeCtx) renderOffice();
-    }
-  };
-  img.src = src;
-}
-
-function loadAllAssets() {
-  // Floor tiles
-  for (let i = 0; i <= 5; i++) loadImage('floor_' + i, ASSETS_BASE + 'tiles/floor_' + i + '.png');
-  // Wall
-  loadImage('wall', ASSETS_BASE + 'tiles/wall_0.png');
-  // Furniture
-  loadImage('desk_front', ASSETS_BASE + 'furniture/desk_front.png');
-  loadImage('desk_side', ASSETS_BASE + 'furniture/desk_side.png');
-  loadImage('pc_on_1', ASSETS_BASE + 'furniture/pc_on_1.png');
-  loadImage('pc_on_2', ASSETS_BASE + 'furniture/pc_on_2.png');
-  loadImage('pc_on_3', ASSETS_BASE + 'furniture/pc_on_3.png');
-  loadImage('pc_off', ASSETS_BASE + 'furniture/pc_off.png');
-  loadImage('chair_front', ASSETS_BASE + 'furniture/chair_front.png');
-  loadImage('chair_back', ASSETS_BASE + 'furniture/chair_back.png');
-  loadImage('bookshelf', ASSETS_BASE + 'furniture/bookshelf.png');
-  loadImage('double_bookshelf', ASSETS_BASE + 'furniture/double_bookshelf.png');
-  loadImage('whiteboard', ASSETS_BASE + 'furniture/whiteboard.png');
-  loadImage('sofa_front', ASSETS_BASE + 'furniture/sofa_front.png');
-  loadImage('coffee_table', ASSETS_BASE + 'furniture/coffee_table.png');
-  loadImage('table_front', ASSETS_BASE + 'furniture/table_front.png');
-  loadImage('small_table', ASSETS_BASE + 'furniture/small_table.png');
-  loadImage('wooden_chair', ASSETS_BASE + 'furniture/wooden_chair.png');
-  // Decorations
-  loadImage('plant', ASSETS_BASE + 'decorations/plant.png');
-  loadImage('plant2', ASSETS_BASE + 'decorations/plant2.png');
-  loadImage('large_plant', ASSETS_BASE + 'decorations/large_plant.png');
-  loadImage('cactus', ASSETS_BASE + 'decorations/cactus.png');
-  loadImage('hanging_plant', ASSETS_BASE + 'decorations/hanging_plant.png');
-  loadImage('large_painting', ASSETS_BASE + 'decorations/large_painting.png');
-  loadImage('small_painting', ASSETS_BASE + 'decorations/small_painting.png');
-  loadImage('small_painting2', ASSETS_BASE + 'decorations/small_painting2.png');
-  loadImage('clock', ASSETS_BASE + 'decorations/clock.png');
-  loadImage('coffee', ASSETS_BASE + 'decorations/coffee.png');
-  loadImage('bin', ASSETS_BASE + 'decorations/bin.png');
-  loadImage('pot', ASSETS_BASE + 'decorations/pot.png');
-  // Characters
-  for (let i = 0; i <= 5; i++) loadImage('char_' + i, ASSETS_BASE + 'characters/char_' + i + '.png');
-}
-
-// =============================================
-// CANVAS-BASED VIRTUAL OFFICE (replaces PixiJS)
-// =============================================
-let officeCanvas = null;
-let officeCtx = null;
-let animFrame = 0;
-let selectedAgent = null;
-let currentFilter = 'all';
-let pinnedAgents = new Set(JSON.parse(localStorage.getItem('dtg_pinned') || '[]'));
-
-const TILE = 16;
-const SCALE = 3; // Render at 3x native for crisp pixel art
-const OFFICE_W = 60;
-const OFFICE_H = 40;
-
-const ROOMS = {
-  'comms-center':    { x: 1,  y: 1,  w: 18, h: 14, label: 'COMMS CENTER', color: '#06b6d4' },
-  'conference':      { x: 20, y: 1,  w: 20, h: 14, label: 'CONFERENCE ROOM', color: '#8b8f9e' },
-  'code-lab':        { x: 41, y: 1,  w: 18, h: 14, label: 'CODE LAB', color: '#f97316' },
-  'mission-control': { x: 1,  y: 16, w: 18, h: 12, label: 'MISSION CONTROL', color: '#a855f7' },
-  'break-room':      { x: 20, y: 16, w: 20, h: 12, label: 'BREAK ROOM', color: '#eab308' },
-  'intel-room':      { x: 41, y: 29, w: 18, h: 10, label: 'INTEL ROOM', color: '#3b82f6' },
-  'server-room':     { x: 1,  y: 29, w: 18, h: 10, label: 'SERVER ROOM', color: '#a855f7' }
-};
-
-const DESK_POS = {
-  cody:      { x: 8,  y: 21, room: 'mission-control' },
-  main:      { x: 6,  y: 33, room: 'server-room' },
-  fish:      { x: 9,  y: 6,  room: 'comms-center' },
-  goku:      { x: 50, y: 6,  room: 'code-lab' },
-  lake:      { x: 50, y: 33, room: 'intel-room' },
-  blockhead: { x: 14, y: 33, room: 'server-room' }
-};
-
-// Floor tile assignments per room (which floor_X.png to use)
-const ROOM_FLOOR = {
-  'comms-center': 1,
-  'conference': 2,
-  'code-lab': 3,
-  'mission-control': 4,
-  'break-room': 5,
-  'intel-room': 1,
-  'server-room': 0
-};
-
-function initCanvas() {
-  officeCanvas = document.getElementById('officeCanvas');
-  officeCtx = officeCanvas.getContext('2d');
-  // Disable smoothing for pixel-perfect rendering
-  officeCtx.imageSmoothingEnabled = false;
-
-  resizeCanvas();
-  window.addEventListener('resize', resizeCanvas);
-
-  // Click handling
-  officeCanvas.addEventListener('click', handleCanvasClick);
-
-  // Start animation loop
-  requestAnimationFrame(gameLoop);
-}
-
-function resizeCanvas() {
-  const container = document.getElementById('canvasArea');
-  const cw = container.clientWidth;
-  const ch = container.clientHeight;
-
-  // Calculate scale to fit the office in the viewport
-  const nativeW = OFFICE_W * TILE;
-  const nativeH = OFFICE_H * TILE;
-  const fitScale = Math.min(cw / nativeW, ch / nativeH);
-  // Use integer-ish scale for crispness, minimum 2
-  const renderScale = Math.max(2, Math.floor(fitScale * 2) / 2);
-
-  officeCanvas.width = Math.floor(nativeW * renderScale);
-  officeCanvas.height = Math.floor(nativeH * renderScale);
-
-  // CSS size = fill container, centered
-  officeCanvas.style.width = officeCanvas.width + 'px';
-  officeCanvas.style.height = officeCanvas.height + 'px';
-  officeCanvas.style.position = 'absolute';
-  officeCanvas.style.left = Math.max(0, (cw - officeCanvas.width) / 2) + 'px';
-  officeCanvas.style.top = Math.max(0, (ch - officeCanvas.height) / 2) + 'px';
-
-  officeCtx.imageSmoothingEnabled = false;
-  officeCtx.setTransform(renderScale, 0, 0, renderScale, 0, 0);
-
-  renderOffice();
-}
-
-let lastRenderScale = 1;
-function getRenderScale() {
-  if (!officeCanvas) return 2;
-  return officeCanvas.width / (OFFICE_W * TILE);
-}
-
-function gameLoop(timestamp) {
-  animFrame++;
-  if (animFrame % 4 === 0) { // ~15fps for pixel art feel
-    renderOffice();
-  }
-  requestAnimationFrame(gameLoop);
-}
-
-// =============================================
-// RENDERING
-// =============================================
-function renderOffice() {
-  if (!officeCtx) return;
-  const ctx = officeCtx;
-
-  // Clear
-  ctx.fillStyle = '#0d0f14';
-  ctx.fillRect(0, 0, OFFICE_W * TILE, OFFICE_H * TILE);
-
-  // Draw floors
-  drawFloors(ctx);
-  // Draw room walls and borders
-  drawRoomBorders(ctx);
-  // Draw hallway indicators
-  drawHallways(ctx);
-  // Draw furniture (z-sorted)
-  drawAllFurniture(ctx);
-  // Draw agents (z-sorted)
-  drawAllAgents(ctx);
-  // Draw room labels on top
-  drawRoomLabels(ctx);
-}
-
-function drawFloors(ctx) {
-  // Draw tiled floor for each room
-  for (const [roomId, room] of Object.entries(ROOMS)) {
-    const floorIdx = ROOM_FLOOR[roomId] || 0;
-    const floorImg = spriteImages['floor_' + floorIdx];
-    for (let tx = room.x; tx < room.x + room.w; tx++) {
-      for (let ty = room.y; ty < room.y + room.h; ty++) {
-        if (floorImg) {
-          ctx.drawImage(floorImg, tx * TILE, ty * TILE, TILE, TILE);
-        } else {
-          // Fallback checkerboard
-          ctx.fillStyle = (tx + ty) % 2 === 0 ? '#1a1d28' : '#1e2130';
-          ctx.fillRect(tx * TILE, ty * TILE, TILE, TILE);
-        }
-      }
-    }
-  }
-
-  // Hallway floors (darker pattern)
-  const hallFloor = spriteImages['floor_0'];
-  for (let tx = 0; tx < OFFICE_W; tx++) {
-    for (let ty = 0; ty < OFFICE_H; ty++) {
-      // Check if tile is inside any room
-      let inRoom = false;
-      for (const room of Object.values(ROOMS)) {
-        if (tx >= room.x && tx < room.x + room.w && ty >= room.y && ty < room.y + room.h) {
-          inRoom = true; break;
-        }
-      }
-      if (!inRoom) {
-        if (hallFloor) {
-          ctx.globalAlpha = 0.4;
-          ctx.drawImage(hallFloor, tx * TILE, ty * TILE, TILE, TILE);
-          ctx.globalAlpha = 1.0;
-        } else {
-          ctx.fillStyle = (tx + ty) % 2 === 0 ? '#111318' : '#131520';
-          ctx.fillRect(tx * TILE, ty * TILE, TILE, TILE);
-        }
-      }
-    }
+function initCanvases() {
+  for (const id of Object.keys(AGENTS)) {
+    const c = document.getElementById('canvas-' + id);
+    canvases[id] = c;
+    const ctx = c.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    contexts[id] = ctx;
   }
 }
 
-function drawRoomBorders(ctx) {
-  for (const [roomId, room] of Object.entries(ROOMS)) {
-    const rx = room.x * TILE;
-    const ry = room.y * TILE;
-    const rw = room.w * TILE;
-    const rh = room.h * TILE;
+// === COLOR UTILS ===
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return {r,g,b};
+}
+function rgbStr(r,g,b,a) { return a !== undefined ? `rgba(${r},${g},${b},${a})` : `rgb(${r},${g},${b})`; }
+function darken(hex, amt) {
+  const c = hexToRgb(hex);
+  return rgbStr(Math.max(0,c.r-amt), Math.max(0,c.g-amt), Math.max(0,c.b-amt));
+}
+function lighten(hex, amt) {
+  const c = hexToRgb(hex);
+  return rgbStr(Math.min(255,c.r+amt), Math.min(255,c.g+amt), Math.min(255,c.b+amt));
+}
 
-    // Wall top strip using wall sprite if available
-    const wallImg = spriteImages['wall'];
-    if (wallImg) {
-      // Draw wall segments along the top of each room
-      // wall_0.png is 64x128, we'll use the top portion as a horizontal wall
-      for (let wx = 0; wx < rw; wx += TILE) {
-        // Use a 16x16 section of the wall for the top border
-        ctx.drawImage(wallImg, 0, 0, 16, 16, rx + wx, ry - TILE, TILE, TILE);
-      }
+// === PARTICLE SYSTEM ===
+function addParticle(agentId, x, y, vx, vy, life, color, size) {
+  particles[agentId].push({ x, y, vx, vy, life, maxLife: life, color, size: size || 2 });
+}
+function updateParticles(agentId) {
+  const arr = particles[agentId];
+  for (let i = arr.length - 1; i >= 0; i--) {
+    const p = arr[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life--;
+    if (p.life <= 0) arr.splice(i, 1);
+  }
+}
+function drawParticles(ctx, agentId) {
+  for (const p of particles[agentId]) {
+    const alpha = Math.max(0, p.life / p.maxLife);
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = p.color;
+    ctx.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size);
+  }
+  ctx.globalAlpha = 1;
+}
+
+// =============================================
+// HIGH-QUALITY PIXEL ART CHARACTER SPRITES
+// 32x32 pixel characters rendered at ~4x scale
+// Using proper pixel art technique: outlines,
+// shading with light from top-left, eye highlights
+// =============================================
+
+// Each palette: 0=transparent, then indexed colors
+// Characters are 32x32 grids (good balance of detail vs. performance)
+// Rendered at 4px per pixel = 128x128 on screen
+
+const PX = 4; // render scale: each pixel = 4 canvas pixels
+const SPRITE_W = 32;
+const SPRITE_H = 32;
+
+// ==========================================
+// CODY - Purple hoodie, headset, determined
+// ==========================================
+const CODY_PAL = [
+  'transparent',  // 0
+  '#1e1338',      // 1 - outline (dark purple)
+  '#f5c5a3',      // 2 - skin light
+  '#e0a882',      // 3 - skin mid
+  '#c88b6a',      // 4 - skin dark/shadow
+  '#7b4dbf',      // 5 - hoodie main
+  '#9b6ddf',      // 6 - hoodie highlight
+  '#5a2d9f',      // 7 - hoodie dark
+  '#3d1a6e',      // 8 - hoodie shadow
+  '#2a1050',      // 9 - hair dark
+  '#3d1870',      // 10 - hair mid
+  '#551fa0',      // 11 - hair highlight
+  '#1a1a2e',      // 12 - eyes
+  '#ffffff',      // 13 - eye highlight
+  '#888899',      // 14 - headset silver
+  '#555566',      // 15 - headset dark
+  '#22c55e',      // 16 - headset mic glow
+  '#2a2540',      // 17 - pants
+  '#1a1520',      // 18 - shoes
+  '#333344',      // 19 - pants highlight
+  '#aa55ff',      // 20 - hoodie accent bright
+];
+
+const CODY_IDLE_0 = [
+//0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],// 0
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],// 1
+ [0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0],// 2
+ [0,0,0,0,0,0,0,0,0,0,0,1,9,9,10,10,11,10,9,9,1,0,0,0,0,0,0,0,0,0],// 3
+ [0,0,0,0,0,0,0,0,0,0,1,9,9,10,11,11,11,10,10,9,9,1,0,0,0,0,0,0,0],// 4
+ [0,0,0,0,0,0,0,0,0,1,9,9,10,10,11,11,11,11,10,9,9,9,1,0,0,0,0,0],// 5
+ [0,0,0,0,0,0,0,0,0,1,9,1,1,1,1,1,1,1,1,1,1,9,1,0,0,0,0,0,0,0,0],// 6 headset band
+ [0,0,0,0,0,0,0,0,15,1,9,2,2,2,3,3,3,2,2,2,9,1,15,0,0,0,0,0,0,0],// 7 headset + forehead
+ [0,0,0,0,0,0,0,15,14,1,2,2,3,3,3,3,3,3,3,2,2,1,14,15,0,0,0,0,0],// 8 headset cups
+ [0,0,0,0,0,0,0,15,14,1,2,2,12,12,3,3,3,12,12,2,2,1,14,15,0,0,0],// 9 eyes row
+ [0,0,0,0,0,0,0,0,15,1,2,13,12,12,3,3,13,12,12,2,2,1,15,0,0,0,0],//10 eye highlights
+ [0,0,0,0,0,0,0,0,0,1,3,2,2,3,3,3,3,3,2,2,3,1,0,0,0,0,0,0,0,0],//11 cheeks
+ [0,0,0,0,0,0,0,0,0,1,4,3,3,3,4,4,3,3,3,3,4,1,0,0,0,0,0,0,0,0],//12 mouth area
+ [0,0,0,0,0,0,0,0,0,0,1,4,3,3,1,1,3,3,4,1,0,0,0,0,0,0,0,0,0,0],//13 mouth + chin
+ [0,0,0,0,0,0,0,0,0,0,0,1,1,4,4,4,4,1,1,0,0,0,0,0,0,0,0,0,0,0],//14 chin
+ [0,0,0,0,0,0,0,0,0,0,1,7,5,5,6,6,5,5,7,1,0,0,0,0,0,0,0,0,0,0],//15 hood/collar
+ [0,0,0,0,0,0,0,0,0,1,7,7,5,5,6,6,5,5,7,7,1,0,0,0,0,0,0,0,0,0],//16 shoulders
+ [0,0,0,0,0,0,0,0,1,8,7,5,5,6,6,6,6,5,5,7,8,1,0,0,0,0,0,0,0,0],//17 upper body
+ [0,0,0,0,0,0,0,1,3,1,7,5,5,5,20,20,5,5,5,7,1,3,1,0,0,0,0,0,0],//18 body + arms start
+ [0,0,0,0,0,0,0,1,2,1,8,7,5,5,5,5,5,5,7,8,1,2,1,0,0,0,0,0,0,0],//19 mid body
+ [0,0,0,0,0,0,0,1,3,1,8,7,7,5,5,5,5,7,7,8,1,3,1,0,0,0,0,0,0,0],//20 lower body
+ [0,0,0,0,0,0,0,1,2,0,1,8,7,7,5,5,7,7,8,1,0,2,1,0,0,0,0,0,0,0],//21 hands
+ [0,0,0,0,0,0,0,0,1,0,0,1,8,8,7,7,8,8,1,0,0,1,0,0,0,0,0,0,0,0],//22 waist
+ [0,0,0,0,0,0,0,0,0,0,0,1,17,17,17,17,17,17,1,0,0,0,0,0,0,0,0,0],//23 belt
+ [0,0,0,0,0,0,0,0,0,0,1,17,17,19,17,17,19,17,17,1,0,0,0,0,0,0,0],//24 upper legs
+ [0,0,0,0,0,0,0,0,0,0,1,17,17,19,1,1,19,17,17,1,0,0,0,0,0,0,0,0],//25 legs
+ [0,0,0,0,0,0,0,0,0,0,1,17,17,1,0,0,1,17,17,1,0,0,0,0,0,0,0,0,0],//26 lower legs
+ [0,0,0,0,0,0,0,0,0,0,1,17,17,1,0,0,1,17,17,1,0,0,0,0,0,0,0,0,0],//27 ankles
+ [0,0,0,0,0,0,0,0,0,1,18,18,18,1,0,0,1,18,18,18,1,0,0,0,0,0,0,0],//28 shoes
+ [0,0,0,0,0,0,0,0,0,1,18,18,18,18,1,1,18,18,18,18,1,0,0,0,0,0,0],//29 shoe base
+ [0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0],//30
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],//31
+];
+
+const CODY_WORK_0 = [
+//0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,1,9,9,10,10,11,10,9,9,1,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,9,9,10,11,11,11,10,10,9,9,1,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,9,9,10,10,11,11,11,11,10,9,9,9,1,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,9,1,1,1,1,1,1,1,1,1,1,9,1,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,15,1,9,2,2,2,3,3,3,2,2,2,9,1,15,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,15,14,1,2,2,3,3,3,3,3,3,3,2,2,1,14,15,0,0,0,0,0],
+ [0,0,0,0,0,0,0,15,14,1,2,2,12,12,3,3,3,12,12,2,2,1,14,15,0,0,0],
+ [0,0,0,0,0,0,0,0,15,1,2,13,12,12,3,3,13,12,12,2,2,1,15,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,3,2,2,3,3,3,3,3,2,2,3,1,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,4,3,3,3,3,1,1,3,3,3,4,1,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,4,3,3,1,1,3,3,4,1,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,1,1,4,4,4,4,1,1,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,7,5,5,6,6,5,5,7,1,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,7,7,5,5,6,6,5,5,7,7,1,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,1,8,7,5,5,6,6,6,6,5,5,7,8,1,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,1,3,1,1,1,7,5,5,5,20,20,5,5,5,7,1,0,0,0,0,0,0,0,0],
+ [0,0,0,0,1,2,2,3,1,1,8,7,5,5,5,5,5,5,7,8,1,0,0,0,0,0,0,0,0,0],
+ [0,0,0,1,3,2,2,1,0,1,8,7,7,5,5,5,5,7,7,8,1,3,1,0,0,0,0,0,0,0],
+ [0,0,0,0,1,2,1,0,0,1,8,8,7,7,5,5,7,7,8,1,0,2,3,1,0,0,0,0,0,0],
+ [0,0,0,0,0,1,0,0,0,0,1,8,8,8,7,7,8,8,1,0,0,1,2,1,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,1,17,17,17,17,17,17,1,0,0,0,1,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,17,17,19,17,17,19,17,17,1,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,17,17,19,1,1,19,17,17,1,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,17,17,1,0,0,1,17,17,1,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,17,17,1,0,0,1,17,17,1,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,18,18,18,1,0,0,1,18,18,18,1,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,18,18,18,18,1,1,18,18,18,18,1,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+];
+
+// ==========================================
+// GOKU - Orange bandana, sleeveless, muscular
+// ==========================================
+const GOKU_PAL = [
+  'transparent',  // 0
+  '#3d2000',      // 1 - outline (dark brown-orange)
+  '#f5c5a3',      // 2 - skin light
+  '#e0a882',      // 3 - skin mid
+  '#c88b6a',      // 4 - skin dark
+  '#f97316',      // 5 - orange main (bandana/vest)
+  '#ffaa44',      // 6 - orange highlight
+  '#cc5500',      // 7 - orange dark
+  '#993d00',      // 8 - orange shadow
+  '#2a1a0a',      // 9 - hair dark
+  '#4a2a10',      // 10 - hair mid
+  '#6a3a18',      // 11 - hair highlight
+  '#1a1a2e',      // 12 - eyes
+  '#ffffff',      // 13 - eye highlight
+  '#554433',      // 14 - apron/leather brown
+  '#3a2a1a',      // 15 - apron dark
+  '#776655',      // 16 - apron highlight
+  '#2a2540',      // 17 - pants
+  '#1a1520',      // 18 - shoes/boots
+  '#333344',      // 19 - pants highlight
+  '#ff6600',      // 20 - bright accent
+];
+
+const GOKU_IDLE_0 = [
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,5,5,6,6,6,6,6,5,5,1,0,0,0,0,0,0,0,0,0,0,0],// bandana
+ [0,0,0,0,0,0,0,0,0,1,9,5,7,7,6,5,5,7,7,5,9,1,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,9,10,11,1,1,1,1,1,10,9,9,1,0,0,0,0,0,0,0,0],// bandana line
+ [0,0,0,0,0,0,0,0,0,1,9,2,2,2,3,3,3,2,2,2,9,1,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,2,2,3,3,3,3,3,3,3,2,2,1,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,2,2,12,12,3,3,3,12,12,2,2,1,0,0,0,0,0,0,0],// eyes
+ [0,0,0,0,0,0,0,0,0,1,2,13,12,12,3,3,13,12,12,2,2,1,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,3,2,3,3,3,3,3,3,3,2,3,1,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,4,3,3,3,1,1,1,3,3,3,4,1,0,0,0,0,0,0,0,0],// grin
+ [0,0,0,0,0,0,0,0,0,0,1,4,3,3,4,4,3,3,4,1,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,1,1,4,4,4,4,1,1,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,1,4,4,3,3,4,4,1,0,0,0,0,0,0,0,0,0,0,0],// neck (thick)
+ [0,0,0,0,0,0,0,0,0,0,1,14,3,3,3,3,3,3,14,1,0,0,0,0,0,0,0,0,0],// shoulders wide
+ [0,0,0,0,0,0,0,0,0,1,14,15,3,3,2,2,3,3,15,14,1,0,0,0,0,0,0,0],// bare arms + apron center
+ [0,0,0,0,0,0,0,0,1,3,1,14,15,14,14,14,14,15,14,1,3,1,0,0,0,0,0],// arms extend
+ [0,0,0,0,0,0,0,1,2,3,1,14,15,16,14,14,16,15,14,1,3,2,1,0,0,0,0],// forearms
+ [0,0,0,0,0,0,0,1,3,2,1,14,15,14,14,14,14,15,14,1,2,3,1,0,0,0,0],
+ [0,0,0,0,0,0,0,0,1,1,0,1,14,15,14,14,15,14,1,0,1,1,0,0,0,0,0,0],// fists
+ [0,0,0,0,0,0,0,0,0,0,0,1,14,14,14,14,14,14,1,0,0,0,0,0,0,0,0,0],// lower torso
+ [0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0],// belt
+ [0,0,0,0,0,0,0,0,0,0,0,1,17,17,17,17,17,17,1,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,17,17,19,17,17,19,17,17,1,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,17,17,19,1,1,19,17,17,1,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,17,17,1,0,0,1,17,17,1,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,18,18,18,1,0,0,1,18,18,18,1,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,18,18,18,18,1,1,18,18,18,18,1,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+];
+
+const GOKU_WORK_0 = [
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,5,5,6,6,6,6,6,5,5,1,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,9,5,7,7,6,5,5,7,7,5,9,1,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,9,10,11,1,1,1,1,1,10,9,9,1,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,9,2,2,2,3,3,3,2,2,2,9,1,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,2,2,3,3,3,3,3,3,3,2,2,1,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,2,2,12,12,3,3,3,12,12,2,2,1,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,2,13,12,12,3,3,13,12,12,2,2,1,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,3,2,3,3,3,3,3,3,3,2,3,1,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,4,3,3,3,1,1,1,3,3,3,4,1,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,4,3,3,4,4,3,3,4,1,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,1,1,4,4,4,4,1,1,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,1,4,4,3,3,4,4,1,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,14,3,3,3,3,3,3,14,1,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,14,15,3,3,2,2,3,3,15,14,1,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,1,3,1,14,15,14,14,14,14,15,14,1,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,1,2,3,2,1,14,15,16,14,14,16,15,14,1,0,0,0,0,0,0,0],// arm raised left
+ [0,0,0,0,0,1,3,2,1,0,1,14,15,14,14,14,14,15,14,1,2,3,1,0,0,0,0],
+ [0,0,0,0,1,2,1,0,0,0,1,14,14,15,14,14,15,14,1,0,0,2,3,1,0,0,0],// right arm down
+ [0,0,0,0,0,1,0,0,0,0,0,1,14,14,14,14,14,14,1,0,0,1,2,1,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,1,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,1,17,17,17,17,17,17,1,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,17,17,19,17,17,19,17,17,1,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,17,17,19,1,1,19,17,17,1,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,17,17,1,0,0,1,17,17,1,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,18,18,18,1,0,0,1,18,18,18,1,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,18,18,18,18,1,1,18,18,18,18,1,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+];
+
+// ==========================================
+// LAKE - Blue robe, glasses, scholarly
+// ==========================================
+const LAKE_PAL = [
+  'transparent',  // 0
+  '#0d1a3d',      // 1 - outline (dark blue)
+  '#f5c5a3',      // 2 - skin light
+  '#e0a882',      // 3 - skin mid
+  '#c88b6a',      // 4 - skin dark
+  '#3b82f6',      // 5 - robe main
+  '#60a5fa',      // 6 - robe highlight
+  '#2563eb',      // 7 - robe dark
+  '#1d4ed8',      // 8 - robe shadow
+  '#2a1a0a',      // 9 - hair dark
+  '#3a2a18',      // 10 - hair mid
+  '#5a4028',      // 11 - hair highlight
+  '#1a1a2e',      // 12 - eyes
+  '#ffffff',      // 13 - eye highlight
+  '#dde4ff',      // 14 - glasses lens
+  '#aabbdd',      // 15 - glasses frame
+  '#8899bb',      // 16 - glasses shadow
+  '#2a2540',      // 17 - pants (barely visible under robe)
+  '#1a1520',      // 18 - shoes
+  '#ffd700',      // 19 - book/scroll gold accent
+  '#f5f0e0',      // 20 - book pages
+];
+
+const LAKE_IDLE_0 = [
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,1,9,10,10,11,10,10,9,1,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,9,10,10,11,11,11,10,10,9,1,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,9,10,10,11,11,11,11,11,10,9,1,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,9,2,2,2,3,3,3,2,2,2,9,1,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,2,2,3,3,3,3,3,3,3,2,2,1,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,2,15,14,14,15,3,15,14,14,15,2,1,0,0,0,0,0,0],// glasses
+ [0,0,0,0,0,0,0,0,0,1,2,15,12,14,15,16,15,12,14,15,2,1,0,0,0,0,0],// eyes through glass
+ [0,0,0,0,0,0,0,0,0,1,3,13,12,14,3,3,13,12,14,3,3,1,0,0,0,0,0,0],// highlight
+ [0,0,0,0,0,0,0,0,0,1,4,3,3,3,3,3,3,3,3,3,4,1,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,4,3,3,1,1,1,1,1,3,3,4,1,0,0,0,0,0,0,0,0],// slight smile
+ [0,0,0,0,0,0,0,0,0,0,1,4,3,3,4,4,3,3,4,1,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,1,1,4,4,4,4,1,1,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,7,5,5,6,6,5,5,7,1,0,0,0,0,0,0,0,0,0,0],// robe collar
+ [0,0,0,0,0,0,0,0,0,1,8,7,5,5,6,6,5,5,7,8,1,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,1,8,7,5,5,6,19,19,6,5,5,7,8,1,0,0,0,0,0,0,0],// gold clasp
+ [0,0,0,0,0,0,0,1,3,1,7,5,5,5,5,5,5,5,5,7,1,0,0,0,0,0,0,0,0,0],// arms
+ [0,0,0,0,0,0,0,1,2,1,8,7,5,5,5,5,5,5,7,8,1,20,19,1,0,0,0,0,0],// book in hand!
+ [0,0,0,0,0,0,0,1,3,1,8,7,7,5,5,5,5,7,7,8,1,20,19,1,0,0,0,0,0],
+ [0,0,0,0,0,0,0,1,2,0,1,8,7,7,5,5,7,7,8,1,0,1,1,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,1,0,0,1,8,8,5,5,8,8,1,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,1,8,7,5,5,7,8,1,0,0,0,0,0,0,0,0,0,0,0],// robe flows long
+ [0,0,0,0,0,0,0,0,0,0,1,8,7,7,5,5,7,7,8,1,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,8,7,7,1,1,7,7,8,1,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,8,8,1,0,0,1,8,8,1,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,18,18,18,1,0,0,1,18,18,18,1,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,18,18,18,18,1,1,18,18,18,18,1,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+];
+
+const LAKE_WORK_0 = [
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,1,9,10,10,11,10,10,9,1,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,9,10,10,11,11,11,10,10,9,1,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,9,10,10,11,11,11,11,11,10,9,1,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,9,2,2,2,3,3,3,2,2,2,9,1,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,2,2,3,3,3,3,3,3,3,2,2,1,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,2,15,14,14,15,3,15,14,14,15,2,1,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,2,15,12,14,15,16,15,12,14,15,2,1,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,3,13,12,14,3,3,13,12,14,3,3,1,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,4,3,3,3,3,3,3,3,3,3,4,1,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,4,3,3,1,1,1,1,1,3,3,4,1,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,4,3,3,4,4,3,3,4,1,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,1,1,4,4,4,4,1,1,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,7,5,5,6,6,5,5,7,1,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,8,7,5,5,6,6,5,5,7,8,1,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,1,8,7,5,5,6,19,19,6,5,5,7,8,1,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,1,20,19,1,7,5,5,5,5,5,5,5,5,7,1,0,0,0,0,0,0,0,0],// book raised left
+ [0,0,0,0,0,1,20,20,19,1,8,7,5,5,5,5,5,5,7,8,1,3,1,0,0,0,0,0,0],
+ [0,0,0,0,0,1,20,19,1,0,1,8,7,7,5,5,7,7,8,1,0,2,3,1,0,0,0,0,0],
+ [0,0,0,0,0,0,1,1,0,0,1,8,7,7,5,5,7,7,8,1,0,1,2,1,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,1,8,8,5,5,8,8,1,0,0,0,1,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,1,8,7,5,5,7,8,1,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,8,7,7,5,5,7,7,8,1,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,8,7,7,1,1,7,7,8,1,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,8,8,1,0,0,1,8,8,1,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,18,18,18,1,0,0,1,18,18,18,1,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,18,18,18,18,1,1,18,18,18,18,1,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+];
+
+// ==========================================
+// FISH - Cyan jacket, big headphones, energetic
+// ==========================================
+const FISH_PAL = [
+  'transparent',  // 0
+  '#0a2a3d',      // 1 - outline (dark cyan)
+  '#f5c5a3',      // 2 - skin light
+  '#e0a882',      // 3 - skin mid
+  '#c88b6a',      // 4 - skin dark
+  '#06b6d4',      // 5 - jacket main
+  '#22d3ee',      // 6 - jacket highlight
+  '#0891b2',      // 7 - jacket dark
+  '#065566',      // 8 - jacket shadow
+  '#1a1a2e',      // 9 - hair dark
+  '#2a2040',      // 10 - hair mid
+  '#3a3050',      // 11 - hair highlight
+  '#1a1a2e',      // 12 - eyes
+  '#ffffff',      // 13 - eye highlight
+  '#08e8ff',      // 14 - headphone glow cyan
+  '#333355',      // 15 - headphone body
+  '#222244',      // 16 - headphone dark
+  '#2a2540',      // 17 - pants
+  '#1a1520',      // 18 - shoes
+  '#333344',      // 19 - pants highlight
+  '#44ffff',      // 20 - bright accent / screen glow
+];
+
+const FISH_IDLE_0 = [
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,1,9,10,10,11,10,10,9,1,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,9,10,11,11,11,11,10,10,9,1,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,9,10,11,11,11,11,11,11,10,9,1,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,15,1,1,1,1,1,1,1,1,1,1,1,1,1,15,0,0,0,0,0,0,0],// headphone band
+ [0,0,0,0,0,0,0,16,15,1,9,2,2,2,3,3,3,2,2,2,9,1,15,16,0,0,0,0,0],
+ [0,0,0,0,0,0,0,16,15,1,2,2,3,3,3,3,3,3,3,2,2,1,15,16,0,0,0,0,0],// headphone cups
+ [0,0,0,0,0,0,0,16,14,1,2,2,12,12,3,3,3,12,12,2,2,1,14,16,0,0,0],// eyes
+ [0,0,0,0,0,0,0,0,15,1,2,13,12,12,3,3,13,12,12,2,2,1,15,0,0,0,0],// highlights
+ [0,0,0,0,0,0,0,0,0,1,3,2,2,3,3,3,3,3,2,2,3,1,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,4,3,3,1,1,1,1,3,3,3,4,1,0,0,0,0,0,0,0,0],// big grin
+ [0,0,0,0,0,0,0,0,0,0,1,4,3,3,4,4,3,3,4,1,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,1,1,4,4,4,4,1,1,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,7,5,5,6,6,5,5,7,1,0,0,0,0,0,0,0,0,0,0],// collar
+ [0,0,0,0,0,0,0,0,0,1,8,5,5,6,6,6,6,5,5,8,1,0,0,0,0,0,0,0,0,0],// jacket open
+ [0,0,0,0,0,0,0,0,1,8,7,5,5,6,20,20,6,5,5,7,8,1,0,0,0,0,0,0,0],// zipper accent
+ [0,0,0,0,0,0,0,1,3,1,7,5,5,5,5,5,5,5,5,7,1,3,1,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,1,2,1,8,7,5,5,5,5,5,5,7,8,1,2,1,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,1,3,1,8,7,7,5,5,5,5,7,7,8,1,3,1,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,1,2,0,1,8,7,7,5,5,7,7,8,1,0,2,1,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,1,0,0,1,8,8,7,7,8,8,1,0,0,1,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,1,17,17,17,17,17,17,1,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,17,17,19,17,17,19,17,17,1,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,17,17,19,1,1,19,17,17,1,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,17,17,1,0,0,1,17,17,1,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,18,18,18,1,0,0,1,18,18,18,1,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,18,18,18,18,1,1,18,18,18,18,1,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+];
+
+const FISH_WORK_0 = [
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,1,9,10,10,11,10,10,9,1,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,9,10,11,11,11,11,10,10,9,1,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,9,10,11,11,11,11,11,11,10,9,1,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,15,1,1,1,1,1,1,1,1,1,1,1,1,1,15,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,16,15,1,9,2,2,2,3,3,3,2,2,2,9,1,15,16,0,0,0,0,0],
+ [0,0,0,0,0,0,0,16,15,1,2,2,3,3,3,3,3,3,3,2,2,1,15,16,0,0,0,0,0],
+ [0,0,0,0,0,0,0,16,14,1,2,2,12,12,3,3,3,12,12,2,2,1,14,16,0,0,0],
+ [0,0,0,0,0,0,0,0,15,1,2,13,12,12,3,3,13,12,12,2,2,1,15,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,3,2,2,3,3,3,3,3,2,2,3,1,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,4,3,3,1,1,1,1,3,3,3,4,1,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,4,3,3,4,4,3,3,4,1,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,1,1,4,4,4,4,1,1,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,7,5,5,6,6,5,5,7,1,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,8,5,5,6,6,6,6,5,5,8,1,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,1,8,7,5,5,6,20,20,6,5,5,7,8,1,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,1,3,1,7,5,5,5,5,5,5,5,5,7,1,3,1,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,1,2,3,1,8,7,5,5,5,5,5,5,7,8,1,2,3,1,0,0,0,0,0,0],// arms forward (typing)
+ [0,0,0,0,0,1,3,2,1,0,1,8,7,7,5,5,7,7,8,1,0,3,2,1,0,0,0,0,0,0],
+ [0,0,0,0,0,1,2,1,0,0,1,8,7,7,5,5,7,7,8,1,0,1,2,1,0,0,0,0,0,0],
+ [0,0,0,0,0,0,1,0,0,0,0,1,8,8,7,7,8,8,1,0,0,0,1,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,1,17,17,17,17,17,17,1,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,17,17,19,17,17,19,17,17,1,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,17,17,19,1,1,19,17,17,1,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,17,17,1,0,0,1,17,17,1,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,18,18,18,1,0,0,1,18,18,18,1,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,1,18,18,18,18,1,1,18,18,18,18,1,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+];
+
+// =============================================
+// SPRITE RENDERING
+// =============================================
+const SPRITE_DATA = {
+  cody: { pal: CODY_PAL, idle: [CODY_IDLE_0], work: [CODY_WORK_0] },
+  goku: { pal: GOKU_PAL, idle: [GOKU_IDLE_0], work: [GOKU_WORK_0] },
+  lake: { pal: LAKE_PAL, idle: [LAKE_IDLE_0], work: [LAKE_WORK_0] },
+  fish: { pal: FISH_PAL, idle: [FISH_IDLE_0], work: [FISH_WORK_0] }
+};
+
+// Pre-render sprites to offscreen canvases for performance
+const spriteCache = {};
+
+function prerenderSprite(agentId, frameData, palette, suffix) {
+  const key = agentId + '_' + suffix;
+  const oc = document.createElement('canvas');
+  oc.width = SPRITE_W * PX;
+  oc.height = SPRITE_H * PX;
+  const octx = oc.getContext('2d');
+  for (let y = 0; y < SPRITE_H; y++) {
+    const row = frameData[y];
+    if (!row) continue;
+    for (let x = 0; x < SPRITE_W; x++) {
+      const ci = row[x];
+      if (ci === 0) continue;
+      octx.fillStyle = palette[ci];
+      octx.fillRect(x * PX, y * PX, PX, PX);
     }
+  }
+  spriteCache[key] = oc;
+}
 
-    // Room border
-    ctx.strokeStyle = room.color;
-    ctx.globalAlpha = 0.5;
-    ctx.lineWidth = 2 / getRenderScale();
-    ctx.strokeRect(rx, ry, rw, rh);
+function prerenderGraySprite(agentId, frameData, palette, suffix) {
+  const key = agentId + '_' + suffix + '_gray';
+  const oc = document.createElement('canvas');
+  oc.width = SPRITE_W * PX;
+  oc.height = SPRITE_H * PX;
+  const octx = oc.getContext('2d');
+  for (let y = 0; y < SPRITE_H; y++) {
+    const row = frameData[y];
+    if (!row) continue;
+    for (let x = 0; x < SPRITE_W; x++) {
+      const ci = row[x];
+      if (ci === 0) continue;
+      const hex = palette[ci];
+      const rgb = hexToRgb(hex);
+      const gray = Math.round(rgb.r * 0.3 + rgb.g * 0.5 + rgb.b * 0.2);
+      const dg = Math.max(0, gray - 30);
+      octx.fillStyle = `rgb(${dg},${dg},${Math.min(255,dg+10)})`;
+      octx.fillRect(x * PX, y * PX, PX, PX);
+    }
+  }
+  spriteCache[key] = oc;
+}
 
-    // Top accent glow
-    ctx.fillStyle = room.color;
-    ctx.globalAlpha = 0.2;
-    ctx.fillRect(rx, ry, rw, 3);
-
-    // Corner dots
-    ctx.globalAlpha = 0.6;
-    const cd = 3;
-    ctx.fillRect(rx, ry, cd, cd);
-    ctx.fillRect(rx + rw - cd, ry, cd, cd);
-    ctx.fillRect(rx, ry + rh - cd, cd, cd);
-    ctx.fillRect(rx + rw - cd, ry + rh - cd, cd, cd);
-
-    ctx.globalAlpha = 1.0;
-    ctx.lineWidth = 1;
+function initSprites() {
+  for (const [id, data] of Object.entries(SPRITE_DATA)) {
+    data.idle.forEach((f, i) => {
+      prerenderSprite(id, f, data.pal, 'idle_' + i);
+      prerenderGraySprite(id, f, data.pal, 'idle_' + i);
+    });
+    data.work.forEach((f, i) => {
+      prerenderSprite(id, f, data.pal, 'work_' + i);
+      prerenderGraySprite(id, f, data.pal, 'work_' + i);
+    });
   }
 }
 
-function drawHallways(ctx) {
-  ctx.strokeStyle = '#2a2d3a';
-  ctx.globalAlpha = 0.3;
-  ctx.lineWidth = 1 / getRenderScale();
+function drawSprite(ctx, agentId, state, x, y) {
+  const isOffline = state === 'offline';
+  const isWorking = state === 'working' || state === 'online';
+
+  const frames = isWorking ? SPRITE_DATA[agentId].work : SPRITE_DATA[agentId].idle;
+  const fi = Math.floor(frame / 15) % frames.length;
+  const suffix = (isWorking ? 'work_' : 'idle_') + fi;
+  const key = agentId + '_' + suffix + (isOffline ? '_gray' : '');
+
+  const bob = isOffline ? 0 : Math.sin(frame * 0.06) * 2;
+  const spriteW = SPRITE_W * PX;
+  const spriteH = SPRITE_H * PX;
+
+  // Under-glow
+  if (!isOffline) {
+    const color = AGENTS[agentId].color;
+    const glow = ctx.createRadialGradient(x + spriteW/2, y + spriteH, 5, x + spriteW/2, y + spriteH, spriteW * 0.6);
+    glow.addColorStop(0, color.replace(')', ',0.25)').replace('#', 'rgba(').replace(/^rgba\(/, '') ? `rgba(${parseInt(color.slice(1,3),16)},${parseInt(color.slice(3,5),16)},${parseInt(color.slice(5,7),16)},0.2)` : 'transparent');
+    glow.addColorStop(1, 'transparent');
+    ctx.fillStyle = glow;
+    ctx.fillRect(x - 20, y + spriteH - 30, spriteW + 40, 60);
+  }
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
   ctx.beginPath();
-  ctx.moveTo(0, 15 * TILE); ctx.lineTo(OFFICE_W * TILE, 15 * TILE);
-  ctx.moveTo(0, 28 * TILE); ctx.lineTo(OFFICE_W * TILE, 28 * TILE);
-  ctx.moveTo(19 * TILE, 0); ctx.lineTo(19 * TILE, OFFICE_H * TILE);
-  ctx.moveTo(40 * TILE, 0); ctx.lineTo(40 * TILE, OFFICE_H * TILE);
-  ctx.stroke();
-  ctx.globalAlpha = 1.0;
-}
-
-function drawSprite(ctx, key, x, y, w, h, alpha) {
-  const img = spriteImages[key];
-  if (!img) return false;
-  if (alpha !== undefined) ctx.globalAlpha = alpha;
-  ctx.drawImage(img, x, y, w || img.width, h || img.height);
-  if (alpha !== undefined) ctx.globalAlpha = 1.0;
-  return true;
-}
-
-function drawAllFurniture(ctx) {
-  // Conference table (center of conference room)
-  const confRoom = ROOMS['conference'];
-  const confCX = (confRoom.x + confRoom.w / 2) * TILE;
-  const confCY = (confRoom.y + confRoom.h / 2) * TILE;
-  // Big table from table_front asset
-  drawSprite(ctx, 'table_front', confCX - 24, confCY - 32, 48, 64);
-  // Chairs around table
-  for (let i = 0; i < 5; i++) {
-    const cx = confCX - 28 + i * 14;
-    drawSprite(ctx, 'wooden_chair', cx, confCY - 28, 10, 16);
-    drawSprite(ctx, 'chair_front', cx, confCY + 20, 10, 10);
-  }
-
-  // Break room
-  const brRoom = ROOMS['break-room'];
-  // Coffee machine (top-left area)
-  drawSprite(ctx, 'coffee', (brRoom.x + 2) * TILE, (brRoom.y + 2) * TILE, 16, 16);
-  // Small tables
-  drawSprite(ctx, 'small_table', (brRoom.x + 6) * TILE, (brRoom.y + 5) * TILE, 32, 32);
-  drawSprite(ctx, 'small_table', (brRoom.x + 13) * TILE, (brRoom.y + 5) * TILE, 32, 32);
-  drawSprite(ctx, 'coffee_table', (brRoom.x + 10) * TILE, (brRoom.y + 3) * TILE, 32, 32);
-  // Sofa
-  drawSprite(ctx, 'sofa_front', (brRoom.x + 7) * TILE, (brRoom.y + 9) * TILE, 32, 16);
-  drawSprite(ctx, 'sofa_front', (brRoom.x + 12) * TILE, (brRoom.y + 9) * TILE, 32, 16);
-  // Plants
-  drawSprite(ctx, 'large_plant', (brRoom.x + 1) * TILE, (brRoom.y + 8) * TILE - 16, 32, 48);
-  drawSprite(ctx, 'cactus', (brRoom.x + 18) * TILE, (brRoom.y + 1) * TILE, 16, 32);
-
-  // Server room - racks (using double_bookshelf as server racks)
-  const srvRoom = ROOMS['server-room'];
-  for (let i = 0; i < 3; i++) {
-    const sx = (srvRoom.x + 2 + i * 4) * TILE;
-    const sy = (srvRoom.y + 2) * TILE;
-    drawSprite(ctx, 'double_bookshelf', sx, sy, 32, 32);
-    // Blinking server lights overlay
-    drawServerLights(ctx, sx, sy);
-  }
-  drawSprite(ctx, 'bin', (srvRoom.x + 16) * TILE, (srvRoom.y + 8) * TILE, 16, 16);
-
-  // Intel room
-  const intRoom = ROOMS['intel-room'];
-  drawSprite(ctx, 'whiteboard', (intRoom.x + 2) * TILE, (intRoom.y + 1) * TILE, 32, 32);
-  drawSprite(ctx, 'whiteboard', (intRoom.x + 6) * TILE, (intRoom.y + 1) * TILE, 32, 32);
-  drawSprite(ctx, 'bookshelf', (intRoom.x + 14) * TILE, (intRoom.y + 1) * TILE, 32, 16);
-  drawSprite(ctx, 'plant', (intRoom.x + 16) * TILE, (intRoom.y + 6) * TILE - 16, 16, 32);
-
-  // Comms center - screens (using desk+pc combos)
-  const comRoom = ROOMS['comms-center'];
-  // Large screens represented by desk with multiple PCs
-  for (let i = 0; i < 2; i++) {
-    const mx = (comRoom.x + 2 + i * 8) * TILE;
-    const my = (comRoom.y + 2) * TILE;
-    drawSprite(ctx, 'desk_front', mx, my + 16, 48, 32);
-    // Monitors on desk
-    const pcKey = 'pc_on_' + (1 + (animFrame >> 4) % 3);
-    drawSprite(ctx, pcKey, mx + 4, my, 16, 32);
-    drawSprite(ctx, pcKey, mx + 24, my, 16, 32);
-  }
-  drawSprite(ctx, 'plant2', (comRoom.x + 16) * TILE, (comRoom.y + 1) * TILE - 16, 16, 32);
-  drawSprite(ctx, 'clock', (comRoom.x + 1) * TILE, (comRoom.y + 1) * TILE, 16, 32);
-
-  // Code lab - multiple workstations
-  const codeRoom = ROOMS['code-lab'];
-  for (let i = 0; i < 3; i++) {
-    const mx = (codeRoom.x + 2 + i * 5) * TILE;
-    const my = (codeRoom.y + 2) * TILE;
-    drawSprite(ctx, 'desk_front', mx, my + 16, 48, 32);
-    const pcKey = 'pc_on_' + (1 + ((animFrame >> 5) + i) % 3);
-    drawSprite(ctx, pcKey, mx + 16, my, 16, 32);
-  }
-  drawSprite(ctx, 'large_painting', (codeRoom.x + 1) * TILE, (codeRoom.y + 1) * TILE, 32, 32);
-  drawSprite(ctx, 'cactus', (codeRoom.x + 16) * TILE, (codeRoom.y + 10) * TILE, 16, 32);
-
-  // Mission control - big screen + desk
-  const mcRoom = ROOMS['mission-control'];
-  // Big screen wall (whiteboards as screens)
-  drawSprite(ctx, 'whiteboard', (mcRoom.x + 3) * TILE, (mcRoom.y + 1) * TILE, 32, 32);
-  drawSprite(ctx, 'whiteboard', (mcRoom.x + 7) * TILE, (mcRoom.y + 1) * TILE, 32, 32);
-  drawSprite(ctx, 'large_painting', (mcRoom.x + 11) * TILE, (mcRoom.y + 1) * TILE, 32, 32);
-  // Control desk area
-  drawSprite(ctx, 'desk_front', (mcRoom.x + 3) * TILE, (mcRoom.y + 5) * TILE + 16, 48, 32);
-  const mcPcKey = 'pc_on_' + (1 + (animFrame >> 4) % 3);
-  drawSprite(ctx, mcPcKey, (mcRoom.x + 4) * TILE, (mcRoom.y + 5) * TILE, 16, 32);
-  drawSprite(ctx, mcPcKey, (mcRoom.x + 7) * TILE, (mcRoom.y + 5) * TILE, 16, 32);
-  drawSprite(ctx, 'hanging_plant', (mcRoom.x + 1) * TILE, (mcRoom.y + 1) * TILE, 16, 32);
-  drawSprite(ctx, 'small_painting', (mcRoom.x + 15) * TILE, (mcRoom.y + 1) * TILE, 16, 32);
-
-  // Agent workstation desks
-  for (const [agentId, pos] of Object.entries(DESK_POS)) {
-    const dx = pos.x * TILE - 24;
-    const dy = pos.y * TILE + 4;
-    drawSprite(ctx, 'desk_front', dx, dy, 48, 32);
-    // Chair behind desk
-    drawSprite(ctx, 'chair_back', pos.x * TILE - 4, pos.y * TILE + 20, 10, 10);
-    // Monitor on desk
-    const state = agentStates[agentId];
-    const isActive = state && (state.status === 'online' || state.status === 'working');
-    const pcKey = isActive ? ('pc_on_' + (1 + (animFrame >> 4) % 3)) : 'pc_off';
-    drawSprite(ctx, pcKey, pos.x * TILE - 8, pos.y * TILE - 16, 16, 32);
-  }
-}
-
-function drawServerLights(ctx, sx, sy) {
-  // Animated blinking lights on server racks
-  for (let j = 0; j < 6; j++) {
-    const on1 = ((animFrame + j * 7) % 20) > 5;
-    const on2 = ((animFrame + j * 11) % 25) > 8;
-    ctx.fillStyle = on1 ? '#22c55e' : '#0a1a0a';
-    ctx.globalAlpha = on1 ? 0.9 : 0.3;
-    ctx.fillRect(sx + 4, sy + 4 + j * 5, 3, 2);
-    ctx.fillStyle = on2 ? '#3b82f6' : '#0a0a1a';
-    ctx.globalAlpha = on2 ? 0.7 : 0.2;
-    ctx.fillRect(sx + 10, sy + 4 + j * 5, 3, 2);
-  }
-  ctx.globalAlpha = 1.0;
-}
-
-function drawAllAgents(ctx) {
-  // Draw agents sorted by Y position for proper overlap
-  const agentOrder = Object.entries(DESK_POS).sort((a, b) => a[1].y - b[1].y);
-
-  for (const [agentId, pos] of agentOrder) {
-    const state = agentStates[agentId];
-    const status = state ? state.status : 'offline';
-    const charIdx = AGENT_CHAR_MAP[agentId];
-    const charImg = spriteImages['char_' + charIdx];
-
-    const agentX = pos.x * TILE;
-    const agentY = pos.y * TILE;
-
-    if (charImg) {
-      // Extract the correct frame from the sprite sheet
-      // Direction: down (row 0), Frame selection based on status
-      let frameIdx;
-      if (status === 'online' || status === 'working') {
-        // Type animation: alternate between frames 3 and 4 (type1, type2)
-        frameIdx = 3 + ((animFrame >> 3) % 2);
-      } else if (status === 'idle') {
-        // Idle: use walk2 (standing pose), frame 1
-        frameIdx = 1;
-      } else {
-        // Offline: standing, frame 1
-        frameIdx = 1;
-      }
-
-      const srcX = frameIdx * CHAR_FRAME_W;
-      const srcY = 0; // Down-facing row
-      const drawW = CHAR_FRAME_W;
-      const drawH = CHAR_FRAME_H;
-
-      // Breathing animation
-      const breathOff = status !== 'offline' ? Math.sin(animFrame * 0.08) * 0.5 : 0;
-
-      // Alpha for offline agents
-      if (status === 'offline') ctx.globalAlpha = 0.35;
-
-      // Shadow
-      ctx.fillStyle = 'rgba(0,0,0,0.25)';
-      ctx.beginPath();
-      ctx.ellipse(agentX, agentY + 2, 7, 3, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Draw the character sprite
-      ctx.drawImage(
-        charImg,
-        srcX, srcY, CHAR_FRAME_W, CHAR_FRAME_H,
-        agentX - drawW / 2, agentY - drawH + 8 + breathOff, drawW, drawH
-      );
-
-      ctx.globalAlpha = 1.0;
-
-      // Status indicator dot
-      const statusColor = status === 'online' ? '#22c55e' : status === 'working' ? '#3b82f6' : status === 'idle' ? '#eab308' : '#ef4444';
-      ctx.fillStyle = statusColor;
-      ctx.beginPath();
-      ctx.arc(agentX + 10, agentY - 22, 3, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Pulse for active agents
-      if (status === 'online' || status === 'working') {
-        const pulseAlpha = 0.3 + Math.sin(animFrame * 0.08) * 0.2;
-        ctx.fillStyle = statusColor;
-        ctx.globalAlpha = pulseAlpha;
-        ctx.beginPath();
-        ctx.arc(agentX + 10, agentY - 22, 5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.globalAlpha = 1.0;
-      }
-    } else {
-      // Fallback: draw simple colored rectangle if sprite not loaded
-      drawFallbackAgent(ctx, agentId, agentX, agentY, status);
-    }
-
-    // Name label
-    const def = AGENT_DEFS[agentId];
-    ctx.fillStyle = def.color;
-    ctx.font = '5px "Press Start 2P", monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(def.name, agentX, agentY + 14);
-    ctx.textAlign = 'left';
-  }
-}
-
-function drawFallbackAgent(ctx, agentId, x, y, status) {
-  const def = AGENT_DEFS[agentId];
-  const col = def.color;
-  const isOffline = status === 'offline';
-  ctx.globalAlpha = isOffline ? 0.3 : 1.0;
-
-  // Body
-  ctx.fillStyle = col;
-  ctx.fillRect(x - 5, y - 6, 10, 8);
-  // Head
-  ctx.fillStyle = isOffline ? '#555' : '#f0c8a0';
-  ctx.beginPath();
-  ctx.arc(x, y - 10, 5, 0, Math.PI * 2);
+  ctx.ellipse(x + spriteW/2, y + spriteH + 2, spriteW * 0.35, 4, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.globalAlpha = 1.0;
-}
-
-function drawRoomLabels(ctx) {
-  ctx.font = '5px "Press Start 2P", monospace';
-  ctx.textAlign = 'center';
-  for (const [roomId, room] of Object.entries(ROOMS)) {
-    ctx.fillStyle = room.color;
-    ctx.globalAlpha = 0.8;
-    ctx.fillText(room.label, (room.x + room.w / 2) * TILE, (room.y + 0.8) * TILE);
+  // Draw sprite
+  if (spriteCache[key]) {
+    ctx.drawImage(spriteCache[key], x, y + Math.round(bob));
   }
-  ctx.globalAlpha = 1.0;
-  ctx.textAlign = 'left';
+
+  // Offline ZZZ
+  if (isOffline) {
+    const zOff = Math.sin(frame * 0.04) * 5;
+    ctx.fillStyle = '#667';
+    ctx.font = '10px "Press Start 2P", monospace';
+    ctx.fillText('z', x + spriteW + 2, y + 30 + zOff);
+    ctx.font = '13px "Press Start 2P", monospace';
+    ctx.fillText('z', x + spriteW + 10, y + 16 + zOff * 0.6);
+    ctx.font = '16px "Press Start 2P", monospace';
+    ctx.fillText('Z', x + spriteW + 16, y + zOff * 0.3);
+  }
 }
 
 // =============================================
-// CLICK HANDLING
+// SCENE BACKGROUNDS
 // =============================================
-function handleCanvasClick(e) {
-  const rect = officeCanvas.getBoundingClientRect();
-  const scale = getRenderScale();
-  const mx = (e.clientX - rect.left) * (officeCanvas.width / rect.width) / scale;
-  const my = (e.clientY - rect.top) * (officeCanvas.height / rect.height) / scale;
 
-  for (const [agentId, pos] of Object.entries(DESK_POS)) {
-    const ax = pos.x * TILE;
-    const ay = pos.y * TILE;
-    const dist = Math.sqrt((mx - ax) ** 2 + (my - ay) ** 2);
-    if (dist < 24) {
-      showAgentPopup(agentId, e);
-      return;
-    }
-  }
-  closePopup();
-}
+function drawCodyScene(ctx, state) {
+  // Dark command center with 3 monitors
+  ctx.fillStyle = '#12141d';
+  ctx.fillRect(0, 0, 300, 120);
+  const floorGrad = ctx.createLinearGradient(0, 120, 0, 200);
+  floorGrad.addColorStop(0, '#1a1530');
+  floorGrad.addColorStop(1, '#0e0c1a');
+  ctx.fillStyle = floorGrad;
+  ctx.fillRect(0, 120, 300, 80);
 
-function showAgentPopup(agentId, clickEvent) {
-  const state = agentStates[agentId];
-  if (!state) return;
-  selectedAgent = agentId;
+  // Floor tiles
+  ctx.strokeStyle = 'rgba(168,85,247,0.06)';
+  for (let tx = 0; tx < 300; tx += 20) { ctx.beginPath(); ctx.moveTo(tx, 120); ctx.lineTo(tx, 200); ctx.stroke(); }
+  for (let ty = 120; ty < 200; ty += 15) { ctx.beginPath(); ctx.moveTo(0, ty); ctx.lineTo(300, ty); ctx.stroke(); }
 
-  document.querySelectorAll('.agent-list-item').forEach(el => el.classList.remove('selected'));
-  const sidebarItem = document.querySelector(`[data-agent-id="${agentId}"]`);
-  if (sidebarItem) sidebarItem.classList.add('selected');
-
-  const statusColors = { online: '#22c55e', idle: '#eab308', working: '#3b82f6', offline: '#ef4444' };
-  const statusBgs = { online: '#0f2b1a', idle: '#2b2a15', working: '#152040', offline: '#2a1a1a' };
-  const sc = statusColors[state.status] || statusColors.offline;
-  const sb = statusBgs[state.status] || statusBgs.offline;
-
-  // Create avatar canvas with sprite
-  const charIdx = AGENT_CHAR_MAP[agentId];
-  const charImg = spriteImages['char_' + charIdx];
-  let avatarHtml = `<div class="agent-popup-avatar" style="background:${state.color}22;color:${state.color};font-size:20px;">${state.emoji}</div>`;
-
-  if (charImg) {
-    avatarHtml = `<div class="agent-popup-avatar" style="background:${state.color}22;" id="popupAvatar_${agentId}"></div>`;
+  // Screen glow
+  if (state !== 'offline') {
+    const glow = ctx.createRadialGradient(150, 80, 20, 150, 80, 140);
+    glow.addColorStop(0, 'rgba(168,85,247,0.12)');
+    glow.addColorStop(1, 'rgba(168,85,247,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, 300, 200);
   }
 
-  const popup = document.getElementById('agentPopup');
-  document.getElementById('agentPopupContent').innerHTML = `
-    <div class="agent-popup-header">
-      ${avatarHtml}
-      <div>
-        <div class="agent-popup-name" style="color:${state.color}">${state.name}</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">${state.role}</div>
-      </div>
-      <div class="agent-popup-status" style="background:${sb};color:${sc};margin-left:auto;">${state.status.toUpperCase()}</div>
-    </div>
-    <div class="agent-popup-grid">
-      <div class="agent-popup-field">
-        <div class="agent-popup-label">MODEL</div>
-        <div class="agent-popup-value">${state.currentModel || 'Unknown'}</div>
-      </div>
-      <div class="agent-popup-field">
-        <div class="agent-popup-label">CHANNEL</div>
-        <div class="agent-popup-value">${state.channel}</div>
-      </div>
-      <div class="agent-popup-field">
-        <div class="agent-popup-label">SESSIONS</div>
-        <div class="agent-popup-value">${state.sessions.length}</div>
-      </div>
-      <div class="agent-popup-field">
-        <div class="agent-popup-label">LAST ACTIVE</div>
-        <div class="agent-popup-value">${state.lastActive ? new Date(state.lastActive).toLocaleString() : 'Never'}</div>
-      </div>
-      <div class="agent-popup-field">
-        <div class="agent-popup-label">TOTAL MSGS</div>
-        <div class="agent-popup-value">${state.totalMessages}</div>
-      </div>
-      <div class="agent-popup-field">
-        <div class="agent-popup-label">TODAY</div>
-        <div class="agent-popup-value">${state.todayMessages}</div>
-      </div>
-    </div>
-    <div class="agent-popup-label">SKILLS (${state.skills.length})</div>
-    <div class="agent-popup-skills">
-      ${state.skills.map(s => `<span class="agent-popup-skill">${s}</span>`).join('')}
-    </div>
-  `;
-
-  // Render avatar sprite
-  if (charImg) {
-    const avatarEl = document.getElementById('popupAvatar_' + agentId);
-    if (avatarEl) {
-      const c = document.createElement('canvas');
-      c.width = CHAR_FRAME_W; c.height = CHAR_FRAME_H;
-      const ac = c.getContext('2d');
-      ac.imageSmoothingEnabled = false;
-      ac.drawImage(charImg, CHAR_FRAME_W, 0, CHAR_FRAME_W, CHAR_FRAME_H, 0, 0, CHAR_FRAME_W, CHAR_FRAME_H);
-      avatarEl.appendChild(c);
-    }
+  // Control desk
+  ctx.fillStyle = '#1e1a30';
+  ctx.fillRect(30, 115, 240, 18);
+  ctx.fillStyle = '#252040';
+  ctx.fillRect(30, 113, 240, 4);
+  // Panel LEDs
+  for (let bx = 50; bx < 260; bx += 18) {
+    ctx.fillStyle = state !== 'offline' ? (((frame + bx) % 40 < 10) ? '#a855f7' : '#333') : '#222';
+    ctx.fillRect(bx, 117, 4, 4);
+    ctx.fillStyle = state !== 'offline' ? (((frame + bx * 3) % 30 < 12) ? '#22c55e' : '#444') : '#222';
+    ctx.fillRect(bx + 6, 117, 4, 4);
   }
 
-  // Position popup
-  if (clickEvent) {
-    const canvasRect = document.getElementById('canvasArea').getBoundingClientRect();
-    let px = clickEvent.clientX - canvasRect.left + 20;
-    let py = clickEvent.clientY - canvasRect.top - 60;
-    px = Math.min(px, canvasRect.width - 300);
-    py = Math.max(10, Math.min(py, canvasRect.height - 300));
-    popup.style.left = px + 'px';
-    popup.style.top = py + 'px';
-  }
+  // 3 Monitors
+  const monitors = [{x:40,w:65},{x:118,w:65},{x:196,w:65}];
+  for (let mi = 0; mi < 3; mi++) {
+    const m = monitors[mi];
+    ctx.fillStyle = '#222';
+    ctx.fillRect(m.x-2, 42, m.w+4, 62);
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(m.x+m.w/2-4, 102, 8, 12);
+    ctx.fillRect(m.x+m.w/2-10, 112, 20, 3);
 
-  popup.classList.add('visible');
-}
+    if (state === 'offline') {
+      ctx.fillStyle = '#111';
+      ctx.fillRect(m.x, 44, m.w, 58);
+    } else {
+      const sg = ctx.createLinearGradient(m.x, 44, m.x, 100);
+      sg.addColorStop(0, '#1a1040');
+      sg.addColorStop(1, '#0d0820');
+      ctx.fillStyle = sg;
+      ctx.fillRect(m.x, 44, m.w, 58);
+      // Scan lines
+      ctx.fillStyle = 'rgba(168,85,247,0.04)';
+      for (let sy = 44; sy < 102; sy += 2) ctx.fillRect(m.x, sy, m.w, 1);
 
-function closePopup() {
-  document.getElementById('agentPopup').classList.remove('visible');
-  document.querySelectorAll('.agent-list-item').forEach(el => el.classList.remove('selected'));
-  selectedAgent = null;
-}
-
-// =============================================
-// UI RENDERING (preserved logic)
-// =============================================
-function setFilter(f) {
-  currentFilter = f;
-  document.querySelectorAll('.filter-tab').forEach(t => t.classList.toggle('active', t.dataset.filter === f));
-  renderSidebar();
-}
-
-function togglePin(id, e) {
-  e.stopPropagation();
-  if (pinnedAgents.has(id)) pinnedAgents.delete(id);
-  else pinnedAgents.add(id);
-  localStorage.setItem('dtg_pinned', JSON.stringify([...pinnedAgents]));
-  renderSidebar();
-  renderPinnedAgents();
-}
-
-function renderSidebar() {
-  const listEl = document.getElementById('agentList');
-  const agentOrder = ['cody', 'main', 'fish', 'goku', 'lake', 'blockhead'];
-  listEl.innerHTML = agentOrder.map(id => {
-    const a = agentStates[id];
-    if (!a) return '';
-    if (currentFilter === 'working' && a.status !== 'online' && a.status !== 'working') return '';
-    if (currentFilter === 'idle' && a.status !== 'idle') return '';
-    if (currentFilter === 'offline' && a.status !== 'offline') return '';
-    const isPinned = pinnedAgents.has(id);
-    return `
-      <div class="agent-list-item ${selectedAgent === id ? 'selected' : ''}" data-agent-id="${id}" onclick="showAgentPopup('${id}')">
-        <div class="agent-status-dot ${a.status}"></div>
-        <div style="flex:1;min-width:0;">
-          <div class="agent-list-name" style="color:${a.color}">${a.name}</div>
-          <div class="agent-list-role">${a.role}</div>
-          <div class="agent-list-channel">${a.channel}</div>
-        </div>
-        <button class="pin-btn ${isPinned ? 'pinned' : ''}" onclick="togglePin('${id}', event)" title="${isPinned ? 'Unpin' : 'Pin'}">&#x1F4CC;</button>
-      </div>
-    `;
-  }).join('');
-
-  // Stats
-  const agents = Object.values(agentStates);
-  const online = agents.filter(a => a.status === 'online' || a.status === 'working').length;
-  const totalMsg = agents.reduce((s, a) => s + a.todayMessages, 0);
-  const totalAll = agents.reduce((s, a) => s + a.totalMessages, 0);
-  const totalSess = agents.reduce((s, a) => s + a.sessions.length, 0);
-
-  document.getElementById('officeStats').innerHTML = `
-    <div class="stat-mini">
-      <span class="stat-mini-label">Agents Online</span>
-      <span class="stat-mini-value" style="color:${online > 0 ? 'var(--accent-green)' : 'var(--accent-red)'}">${online}/${agents.length}</span>
-    </div>
-    <div class="stat-mini">
-      <span class="stat-mini-label">Messages Today</span>
-      <span class="stat-mini-value" style="color:var(--accent-cyan)">${totalMsg}</span>
-    </div>
-    <div class="stat-mini">
-      <span class="stat-mini-label">Total Messages</span>
-      <span class="stat-mini-value" style="color:var(--accent-orange)">${totalAll}</span>
-    </div>
-    <div class="stat-mini">
-      <span class="stat-mini-label">Active Sessions</span>
-      <span class="stat-mini-value" style="color:var(--accent-blue)">${totalSess}</span>
-    </div>
-  `;
-
-  const channels = liveData?.channels || {};
-  document.getElementById('channelList').innerHTML = `
-    <div class="stat-mini">
-      <span class="stat-mini-label">Discord</span>
-      <span class="stat-mini-value" style="color:${channels.discord?.enabled ? 'var(--accent-green)' : 'var(--accent-red)'}">${channels.discord?.enabled ? 'ON' : 'OFF'}</span>
-    </div>
-    <div class="stat-mini">
-      <span class="stat-mini-label">Google Chat</span>
-      <span class="stat-mini-value" style="color:${channels.googlechat?.enabled ? 'var(--accent-green)' : 'var(--accent-red)'}">${channels.googlechat?.enabled ? 'ON' : 'OFF'}</span>
-    </div>
-    <div class="stat-mini">
-      <span class="stat-mini-label">WhatsApp</span>
-      <span class="stat-mini-value" style="color:${channels.whatsapp?.enabled ? 'var(--accent-green)' : 'var(--accent-red)'}">${channels.whatsapp?.enabled ? 'ON' : 'OFF'}</span>
-    </div>
-  `;
-}
-
-function renderActivityFeed() {
-  const feed = liveData?.recentActivity || [];
-  const items = feed.filter(a => a.role === 'assistant').slice(0, 30);
-  const el = document.getElementById('activityFeed');
-
-  if (!items.length) {
-    el.innerHTML = '<div style="color:var(--text-muted);font-size:10px;text-align:center;padding:20px;">No recent activity</div>';
-    return;
-  }
-
-  el.innerHTML = items.map(a => {
-    const agentColor = a.color === 'purple' ? 'var(--accent-purple)' : a.color === 'cyan' ? 'var(--accent-cyan)' : 'var(--text-secondary)';
-    const dotColor = a.color === 'purple' ? '#a855f7' : a.color === 'cyan' ? '#06b6d4' : '#8b8f9e';
-    return `
-      <div class="feed-item">
-        <div class="feed-dot" style="background:${dotColor}"></div>
-        <div class="feed-body">
-          <span class="feed-agent" style="color:${agentColor}">${a.agent}</span>
-          <span class="feed-time">${timeAgo(a.timestamp)}</span>
-          <div class="feed-msg">${escHtml(a.summary)}</div>
-          <div class="feed-channel">via ${a.channel}</div>
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
-function renderPinnedAgents() {
-  const el = document.getElementById('pinnedAgents');
-  if (!pinnedAgents.size) {
-    el.innerHTML = '<div style="color:var(--text-muted);font-size:9px;text-align:center;padding:20px;font-family:\'Press Start 2P\',monospace;">Pin agents from the left panel</div>';
-    return;
-  }
-  el.innerHTML = [...pinnedAgents].map(id => {
-    const a = agentStates[id];
-    if (!a) return '';
-    const statusColor = a.status === 'online' || a.status === 'working' ? 'var(--accent-green)' : a.status === 'idle' ? 'var(--accent-yellow)' : 'var(--accent-red)';
-    const statusBg = a.status === 'online' || a.status === 'working' ? 'rgba(34,197,94,0.15)' : a.status === 'idle' ? 'rgba(234,179,8,0.15)' : 'rgba(239,68,68,0.15)';
-    const statusLabel = a.status === 'online' ? 'ONLINE' : a.status === 'working' ? 'WORKING' : a.status === 'idle' ? 'IDLE' : 'OFFLINE';
-    const feed = liveData?.recentActivity || [];
-    const lastTask = feed.find(f => {
-      const agentId = f.agentId || '';
-      return (agentId === id || f.agent === a.name) && f.role === 'assistant';
-    });
-    const taskText = lastTask ? lastTask.summary : (a.status === 'offline' ? 'Agent is offline' : 'Waiting for tasks...');
-    const isWorking = a.status === 'online' || a.status === 'working';
-    return `
-      <div class="pinned-card">
-        <div class="pinned-card-header">
-          <div class="pinned-card-avatar" style="background:${a.color}33;" id="pinnedAvatar_${id}">
-          </div>
-          <div>
-            <div class="pinned-card-name" style="color:${a.color}">${a.name}</div>
-          </div>
-          <span class="pinned-card-status" style="color:${statusColor};background:${statusBg}">${statusLabel}</span>
-          <button class="pinned-unpin" onclick="togglePin('${id}', event)" title="Unpin">&#x2715;</button>
-        </div>
-        <div class="pinned-card-desk" id="pinnedDesk_${id}">
-        </div>
-        <div class="pinned-card-task">
-          <span class="task-label">${isWorking ? 'WORKING ON' : 'STATUS'}</span>
-          ${escHtml(taskText)}
-        </div>
-      </div>
-    `;
-  }).join('');
-
-  // Render mini sprite canvases for pinned agents
-  for (const id of pinnedAgents) {
-    renderPinnedMiniScene(id);
-  }
-}
-
-function renderPinnedMiniScene(agentId) {
-  const a = agentStates[agentId];
-  if (!a) return;
-  const charIdx = AGENT_CHAR_MAP[agentId];
-  const charImg = spriteImages['char_' + charIdx];
-  const isWorking = a.status === 'online' || a.status === 'working';
-
-  // Avatar
-  const avatarEl = document.getElementById('pinnedAvatar_' + agentId);
-  if (avatarEl && charImg) {
-    const ac = document.createElement('canvas');
-    ac.width = CHAR_FRAME_W; ac.height = CHAR_FRAME_H;
-    const actx = ac.getContext('2d');
-    actx.imageSmoothingEnabled = false;
-    actx.drawImage(charImg, CHAR_FRAME_W, 0, CHAR_FRAME_W, CHAR_FRAME_H, 0, 0, CHAR_FRAME_W, CHAR_FRAME_H);
-    ac.style.imageRendering = 'pixelated';
-    avatarEl.appendChild(ac);
-  }
-
-  // Mini desk scene
-  const deskEl = document.getElementById('pinnedDesk_' + agentId);
-  if (!deskEl) return;
-  const mc = document.createElement('canvas');
-  mc.width = 120; mc.height = 60;
-  mc.style.imageRendering = 'pixelated';
-  mc.style.width = '120px';
-  mc.style.height = '60px';
-  const mctx = mc.getContext('2d');
-  mctx.imageSmoothingEnabled = false;
-
-  // Scale up 2x for the mini scene
-  mctx.scale(2, 2);
-
-  // Floor
-  const floorImg = spriteImages['floor_' + (ROOM_FLOOR[a.room] || 0)];
-  if (floorImg) {
-    for (let fx = 0; fx < 4; fx++) {
-      for (let fy = 0; fy < 2; fy++) {
-        mctx.drawImage(floorImg, fx * 16, fy * 16, 16, 16);
+      if (mi === 0) {
+        // Terminal bars
+        for (let row = 0; row < 8; row++) {
+          const bW = 10 + Math.sin(frame * 0.1 + row) * 15 + 15;
+          ctx.fillStyle = `rgba(168,85,247,${0.2+Math.sin(frame*0.05+row*0.5)*0.15})`;
+          ctx.fillRect(m.x+3, 48+row*7, bW, 3);
+        }
+      } else if (mi === 1) {
+        // Radar
+        const cx = m.x+m.w/2, cy = 73;
+        ctx.strokeStyle = 'rgba(168,85,247,0.2)';
+        ctx.lineWidth = 1;
+        for (let r = 8; r < 28; r += 8) { ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke(); }
+        const angle = (frame*0.03)%(Math.PI*2);
+        ctx.strokeStyle = 'rgba(168,85,247,0.5)';
+        ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+Math.cos(angle)*25,cy+Math.sin(angle)*25); ctx.stroke();
+        for (let bi = 0; bi < 3; bi++) {
+          const ba = (frame*0.01+bi*2.1)%(Math.PI*2), br = 8+bi*7;
+          ctx.fillStyle = 'rgba(168,85,247,0.7)';
+          ctx.fillRect(cx+Math.cos(ba)*br-1, cy+Math.sin(ba)*br-1, 3, 3);
+        }
+      } else {
+        // Scrolling data
+        for (let row = 0; row < 10; row++) {
+          const yy = 47+((row*6+Math.floor(frame*0.3))%54);
+          const bW = 15+(row*7+frame)%30;
+          ctx.fillStyle = `rgba(168,85,247,${0.15+(row%3)*0.1})`;
+          ctx.fillRect(m.x+3, yy, bW, 2);
+        }
       }
+      if (frame%120<3) { ctx.fillStyle='rgba(168,85,247,0.06)'; ctx.fillRect(m.x,44,m.w,58); }
     }
-  } else {
-    mctx.fillStyle = '#1a1d28';
-    mctx.fillRect(0, 0, 60, 30);
+  }
+
+  // Coffee mug on desk
+  ctx.fillStyle = '#444';
+  ctx.fillRect(275, 109, 10, 8);
+  ctx.fillRect(284, 111, 3, 4);
+  if (state !== 'offline') {
+    // Steam
+    const s1 = Math.sin(frame * 0.08) * 2;
+    const s2 = Math.sin(frame * 0.08 + 1) * 2;
+    ctx.fillStyle = 'rgba(200,200,200,0.15)';
+    ctx.fillRect(277+s1, 103, 2, 5);
+    ctx.fillRect(281+s2, 101, 2, 6);
+  }
+
+  // Data particles
+  if (state !== 'offline' && frame%8===0) {
+    addParticle('cody', Math.random()*260+20, 50+Math.random()*50, (Math.random()-0.5)*2, -0.3, 30+Math.random()*20, `rgba(168,85,247,${0.3+Math.random()*0.4})`, 2);
+  }
+  updateParticles('cody');
+  drawParticles(ctx, 'cody');
+
+  // Character
+  const charX = 150 - (SPRITE_W*PX)/2;
+  const charY = state !== 'offline' ? 62 : 66;
+  drawSprite(ctx, 'cody', state, charX, charY);
+
+  if (state === 'offline') { ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.fillRect(0,0,300,200); }
+}
+
+function drawGokuScene(ctx, state) {
+  // Forge / smithy
+  ctx.fillStyle = '#1a1510';
+  ctx.fillRect(0, 0, 300, 120);
+  ctx.strokeStyle = 'rgba(100,80,50,0.08)';
+  for (let sy = 0; sy < 120; sy += 12)
+    for (let sx = (sy%24===0?0:14); sx < 300; sx += 28)
+      ctx.strokeRect(sx, sy, 28, 12);
+
+  const floorGrad = ctx.createLinearGradient(0, 120, 0, 200);
+  floorGrad.addColorStop(0, '#1e1810');
+  floorGrad.addColorStop(1, '#120e08');
+  ctx.fillStyle = floorGrad;
+  ctx.fillRect(0, 120, 300, 80);
+
+  // Fire glow
+  if (state !== 'offline') {
+    const fg = ctx.createRadialGradient(80,100,10,80,100,100);
+    fg.addColorStop(0, 'rgba(249,115,22,0.2)');
+    fg.addColorStop(0.5, 'rgba(249,115,22,0.08)');
+    fg.addColorStop(1, 'rgba(249,115,22,0)');
+    ctx.fillStyle = fg;
+    ctx.fillRect(0,0,200,200);
+  }
+
+  // Forge structure
+  ctx.fillStyle = '#333028';
+  ctx.fillRect(40, 80, 80, 40);
+  ctx.fillStyle = '#2a2520';
+  ctx.fillRect(44, 84, 72, 32);
+  ctx.fillStyle = state !== 'offline' ? '#1a0800' : '#111';
+  ctx.fillRect(55, 90, 50, 20);
+  // Fire
+  if (state !== 'offline') {
+    const ff = Math.sin(frame*0.2)*0.15+0.85;
+    ctx.fillStyle = `rgba(249,115,22,${0.8*ff})`;
+    ctx.fillRect(60,98,40,10);
+    ctx.fillStyle = `rgba(234,179,8,${0.6*ff})`;
+    ctx.fillRect(65,95,30,8);
+    ctx.fillStyle = `rgba(255,220,100,${0.4*ff})`;
+    ctx.fillRect(70,93,20,5);
+    if (frame%6===0) addParticle('goku',70+Math.random()*20,90,(Math.random()-0.5)*1.5,-1.5-Math.random(),20+Math.random()*15, Math.random()>0.5?'rgba(249,115,22,0.9)':'rgba(234,179,8,0.8)',2);
+  }
+  // Chimney
+  ctx.fillStyle = '#2a2520';
+  ctx.fillRect(65,30,30,52);
+  ctx.fillStyle = '#333028';
+  ctx.fillRect(60,26,40,8);
+  if (state !== 'offline') {
+    for (let si=0;si<3;si++) {
+      const sy=20-si*8+Math.sin(frame*0.03+si)*3;
+      const sx=78+Math.sin(frame*0.02+si*2)*5;
+      ctx.fillStyle=`rgba(100,100,100,${0.15-si*0.04})`;
+      ctx.fillRect(sx-3,sy,6+si*2,4);
+    }
+  }
+
+  // Anvil
+  ctx.fillStyle = '#555';
+  ctx.fillRect(155,125,36,6);
+  ctx.fillStyle = '#444';
+  ctx.fillRect(150,120,46,7);
+  ctx.fillStyle = '#3a3a3a';
+  ctx.fillRect(160,130,26,14);
+  ctx.fillStyle = '#333';
+  ctx.fillRect(163,143,20,6);
+  // Anvil highlight
+  ctx.fillStyle = '#666';
+  ctx.fillRect(152,121,4,3);
+
+  // Tools on wall
+  ctx.fillStyle = '#555';
+  ctx.fillRect(220,50,2,25);
+  ctx.fillRect(235,48,2,28);
+  ctx.fillRect(250,52,2,22);
+  ctx.fillStyle = '#777';
+  ctx.fillRect(218,48,6,4);
+  ctx.fillRect(233,45,6,5);
+  ctx.fillRect(248,50,6,4);
+
+  // Workbench
+  ctx.fillStyle = '#3a3020';
+  ctx.fillRect(210,110,70,10);
+  ctx.fillStyle = '#2a2518';
+  ctx.fillRect(215,120,6,22);
+  ctx.fillRect(268,120,6,22);
+  ctx.fillStyle = '#666';
+  ctx.fillRect(225,105,12,6);
+  ctx.fillRect(245,106,8,5);
+  ctx.fillStyle = state!=='offline'?'rgba(249,115,22,0.5)':'#333';
+  ctx.fillRect(260,105,10,6);
+
+  // Sparks when working
+  if ((state==='working'||state==='online') && frame%4===0) {
+    for (let si=0;si<3;si++) addParticle('goku',168+Math.random()*8,120,(Math.random()-0.5)*4,-2-Math.random()*3,12+Math.random()*10,Math.random()>0.3?'#f97316':'#eab308',Math.random()>0.5?2:1);
+  }
+  updateParticles('goku');
+  drawParticles(ctx, 'goku');
+
+  // Character
+  const charX = 155 - (SPRITE_W*PX)/2;
+  const charY = state !== 'offline' ? 62 : 66;
+  drawSprite(ctx, 'goku', state, charX, charY);
+
+  if (state === 'offline') { ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.fillRect(0,0,300,200); }
+}
+
+function drawLakeScene(ctx, state) {
+  // Library / Observatory
+  ctx.fillStyle = '#0e1320';
+  ctx.fillRect(0, 0, 300, 120);
+  const floorGrad = ctx.createLinearGradient(0,120,0,200);
+  floorGrad.addColorStop(0, '#1a1825');
+  floorGrad.addColorStop(1, '#0e0c18');
+  ctx.fillStyle = floorGrad;
+  ctx.fillRect(0, 120, 300, 80);
+
+  // Carpet
+  ctx.fillStyle = 'rgba(59,130,246,0.06)';
+  ctx.fillRect(60,130,180,60);
+  ctx.strokeStyle = 'rgba(59,130,246,0.1)';
+  ctx.strokeRect(60,130,180,60);
+
+  // Window with night sky
+  ctx.fillStyle = '#080c18';
+  ctx.fillRect(220,15,60,60);
+  ctx.strokeStyle = '#333';
+  ctx.strokeRect(220,15,60,60);
+  ctx.strokeRect(250,15,1,60);
+  ctx.strokeRect(220,45,60,1);
+  if (state !== 'offline') {
+    const stars = [[228,22],[240,30],[260,20],[270,38],[235,55],[265,52],[255,28]];
+    for (const [sx,sy] of stars) {
+      const tw = Math.sin(frame*0.05+sx*0.1)*0.3+0.7;
+      ctx.fillStyle = `rgba(255,255,255,${tw*0.8})`;
+      ctx.fillRect(sx,sy,2,2);
+    }
+    ctx.fillStyle = 'rgba(255,255,200,0.6)';
+    ctx.fillRect(228,25,6,6);
+    ctx.fillStyle = '#080c18';
+    ctx.fillRect(230,24,5,5);
+  }
+
+  // Bookshelves
+  for (let shelf=0; shelf<3; shelf++) {
+    const sy = 25+shelf*30;
+    ctx.fillStyle = '#3a2a1a';
+    ctx.fillRect(15,sy+24,80,4);
+    const bookColors = ['#c0392b','#2980b9','#27ae60','#8e44ad','#d35400','#1abc9c','#e67e22','#2c3e50','#e74c3c','#3498db'];
+    let bx = 17;
+    for (let bi=0; bi<8+shelf; bi++) {
+      const bw = 4+(bi%3)*2, bh = 16+(bi*3+shelf)%8;
+      ctx.fillStyle = state!=='offline'?bookColors[(bi+shelf*3)%bookColors.length]:'#333';
+      ctx.fillRect(bx,sy+24-bh,bw,bh);
+      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+      ctx.fillRect(bx,sy+24-bh,1,bh);
+      bx += bw+1;
+      if (bx>90) break;
+    }
   }
 
   // Desk
-  const deskImg = spriteImages['desk_front'];
-  if (deskImg) {
-    mctx.drawImage(deskImg, 8, 16, 48, 16);
+  ctx.fillStyle = '#2a2238';
+  ctx.fillRect(110,118,90,10);
+  ctx.fillStyle = '#221a30';
+  ctx.fillRect(115,128,6,18);
+  ctx.fillRect(188,128,6,18);
+
+  // Open book
+  ctx.fillStyle = state!=='offline'?'#f5f0e0':'#444';
+  ctx.fillRect(130,112,26,8);
+  ctx.fillRect(157,112,26,8);
+  ctx.fillStyle = state!=='offline'?'#8B4513':'#333';
+  ctx.fillRect(155,111,3,10);
+  if (state!=='offline') {
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    for (let tl=0;tl<3;tl++) { ctx.fillRect(133,114+tl*2,18,1); ctx.fillRect(160,114+tl*2,18,1); }
   }
 
-  // Monitor
-  const pcKey = isWorking ? ('pc_on_' + (1 + (animFrame >> 4) % 3)) : 'pc_off';
-  const pcImg = spriteImages[pcKey];
-  if (pcImg) {
-    mctx.drawImage(pcImg, 22, 0, 16, 20);
+  // Floating orbs
+  if (state !== 'offline') {
+    for (let oi = 0; oi < 3; oi++) {
+      const oa = (frame * 0.015 + oi * 2.09) % (Math.PI * 2);
+      const ox = 150 + Math.cos(oa) * (40 + oi * 15);
+      const oy = 60 + Math.sin(oa) * 15 + Math.sin(frame * 0.04 + oi) * 5;
+      const orbGlow = ctx.createRadialGradient(ox, oy, 0, ox, oy, 8);
+      orbGlow.addColorStop(0, `rgba(59,130,246,${0.5 + Math.sin(frame * 0.06 + oi) * 0.2})`);
+      orbGlow.addColorStop(0.5, 'rgba(59,130,246,0.15)');
+      orbGlow.addColorStop(1, 'transparent');
+      ctx.fillStyle = orbGlow;
+      ctx.fillRect(ox - 10, oy - 10, 20, 20);
+      ctx.fillStyle = `rgba(100,180,255,${0.7 + Math.sin(frame*0.08+oi)*0.2})`;
+      ctx.fillRect(Math.round(ox) - 2, Math.round(oy) - 2, 4, 4);
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.fillRect(Math.round(ox) - 1, Math.round(oy) - 1, 2, 2);
+    }
+  }
+
+  // Telescope
+  ctx.fillStyle = '#555';
+  ctx.fillRect(245,90,4,30);
+  ctx.fillRect(260,90,4,30);
+  ctx.fillRect(252,95,2,25);
+  ctx.save();
+  ctx.translate(252,85);
+  ctx.rotate(-0.6);
+  ctx.fillStyle = '#666';
+  ctx.fillRect(-3,-30,6,35);
+  ctx.fillStyle = '#888';
+  ctx.fillRect(-4,-32,8,5);
+  ctx.fillStyle = state!=='offline'?'rgba(59,130,246,0.5)':'#444';
+  ctx.fillRect(-3,-34,6,3);
+  ctx.restore();
+
+  // Desk lamp
+  ctx.fillStyle = '#444';
+  ctx.fillRect(195, 100, 3, 16);
+  ctx.fillRect(188, 98, 16, 4);
+  if (state !== 'offline') {
+    const lampGlow = ctx.createRadialGradient(196, 100, 2, 196, 115, 15);
+    lampGlow.addColorStop(0, 'rgba(255,240,180,0.2)');
+    lampGlow.addColorStop(1, 'transparent');
+    ctx.fillStyle = lampGlow;
+    ctx.fillRect(180, 95, 30, 30);
+  }
+
+  // Sparkle particles
+  if (state !== 'offline' && frame%25===0) addParticle('lake',80+Math.random()*140,80+Math.random()*40,(Math.random()-0.5)*0.5,-0.3-Math.random()*0.3,30+Math.random()*20,Math.random()>0.5?'rgba(59,130,246,0.6)':'rgba(255,255,200,0.5)',2);
+  if ((state==='working'||state==='online') && frame%10===0) addParticle('lake',130+Math.random()*50,105+Math.random()*10,(Math.random()-0.5),-0.8,20,'#ffd700',2);
+  updateParticles('lake');
+  drawParticles(ctx, 'lake');
+
+  // Ambient glow
+  if (state !== 'offline') {
+    const glow = ctx.createRadialGradient(155,115,10,155,115,80);
+    glow.addColorStop(0, 'rgba(59,130,246,0.06)');
+    glow.addColorStop(1, 'rgba(59,130,246,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0,0,300,200);
   }
 
   // Character
-  if (charImg) {
-    const frameIdx = isWorking ? (3 + ((animFrame >> 3) % 2)) : 1;
-    const srcX = frameIdx * CHAR_FRAME_W;
-    if (a.status === 'offline') mctx.globalAlpha = 0.4;
-    mctx.drawImage(charImg, srcX, 0, CHAR_FRAME_W, CHAR_FRAME_H, 22, -4, CHAR_FRAME_W, CHAR_FRAME_H);
-    mctx.globalAlpha = 1.0;
+  const charX = 140 - (SPRITE_W*PX)/2;
+  const charY = state !== 'offline' ? 60 : 64;
+  drawSprite(ctx, 'lake', state, charX, charY);
+
+  if (state === 'offline') { ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.fillRect(0,0,300,200); }
+}
+
+function drawFishScene(ctx, state) {
+  // Comms station
+  ctx.fillStyle = '#0f1620';
+  ctx.fillRect(0, 0, 300, 120);
+  const floorGrad = ctx.createLinearGradient(0,120,0,200);
+  floorGrad.addColorStop(0, '#141e28');
+  floorGrad.addColorStop(1, '#0a1218');
+  ctx.fillStyle = floorGrad;
+  ctx.fillRect(0, 120, 300, 80);
+
+  ctx.strokeStyle = 'rgba(6,182,212,0.05)';
+  for (let tx=0;tx<300;tx+=20) { ctx.beginPath(); ctx.moveTo(tx,120); ctx.lineTo(tx,200); ctx.stroke(); }
+
+  // Ambient glow
+  if (state !== 'offline') {
+    const glow = ctx.createRadialGradient(150,100,20,150,100,120);
+    glow.addColorStop(0, 'rgba(6,182,212,0.1)');
+    glow.addColorStop(1, 'rgba(6,182,212,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0,0,300,200);
   }
 
-  deskEl.appendChild(mc);
-}
+  // Desk
+  ctx.fillStyle = '#1a2530';
+  ctx.fillRect(40,118,220,16);
+  ctx.fillStyle = '#223040';
+  ctx.fillRect(40,116,220,4);
 
-function escHtml(str) {
-  if (!str) return '';
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+  // Radio equipment
+  ctx.fillStyle = '#222';
+  ctx.fillRect(50,80,40,36);
+  ctx.fillStyle = '#1a1a1a';
+  ctx.fillRect(52,82,36,28);
+  if (state !== 'offline') {
+    ctx.fillStyle = '#06b6d4';
+    ctx.fillRect(56,86,8,8);
+    ctx.fillStyle = '#22c55e';
+    ctx.fillRect(68,86,8,8);
+    ctx.fillStyle = 'rgba(6,182,212,0.8)';
+    ctx.fillRect(56,98,24,6);
+    ctx.fillStyle = '#666';
+    ctx.fillRect(54,108,6,4);
+    ctx.fillRect(66,108,6,4);
+    ctx.fillRect(78,108,6,4);
+  }
 
-function timeAgo(iso) {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return mins + 'm ago';
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return hours + 'h ago';
-  const days = Math.floor(hours / 24);
-  return days + 'd ago';
+  // Antenna
+  ctx.fillStyle = '#555';
+  ctx.fillRect(68,50,2,30);
+  ctx.fillStyle = state!=='offline'?'#06b6d4':'#333';
+  ctx.fillRect(66,48,6,4);
+  if (state!=='offline' && frame%30<15) {
+    ctx.fillStyle = '#06b6d4';
+    ctx.fillRect(67,46,4,3);
+    ctx.fillStyle = 'rgba(6,182,212,0.3)';
+    ctx.fillRect(63,43,12,8);
+  }
+
+  // Chat terminals
+  for (let ti=0;ti<2;ti++) {
+    const tx = 130+ti*70;
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(tx,78,50,38);
+    ctx.fillStyle = '#222';
+    ctx.fillRect(tx+2,80,46,30);
+    if (state==='offline') {
+      ctx.fillStyle = '#111';
+      ctx.fillRect(tx+2,80,46,30);
+    } else {
+      const colors = ['rgba(6,182,212,0.3)','rgba(34,197,94,0.25)','rgba(168,85,247,0.25)'];
+      for (let msg=0;msg<4;msg++) {
+        const my = 83+msg*7+((frame*0.2+ti*20)%7<3?1:0);
+        const mw = 12+(msg*7+ti*3)%20;
+        const side = msg%2===0?tx+4:tx+44-mw;
+        ctx.fillStyle = colors[msg%3];
+        ctx.fillRect(side,my,mw,4);
+      }
+    }
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(tx+20,116,10,4);
+  }
+
+  // Coffee cup
+  ctx.fillStyle = '#355';
+  ctx.fillRect(255, 112, 8, 6);
+  ctx.fillRect(262, 113, 3, 3);
+  if (state !== 'offline') {
+    const s1 = Math.sin(frame * 0.07) * 2;
+    ctx.fillStyle = 'rgba(200,200,200,0.12)';
+    ctx.fillRect(257+s1, 107, 2, 4);
+    ctx.fillRect(260-s1, 105, 2, 5);
+  }
+
+  // Message particles
+  if (state!=='offline' && frame%15===0) {
+    const icons = ['rgba(6,182,212,0.6)','rgba(34,197,94,0.5)','rgba(255,255,255,0.3)'];
+    addParticle('fish',100+Math.random()*120,100+Math.random()*20,(Math.random()-0.5)*0.5,-0.8-Math.random()*0.5,40+Math.random()*20,icons[Math.floor(Math.random()*icons.length)],3);
+  }
+  updateParticles('fish');
+  drawParticles(ctx, 'fish');
+
+  // Character
+  const charX = 145 - (SPRITE_W*PX)/2;
+  const charY = state !== 'offline' ? 62 : 66;
+  drawSprite(ctx, 'fish', state, charX, charY);
+
+  // Music notes when idle
+  if (state !== 'offline' && state !== 'working' && state !== 'online') {
+    const nY = Math.sin(frame*0.1)*4;
+    ctx.fillStyle = 'rgba(6,182,212,0.7)';
+    ctx.font = '12px serif';
+    ctx.fillText('\u266A', charX+SPRITE_W*PX+4, charY+20+nY);
+    ctx.font = '14px serif';
+    ctx.fillText('\u266B', charX+SPRITE_W*PX+14, charY+8+nY*0.7);
+  }
+
+  if (state === 'offline') { ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.fillRect(0,0,300,200); }
 }
 
 // =============================================
-// CLOCK
+// SCENE RENDERERS MAP
 // =============================================
+const SCENE_RENDERERS = {
+  cody: drawCodyScene,
+  goku: drawGokuScene,
+  lake: drawLakeScene,
+  fish: drawFishScene
+};
+
+// =============================================
+// MAIN RENDER LOOP
+// =============================================
+function renderAllScenes() {
+  for (const id of Object.keys(AGENTS)) {
+    const ctx = contexts[id];
+    if (!ctx) continue;
+    const state = agentStates[id]?.status || 'offline';
+    ctx.clearRect(0, 0, NATIVE_W, NATIVE_H);
+    SCENE_RENDERERS[id](ctx, state);
+  }
+}
+
+function gameLoop() {
+  frame++;
+  renderAllScenes();
+  requestAnimationFrame(gameLoop);
+}
+
+// =============================================
+// SCALE CANVASES TO FIT
+// =============================================
+function scaleCanvases() {
+  for (const id of Object.keys(AGENTS)) {
+    const c = canvases[id];
+    if (!c) continue;
+    const wrap = c.parentElement;
+    const ww = wrap.clientWidth;
+    const wh = wrap.clientHeight;
+    const scale = Math.min(ww / NATIVE_W, wh / NATIVE_H);
+    c.style.width = Math.floor(NATIVE_W * scale) + 'px';
+    c.style.height = Math.floor(NATIVE_H * scale) + 'px';
+  }
+}
+
+// =============================================
+// UI UPDATES
+// =============================================
+function updateUI() {
+  for (const [id, agent] of Object.entries(agentStates)) {
+    const dot = document.getElementById('dot-' + id);
+    const label = document.getElementById('label-' + id);
+    const modelEl = document.getElementById('model-' + id);
+    const cell = document.querySelector(`.scene-cell[data-agent="${id}"]`);
+    if (dot) dot.className = 'scene-status-dot ' + agent.status;
+    if (label) label.textContent = agent.status.toUpperCase();
+    if (modelEl) modelEl.textContent = agent.currentModel;
+    if (cell) {
+      if (agent.status !== 'offline') cell.classList.add('agent-online');
+      else cell.classList.remove('agent-online');
+    }
+  }
+}
+
 function updateClock() {
   const now = new Date();
-  const h = String(now.getHours()).padStart(2, '0');
-  const m = String(now.getMinutes()).padStart(2, '0');
-  const s = String(now.getSeconds()).padStart(2, '0');
-  document.getElementById('topClock').textContent = `${h}:${m}:${s}`;
+  document.getElementById('topClock').textContent = now.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+
+function updateTicker(activities) {
+  if (!activities || !activities.length) return;
+  const ticker = document.getElementById('tickerScroll');
+  const agentColors = { Cody:'#a855f7', Fish:'#06b6d4', Goku:'#f97316', Lake:'#3b82f6' };
+  let html = '';
+  const items = activities.slice(0, 20);
+  for (let pass=0; pass<2; pass++) {
+    for (const act of items) {
+      const color = agentColors[act.agent] || '#8b8f9e';
+      const summary = act.summary?.length>60 ? act.summary.slice(0,57)+'...' : (act.summary||'');
+      html += `<span class="ticker-item"><span class="ticker-agent" style="color:${color}">${act.agent}</span> ${summary}</span><span class="ticker-sep">&bull;</span>`;
+    }
+  }
+  ticker.innerHTML = html;
+  ticker.style.animation = 'none';
+  void ticker.offsetWidth;
+  const duration = Math.max(30, items.length*5);
+  ticker.style.animation = `tickerScroll ${duration}s linear infinite`;
+}
+
+function showSpeechBubble(agentId, text) {
+  const el = document.getElementById('speech-' + agentId);
+  if (!el || !text) return;
+  el.textContent = text.length>50 ? text.slice(0,47)+'...' : text;
+  el.classList.add('visible');
+  clearTimeout(speechTimers[agentId]);
+  speechTimers[agentId] = setTimeout(() => el.classList.remove('visible'), 6000);
 }
 
 // =============================================
-// MAIN INIT & FETCH LOOP
+// POPUP
 // =============================================
-let appInitialized = false;
+function openPopup(agentId) {
+  const agent = agentStates[agentId];
+  if (!agent) return;
+  const overlay = document.getElementById('popupOverlay');
+  const content = document.getElementById('popupContent');
+  const statusColor = agent.status==='online'?'#22c55e':agent.status==='working'?'#3b82f6':agent.status==='idle'?'#eab308':'#ef4444';
+  const statusBg = agent.status==='online'?'#133022':agent.status==='working'?'#0f1e3d':agent.status==='idle'?'#2d2a0f':'#3b1518';
 
-async function initApp() {
-  if (appInitialized) return;
-  appInitialized = true;
+  let sessionsHtml = '';
+  if (agent.sessions && agent.sessions.length) {
+    sessionsHtml = `<div class="popup-sessions"><h4>RECENT SESSIONS</h4>`;
+    for (const s of agent.sessions.slice(0,5)) {
+      const ts = s.timestamp ? new Date(s.timestamp).toLocaleString() : '';
+      sessionsHtml += `<div class="popup-session-item"><strong>${s.channel||'unknown'}</strong> &mdash; ${(s.summary||'').slice(0,80)}${s.summary?.length>80?'...':''}<br><span style="font-size:8px;color:var(--text-muted)">${ts}</span></div>`;
+    }
+    sessionsHtml += '</div>';
+  }
+
+  const lastActiveStr = agent.lastActive ? new Date(agent.lastActive).toLocaleString() : 'N/A';
+
+  content.innerHTML = `
+    <div class="popup-header">
+      <div class="popup-avatar" style="background:${agent.color}">${agent.name[0]}</div>
+      <span class="popup-name">${agent.name}</span>
+      <span class="popup-status" style="background:${statusBg};color:${statusColor}">${agent.status.toUpperCase()}</span>
+    </div>
+    <div class="popup-grid">
+      <div><div class="popup-field-label">Role</div><div class="popup-field-value">${agent.role}</div></div>
+      <div><div class="popup-field-label">Channel</div><div class="popup-field-value">${agent.channel||'N/A'}</div></div>
+      <div><div class="popup-field-label">Model</div><div class="popup-field-value">${agent.currentModel}</div></div>
+      <div><div class="popup-field-label">Last Active</div><div class="popup-field-value">${lastActiveStr}</div></div>
+      <div><div class="popup-field-label">Total Messages</div><div class="popup-field-value">${agent.totalMessages}</div></div>
+      <div><div class="popup-field-label">Today</div><div class="popup-field-value">${agent.todayMessages}</div></div>
+    </div>
+    <div class="popup-field-label">Skills</div>
+    <div class="popup-skills">${(agent.skills||[]).map(s => `<span class="popup-skill">${s}</span>`).join('')}</div>
+    ${sessionsHtml}
+  `;
+  overlay.classList.add('visible');
+}
+
+function closePopup() {
+  document.getElementById('popupOverlay').classList.remove('visible');
+}
+
+// =============================================
+// DATA FETCH
+// =============================================
+async function fetchData() {
+  try {
+    const resp = await fetchWithFallback('/dashboard');
+    const data = await resp.json();
+    liveData = data;
+    mergeAgentData(data);
+    document.getElementById('liveDot').classList.remove('error');
+    document.getElementById('connectionText').textContent = 'LIVE';
+    if (data.recentActivity) {
+      for (const act of data.recentActivity.slice(0,4)) {
+        const agentId = Object.keys(AGENTS).find(k => AGENTS[k].name === act.agent);
+        if (agentId) showSpeechBubble(agentId, act.summary);
+      }
+      updateTicker(data.recentActivity);
+    }
+  } catch (err) {
+    document.getElementById('liveDot').classList.add('error');
+    document.getElementById('connectionText').textContent = 'OFFLINE';
+    mergeAgentData(null);
+  }
+  updateUI();
+}
+
+// =============================================
+// INIT
+// =============================================
+let inited = false;
+function initApp() {
+  if (inited) return;
+  inited = true;
 
   mergeAgentData(null);
-  loadAllAssets();
-  initCanvas();
-  renderSidebar();
+  updateUI();
+
+  initSprites();
+  initCanvases();
+  scaleCanvases();
+  window.addEventListener('resize', scaleCanvases);
+
+  requestAnimationFrame(gameLoop);
+
   updateClock();
   setInterval(updateClock, 1000);
 
-  await fetchAndRender();
-  setInterval(fetchAndRender, 30000);
-  checkApiStatus();
-}
-
-async function fetchAndRender() {
-  try {
-    const resp = await fetchWithFallback('/dashboard');
-    liveData = await resp.json();
-    document.getElementById('liveDot').classList.remove('error');
-    document.getElementById('liveDot').title = `Live (${API_URL}) - updated ${new Date().toLocaleTimeString()}`;
-    document.getElementById('connectionText').textContent = 'LIVE';
-    document.getElementById('connectionText').style.color = '#22c55e';
-    mergeAgentData(liveData);
-    renderSidebar();
-    renderActivityFeed();
-    renderPinnedAgents();
-  } catch (err) {
-    console.warn('API fetch failed:', err.message);
-    document.getElementById('liveDot').classList.add('error');
-    document.getElementById('liveDot').title = 'Offline - ' + err.message;
-    document.getElementById('connectionText').textContent = 'OFFLINE';
-    document.getElementById('connectionText').style.color = '#ef4444';
-  }
-}
-
-async function checkApiStatus() {
-  const statusEl = document.getElementById('apiStatus');
-  try {
-    const resp = await fetchWithFallback('/health');
-    const d = await resp.json();
-    statusEl.textContent = `Connected via ${API_URL} - uptime: ${Math.round(d.uptime)}s`;
-    statusEl.style.background = '#133022'; statusEl.style.color = '#22c55e';
-  } catch {
-    statusEl.textContent = 'Not connected - no data shown';
-    statusEl.style.background = '#3b1518'; statusEl.style.color = '#ef4444';
-  }
+  fetchData();
+  setInterval(fetchData, 30000);
 }
 </script>
 </body>
