@@ -3,118 +3,113 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DTG Mission Control</title>
+<title>DTG Mission Control - Virtual Office</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   /* Password Gate */
-  #lock-screen { position: fixed; inset: 0; z-index: 9999; background: #0d0f14; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 20px; font-family: 'Inter', sans-serif; }
+  #lock-screen { position: fixed; inset: 0; z-index: 9999; background: #0d0f14; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 20px; font-family: 'Press Start 2P', monospace; }
   #lock-screen.hidden { display: none; }
-  #lock-screen .lock-icon { font-size: 48px; margin-bottom: 8px; }
-  #lock-screen h2 { color: #e8e9ed; font-size: 20px; font-weight: 700; }
-  #lock-screen p { color: #5a5e6e; font-size: 13px; }
-  #lock-screen input { background: #1a1d28; border: 1px solid #2a2d3a; color: #e8e9ed; padding: 12px 20px; border-radius: 8px; font-size: 14px; width: 280px; text-align: center; font-family: inherit; outline: none; }
-  #lock-screen input:focus { border-color: #f97316; }
-  #lock-screen button { background: #f97316; color: #fff; border: none; padding: 10px 32px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
-  #lock-screen button:hover { background: #ea580c; }
-  #lock-screen .error { color: #ef4444; font-size: 12px; min-height: 16px; }
+  #lock-screen .lock-icon { font-size: 48px; margin-bottom: 8px; image-rendering: pixelated; }
+  #lock-screen h2 { color: #e8e9ed; font-size: 14px; font-weight: 700; letter-spacing: 2px; }
+  #lock-screen p { color: #5a5e6e; font-size: 9px; }
+  #lock-screen input { background: #1a1d28; border: 2px solid #2a2d3a; color: #e8e9ed; padding: 12px 20px; border-radius: 4px; font-size: 12px; width: 280px; text-align: center; font-family: 'Press Start 2P', monospace; outline: none; image-rendering: pixelated; }
+  #lock-screen input:focus { border-color: #f97316; box-shadow: 0 0 0 2px rgba(249,115,22,0.3); }
+  #lock-screen button { background: #f97316; color: #fff; border: 2px solid #ea580c; padding: 10px 32px; border-radius: 4px; font-size: 10px; font-weight: 600; cursor: pointer; font-family: 'Press Start 2P', monospace; }
+  #lock-screen button:hover { background: #ea580c; transform: translateY(-1px); }
+  #lock-screen .error { color: #ef4444; font-size: 9px; min-height: 16px; }
+  #lock-screen .pixel-border { position: absolute; inset: 0; pointer-events: none; border: 4px solid #1a1d28; }
   #app-wrap { display: none; }
-  #app-wrap.unlocked { display: block; }
+  #app-wrap.unlocked { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
   :root {
     --bg-primary: #0d0f14; --bg-secondary: #141720; --bg-card: #1a1d28; --bg-card-hover: #1f2330;
     --border: #2a2d3a; --text-primary: #e8e9ed; --text-secondary: #8b8f9e; --text-muted: #5a5e6e;
     --accent-orange: #f97316; --accent-green: #22c55e; --accent-red: #ef4444; --accent-blue: #3b82f6;
     --accent-purple: #a855f7; --accent-yellow: #eab308; --accent-cyan: #06b6d4; --accent-teal: #14b8a6;
+    --accent-gray: #6b7280;
   }
-  body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; }
-  .header { display: flex; align-items: center; justify-content: space-between; padding: 16px 32px; background: var(--bg-secondary); border-bottom: 1px solid var(--border); }
-  .header-left { display: flex; align-items: center; gap: 14px; }
-  .header-icon { width: 36px; height: 36px; background: linear-gradient(135deg, var(--accent-orange), #fb923c); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: #fff; }
-  .header-brand { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--text-muted); }
-  .header-title { font-size: 18px; font-weight: 700; }
-  .tab-nav { display: flex; gap: 4px; background: #111318; border-radius: 8px; padding: 4px; }
-  .tab-btn { padding: 8px 20px; border: none; border-radius: 6px; font-size: 13px; font-weight: 500; color: var(--text-secondary); background: transparent; cursor: pointer; transition: all 0.2s; font-family: inherit; }
-  .tab-btn:hover { color: var(--text-primary); }
-  .tab-btn.active { background: var(--accent-orange); color: #fff; }
-  .live-dot { display: inline-block; width: 8px; height: 8px; background: var(--accent-green); border-radius: 50%; margin-left: 12px; animation: pulse 2s infinite; cursor: pointer; }
+  body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; overflow: hidden; }
+
+  /* Top Bar */
+  .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 20px; background: #0a0c10; border-bottom: 2px solid #1e2130; z-index: 100; flex-shrink: 0; }
+  .top-bar-left { display: flex; align-items: center; gap: 12px; }
+  .top-bar-logo { font-family: 'Press Start 2P', monospace; font-size: 10px; color: var(--accent-orange); letter-spacing: 1px; }
+  .top-bar-title { font-family: 'Press Start 2P', monospace; font-size: 8px; color: var(--text-secondary); }
+  .top-bar-right { display: flex; align-items: center; gap: 16px; }
+  .top-bar-clock { font-family: 'Press Start 2P', monospace; font-size: 9px; color: var(--accent-cyan); }
+  .top-bar-status { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--text-muted); }
+  .live-dot { display: inline-block; width: 8px; height: 8px; background: var(--accent-green); border-radius: 50%; animation: pulse 2s infinite; }
   .live-dot.error { background: var(--accent-red); }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
-  .main { padding: 24px 32px; }
-  .tab-content { display: none; }
-  .tab-content.active { display: block; }
-  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
-  .kpi-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
-  .kpi-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-  .kpi-value { font-size: 26px; font-weight: 700; }
-  .kpi-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
-  .two-col { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; margin-bottom: 24px; }
-  .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
-  .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-  .card-title { font-size: 14px; font-weight: 600; }
-  .card-meta { font-size: 11px; color: var(--text-muted); }
-  .card-link { font-size: 12px; color: var(--accent-orange); cursor: pointer; text-decoration: none; }
-  .chart-container { position: relative; height: 220px; }
-  .agent-activity-item { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 14px; }
-  .agent-dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
-  .agent-dot.purple { background: var(--accent-purple); }
-  .agent-dot.cyan { background: var(--accent-cyan); }
-  .agent-activity-name { font-size: 13px; font-weight: 600; }
-  .agent-activity-name.purple { color: var(--accent-purple); }
-  .agent-activity-name.cyan { color: var(--accent-cyan); }
-  .agent-activity-time { font-size: 11px; color: var(--text-muted); margin-left: 8px; }
-  .agent-activity-desc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; line-height: 1.4; }
-  .channel-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #1e2130; }
-  .channel-item:last-child { border: none; }
-  .channel-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
-  .channel-icon.discord { background: #2d2b5e; } .channel-icon.gchat { background: #1a3022; } .channel-icon.whatsapp { background: #1a3022; }
-  .channel-name { font-size: 13px; font-weight: 500; }
-  .channel-status { font-size: 11px; margin-left: auto; }
-  .channel-status.on { color: var(--accent-green); } .channel-status.off { color: var(--accent-red); }
-  .agents-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 24px; }
-  .agent-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 24px; position: relative; overflow: hidden; }
-  .agent-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
-  .agent-card.purple::before { background: linear-gradient(90deg, var(--accent-purple), #c084fc); }
-  .agent-card.cyan::before { background: linear-gradient(90deg, var(--accent-cyan), var(--accent-teal)); }
-  .agent-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-  .agent-card-name { display: flex; align-items: center; gap: 10px; }
-  .agent-avatar { font-size: 24px; } .agent-name-text { font-size: 18px; font-weight: 700; }
-  .status-badge { display: flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-  .status-badge.online { background: #0f2b1a; color: var(--accent-green); }
-  .status-badge.offline { background: #2a1a1a; color: var(--accent-red); }
-  .status-dot { width: 6px; height: 6px; border-radius: 50%; }
-  .status-dot.online { background: var(--accent-green); } .status-dot.offline { background: var(--accent-red); }
-  .agent-card-role { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; font-style: italic; }
-  .agent-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-  .agent-field-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-  .agent-field-value { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
-  .skill-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-  .skill-tag { padding: 3px 10px; border-radius: 6px; font-size: 10px; font-weight: 600; background: #1e2130; color: var(--text-secondary); border: 1px solid var(--border); }
-  .agent-card-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
-  .agent-tasks-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; }
-  .agent-tasks-count { font-size: 24px; font-weight: 700; }
-  .feed-item { display: flex; gap: 12px; padding: 14px 0; border-bottom: 1px solid #1e2130; }
+
+  /* Main Layout */
+  .main-layout { display: flex; flex: 1; overflow: hidden; }
+
+  /* Left Sidebar */
+  .sidebar-left { width: 220px; background: #0e1018; border-right: 2px solid #1e2130; display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
+  .sidebar-section { padding: 12px; border-bottom: 1px solid #1e2130; }
+  .sidebar-title { font-family: 'Press Start 2P', monospace; font-size: 7px; color: var(--accent-orange); margin-bottom: 10px; letter-spacing: 1px; text-transform: uppercase; }
+  .agent-list-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 4px; cursor: pointer; margin-bottom: 2px; transition: background 0.15s; }
+  .agent-list-item:hover { background: #1a1d28; }
+  .agent-list-item.selected { background: #1f2330; border: 1px solid var(--border); }
+  .agent-status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .agent-status-dot.online { background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); }
+  .agent-status-dot.idle { background: var(--accent-yellow); box-shadow: 0 0 6px var(--accent-yellow); }
+  .agent-status-dot.working { background: var(--accent-blue); box-shadow: 0 0 6px var(--accent-blue); }
+  .agent-status-dot.offline { background: var(--accent-red); }
+  .agent-list-name { font-size: 11px; font-weight: 600; flex: 1; }
+  .agent-list-role { font-size: 8px; color: var(--text-muted); }
+  .agent-list-channel { font-size: 8px; color: var(--text-muted); font-family: 'Press Start 2P', monospace; font-size: 6px; }
+
+  /* Stats mini cards */
+  .stat-mini { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #1a1d28; }
+  .stat-mini:last-child { border: none; }
+  .stat-mini-label { font-size: 9px; color: var(--text-muted); }
+  .stat-mini-value { font-size: 10px; font-weight: 700; font-family: 'Press Start 2P', monospace; font-size: 8px; }
+
+  /* Canvas Area */
+  .canvas-area { flex: 1; position: relative; overflow: hidden; background: #0d0f14; }
+  #pixiCanvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+
+  /* Right Sidebar - Activity Feed */
+  .sidebar-right { width: 280px; background: #0e1018; border-left: 2px solid #1e2130; display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; }
+  .feed-header { padding: 12px; border-bottom: 1px solid #1e2130; }
+  .feed-title { font-family: 'Press Start 2P', monospace; font-size: 7px; color: var(--accent-orange); letter-spacing: 1px; }
+  .feed-scroll { flex: 1; overflow-y: auto; padding: 8px 12px; }
+  .feed-item { display: flex; gap: 8px; padding: 8px 0; border-bottom: 1px solid #151822; }
   .feed-item:last-child { border: none; }
-  .feed-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
-  .feed-avatar.purple { background: #2d1b3e; } .feed-avatar.cyan { background: #0f2b2b; }
-  .feed-content { flex: 1; }
-  .feed-name { font-size: 13px; font-weight: 600; }
-  .feed-name.purple { color: var(--accent-purple); } .feed-name.cyan { color: var(--accent-cyan); }
-  .feed-time { font-size: 11px; color: var(--text-muted); }
-  .feed-desc { font-size: 12px; color: var(--text-secondary); margin-top: 4px; line-height: 1.4; }
-  .feed-channel { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-  .stat-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #1e2130; font-size: 13px; }
-  .stat-row:last-child { border: none; }
-  .stat-label { color: var(--text-secondary); } .stat-value { font-weight: 600; color: var(--text-primary); }
-  .updated-text { font-size: 11px; color: var(--text-muted); text-align: right; margin-bottom: 12px; }
-  .no-data { color: var(--text-muted); font-size: 13px; text-align: center; padding: 40px 0; }
-  .api-config { position: fixed; bottom: 16px; right: 16px; z-index: 100; }
-  .api-config button { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted); width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 16px; }
+  .feed-dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+  .feed-body { flex: 1; min-width: 0; }
+  .feed-agent { font-size: 10px; font-weight: 600; }
+  .feed-time { font-size: 8px; color: var(--text-muted); margin-left: 6px; }
+  .feed-msg { font-size: 10px; color: var(--text-secondary); margin-top: 2px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .feed-channel { font-size: 8px; color: var(--text-muted); margin-top: 2px; }
+
+  /* Agent Popup */
+  .agent-popup { position: absolute; z-index: 200; background: var(--bg-card); border: 2px solid var(--border); border-radius: 8px; padding: 16px; min-width: 280px; box-shadow: 0 8px 32px rgba(0,0,0,0.6); display: none; pointer-events: auto; }
+  .agent-popup.visible { display: block; }
+  .agent-popup-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .agent-popup-avatar { width: 32px; height: 32px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-family: 'Press Start 2P', monospace; image-rendering: pixelated; }
+  .agent-popup-name { font-size: 14px; font-weight: 700; }
+  .agent-popup-status { font-size: 10px; padding: 2px 8px; border-radius: 10px; }
+  .agent-popup-close { position: absolute; top: 8px; right: 10px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 16px; }
+  .agent-popup-close:hover { color: var(--text-primary); }
+  .agent-popup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .agent-popup-field { }
+  .agent-popup-label { font-size: 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+  .agent-popup-value { font-size: 11px; color: var(--text-secondary); }
+  .agent-popup-skills { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+  .agent-popup-skill { padding: 2px 8px; border-radius: 4px; font-size: 9px; background: #1e2130; color: var(--text-secondary); border: 1px solid var(--border); }
+
+  /* API Settings */
+  .api-config { position: fixed; bottom: 12px; right: 12px; z-index: 100; }
+  .api-config button { background: var(--bg-card); border: 2px solid var(--border); color: var(--text-muted); width: 32px; height: 32px; border-radius: 4px; cursor: pointer; font-size: 14px; }
   .api-config button:hover { border-color: var(--accent-orange); color: var(--text-primary); }
   .api-modal { display: none; position: fixed; inset: 0; z-index: 9998; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; }
   .api-modal.show { display: flex; }
-  .api-modal-box { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; width: 400px; }
+  .api-modal-box { background: var(--bg-card); border: 2px solid var(--border); border-radius: 8px; padding: 24px; width: 400px; }
   .api-modal-box h3 { font-size: 16px; margin-bottom: 12px; }
   .api-modal-box input { width: 100%; background: var(--bg-primary); border: 1px solid var(--border); color: var(--text-primary); padding: 10px; border-radius: 6px; font-size: 13px; margin-bottom: 12px; font-family: inherit; }
   .api-modal-box .btn-row { display: flex; gap: 8px; justify-content: flex-end; }
@@ -122,155 +117,131 @@
   .api-modal-box .btn-save { background: var(--accent-orange); color: #fff; }
   .api-modal-box .btn-cancel { background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border); }
   .api-status { font-size: 11px; margin-bottom: 12px; padding: 6px 10px; border-radius: 6px; }
-  /* Models tab */
-  .model-agent-section { margin-bottom: 32px; }
-  .model-agent-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-  .model-agent-title { font-size: 16px; font-weight: 700; }
-  .model-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-  .model-row-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; width: 80px; flex-shrink: 0; }
-  .model-select { background: var(--bg-primary); border: 1px solid var(--border); color: var(--text-primary); padding: 8px 12px; border-radius: 8px; font-size: 13px; font-family: inherit; flex: 1; max-width: 400px; cursor: pointer; }
-  .model-select:focus { border-color: var(--accent-orange); outline: none; }
-  .fallback-list { list-style: none; padding: 0; margin: 0; }
-  .fallback-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 6px; cursor: grab; max-width: 480px; }
-  .fallback-item:hover { border-color: #3a3d4a; }
-  .fallback-item.dragging { opacity: 0.5; border-color: var(--accent-orange); }
-  .fallback-grip { color: var(--text-muted); font-size: 14px; cursor: grab; user-select: none; }
-  .fallback-num { font-size: 11px; color: var(--text-muted); width: 16px; }
-  .fallback-name { font-size: 13px; color: var(--text-primary); flex: 1; }
-  .fallback-cost { font-size: 10px; padding: 2px 6px; border-radius: 4px; }
-  .fallback-cost.free { background: #133022; color: var(--accent-green); }
-  .fallback-cost.paid { background: #3b2e15; color: var(--accent-yellow); }
-  .fallback-remove { color: var(--text-muted); cursor: pointer; font-size: 16px; background: none; border: none; padding: 0 4px; }
-  .fallback-remove:hover { color: var(--accent-red); }
-  .add-fallback-row { display: flex; gap: 8px; margin-top: 8px; max-width: 480px; }
-  .add-fallback-row select { flex: 1; }
-  .btn-add { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary); padding: 8px 14px; border-radius: 8px; font-size: 12px; cursor: pointer; font-family: inherit; }
-  .btn-add:hover { border-color: var(--accent-orange); color: var(--text-primary); }
-  .btn-save-models { background: var(--accent-orange); color: #fff; border: none; padding: 10px 24px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; margin-top: 12px; }
-  .btn-save-models:hover { background: #ea580c; }
-  .btn-save-models:disabled { opacity: 0.5; cursor: not-allowed; }
-  .save-status { font-size: 12px; margin-left: 12px; }
 
-  @media (max-width: 1100px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } .agents-grid { grid-template-columns: 1fr; } }
-  @media (max-width: 800px) { .two-col { grid-template-columns: 1fr; } }
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #2a2d3a; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #3a3d4a; }
+
+  /* Responsive */
+  @media (max-width: 1100px) { .sidebar-right { width: 240px; } .sidebar-left { width: 190px; } }
+  @media (max-width: 900px) { .sidebar-right { display: none; } .sidebar-left { width: 180px; } }
+  @media (max-width: 700px) { .sidebar-left { display: none; } }
 </style>
 </head>
 <body>
 
 <div id="lock-screen">
+  <div class="pixel-border"></div>
   <div class="lock-icon">&#x1F512;</div>
-  <h2>DTG Mission Control</h2>
-  <p>Enter password to continue</p>
-  <input type="password" id="lockPass" placeholder="Password" autofocus>
-  <button onclick="tryUnlock()">Unlock</button>
+  <h2>DTG MISSION CONTROL</h2>
+  <p>ENTER PASSWORD TO CONTINUE</p>
+  <input type="password" id="lockPass" placeholder="********" autofocus>
+  <button onclick="tryUnlock()">UNLOCK</button>
   <div class="error" id="lockError"></div>
 </div>
 
 <div id="app-wrap">
-<div class="header">
-  <div class="header-left">
-    <div class="header-icon">D</div>
-    <div>
-      <div class="header-brand">DEDICATED TELECOM</div>
-      <div class="header-title">DTG Mission Control <span class="live-dot" id="liveDot" title="Connecting..."></span></div>
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <div class="top-bar-logo">DTG AGENTS TEAM</div>
+      <div class="top-bar-title">VIRTUAL OFFICE</div>
+    </div>
+    <div class="top-bar-right">
+      <div class="top-bar-status">
+        <span class="live-dot" id="liveDot" title="Connecting..."></span>
+        <span id="connectionText" style="font-size:9px;">Connecting...</span>
+      </div>
+      <div class="top-bar-clock" id="topClock">--:--:--</div>
     </div>
   </div>
-  <nav class="tab-nav">
-    <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
-    <button class="tab-btn" data-tab="agents">Agents</button>
-    <button class="tab-btn" data-tab="models">Models</button>
-  </nav>
-</div>
 
-<div class="main">
+  <!-- Main Layout -->
+  <div class="main-layout">
+    <!-- Left Sidebar -->
+    <div class="sidebar-left">
+      <div class="sidebar-section">
+        <div class="sidebar-title">TEAM STATUS</div>
+        <div id="agentList"></div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">OFFICE STATS</div>
+        <div id="officeStats"></div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">CHANNELS</div>
+        <div id="channelList"></div>
+      </div>
+    </div>
 
-<!-- ══ DASHBOARD ══ -->
-<div id="tab-dashboard" class="tab-content active">
-  <div class="kpi-row" id="kpiRow"><div class="no-data">Loading...</div></div>
-  <div class="two-col">
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">Agent Activity (7 days)</div>
-        <div class="card-meta">Messages per session file</div>
+    <!-- Canvas Area -->
+    <div class="canvas-area" id="canvasArea">
+      <div id="pixiContainer"></div>
+      <div class="agent-popup" id="agentPopup">
+        <button class="agent-popup-close" onclick="closePopup()">&times;</button>
+        <div id="agentPopupContent"></div>
       </div>
-      <div class="chart-container"><canvas id="pulseChart"></canvas></div>
     </div>
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">Recent Activity</div>
-        <a class="card-link" data-nav="agents">Open Agents</a>
-      </div>
-      <div id="activitySnapshot"><div class="no-data">Loading...</div></div>
-    </div>
-  </div>
-  <div class="two-col">
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">Session Overview</div>
-      </div>
-      <div id="sessionTable"><div class="no-data">Loading...</div></div>
-    </div>
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">Connected Channels</div>
-      </div>
-      <div id="channelsList"><div class="no-data">Loading...</div></div>
-    </div>
-  </div>
-</div>
 
-<!-- ══ AGENTS ══ -->
-<div id="tab-agents" class="tab-content">
-  <div class="updated-text">Updated <span id="agentUpdateTime">...</span></div>
-  <div class="agents-grid" id="agentsGrid"><div class="no-data">Loading...</div></div>
-  <div class="two-col">
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">Recent Activity Feed</div>
-        <div class="card-meta" id="feedMeta"></div>
+    <!-- Right Sidebar -->
+    <div class="sidebar-right">
+      <div class="feed-header">
+        <div class="feed-title">ACTIVITY FEED</div>
       </div>
-      <div id="activityFeed"><div class="no-data">Loading...</div></div>
-    </div>
-    <div class="card">
-      <div class="card-header"><div class="card-title">Statistics</div></div>
-      <div id="statsPanel"><div class="no-data">Loading...</div></div>
+      <div class="feed-scroll" id="activityFeed">
+        <div style="color:var(--text-muted);font-size:10px;text-align:center;padding:20px;">Loading...</div>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- ══ MODELS ══ -->
-<div id="tab-models" class="tab-content">
-  <div id="modelsPanel"><div class="no-data">Loading models...</div></div>
+<!-- API Settings -->
+<div class="api-config">
+  <button onclick="document.getElementById('apiModal').classList.add('show')" title="API Settings">&#x2699;</button>
+</div>
+<div class="api-modal" id="apiModal">
+  <div class="api-modal-box">
+    <h3>API Connection</h3>
+    <div class="api-status" id="apiStatus" style="background:var(--bg-secondary);color:var(--text-muted);">Checking...</div>
+    <input type="text" id="apiUrlInput" value="">
+    <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">URL where server.js is running.</p>
+    <div class="btn-row">
+      <button class="btn-cancel" onclick="document.getElementById('apiModal').classList.remove('show')">Cancel</button>
+      <button class="btn-save" onclick="saveApiUrl()">Save & Test</button>
+    </div>
+  </div>
 </div>
 
-</div>
-</div><!-- end app-wrap -->
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="https://pixijs.download/v7.3.2/pixi.min.js"></script>
 <script>
-// ── Tab Switching ──
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-  });
-});
-document.querySelectorAll('[data-nav]').forEach(link => {
-  link.addEventListener('click', () => {
-    const t = link.dataset.nav;
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    document.querySelector(`[data-tab="${t}"]`).classList.add('active');
-    document.getElementById('tab-' + t).classList.add('active');
-  });
-});
+// =============================================
+// PASSWORD GATE (preserved from original)
+// =============================================
+async function tryUnlock() {
+  const input = document.getElementById('lockPass').value;
+  if (input === atob('U3RlbGxpY2FsZW4xNTIwMjEh')) {
+    sessionStorage.setItem('dtg_unlocked','1');
+    document.getElementById('lock-screen').classList.add('hidden');
+    document.getElementById('app-wrap').classList.add('unlocked');
+    initApp();
+  } else {
+    document.getElementById('lockError').textContent = 'ACCESS DENIED';
+    document.getElementById('lockPass').value = '';
+    document.getElementById('lockPass').focus();
+  }
+}
+if (sessionStorage.getItem('dtg_unlocked') === '1') {
+  document.getElementById('lock-screen').classList.add('hidden');
+  document.getElementById('app-wrap').classList.add('unlocked');
+  window.addEventListener('DOMContentLoaded', initApp);
+}
+document.getElementById('lockPass').addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock(); });
 
-// ══════════════════════════════════════
-// ── ALL DATA FROM API — ZERO HARDCODING ──
-// ══════════════════════════════════════
-// Try same-origin first (if served from server.js), then localhost, then Funnel
+// =============================================
+// API CONNECTION (preserved from original)
+// =============================================
 const isSameOrigin = location.hostname !== 'stephen395.github.io';
 const API_ENDPOINTS = [
   localStorage.getItem('dtg_api_url'),
@@ -291,599 +262,931 @@ async function fetchWithFallback(path) {
   throw new Error('All API endpoints unreachable');
 }
 
+// API Settings
+document.getElementById('apiUrlInput').value = localStorage.getItem('dtg_api_url') || 'https://remote-pc8.tail93ed18.ts.net/api';
+async function saveApiUrl() {
+  const url = document.getElementById('apiUrlInput').value.replace(/\/+$/, '');
+  const statusEl = document.getElementById('apiStatus');
+  statusEl.textContent = 'Testing...'; statusEl.style.background = 'var(--bg-secondary)'; statusEl.style.color = 'var(--text-muted)';
+  try {
+    const resp = await fetch(url + '/health', { signal: AbortSignal.timeout(5000) });
+    if (resp.ok) {
+      localStorage.setItem('dtg_api_url', url);
+      statusEl.textContent = 'Connected! Reloading...'; statusEl.style.background = '#133022'; statusEl.style.color = '#22c55e';
+      setTimeout(() => location.reload(), 1000);
+    } else throw new Error('Status ' + resp.status);
+  } catch (err) {
+    statusEl.textContent = 'Failed: ' + err.message; statusEl.style.background = '#3b1518'; statusEl.style.color = '#ef4444';
+  }
+}
+
+// =============================================
+// AGENT DEFINITIONS
+// =============================================
+const AGENT_DEFS = {
+  cody: { id: 'cody', apiId: null, name: 'Cody', role: 'Mission Control / Delegator', emoji: '\u{1F573}\u{FE0F}', color: '#a855f7', colorName: 'purple', channel: '#cody-control', room: 'mission-control', defaultModel: 'Unknown', defaultSkills: ['delegation', 'task-routing', 'mission-planning'] },
+  main: { id: 'main', apiId: 'main', name: 'FallingCave', role: 'Discord Bot (AWS)', emoji: '\u{1F573}\u{FE0F}', color: '#a855f7', colorName: 'purple', channel: '#falling-cave', room: 'server-room', defaultModel: 'claude-sonnet-4', defaultSkills: ['ddg-search', 'dtg-billread'] },
+  fish: { id: 'fish', apiId: 'fish', name: 'Fish', role: 'Discord + Google Chat Bot', emoji: '\u{1F41F}', color: '#06b6d4', colorName: 'cyan', channel: '#fish', room: 'comms-center', defaultModel: 'claude-sonnet-4', defaultSkills: ['hubspot', 'email'] },
+  goku: { id: 'goku', apiId: null, name: 'Goku', role: 'Coder / Tool Builder', emoji: '\u{1F4BB}', color: '#f97316', colorName: 'orange', channel: '#goku-forge', room: 'code-lab', defaultModel: 'qwen3-coder:480b', defaultSkills: ['coding', 'tool-building', 'debugging'] },
+  lake: { id: 'lake', apiId: null, name: 'Lake', role: 'Research / Intelligence', emoji: '\u{1F50D}', color: '#3b82f6', colorName: 'blue', channel: '#lake-intel', room: 'intel-room', defaultModel: 'glm-5', defaultSkills: ['research', 'analysis', 'web-search'] },
+  blockhead: { id: 'blockhead', apiId: null, name: 'Blockhead', role: 'Tencent VPS Bot', emoji: '\u{1F4E6}', color: '#6b7280', colorName: 'gray', channel: '#blockhead', room: 'server-room', defaultModel: 'Unknown', defaultSkills: ['discord-bot'] }
+};
+
+// Merged agent data (API + defaults)
+let agentStates = {};
+
+function mergeAgentData(apiData) {
+  agentStates = {};
+  for (const [key, def] of Object.entries(AGENT_DEFS)) {
+    const apiAgent = def.apiId ? apiData?.agents?.[def.apiId] : null;
+    agentStates[key] = {
+      ...def,
+      status: apiAgent ? apiAgent.status : 'offline',
+      currentModel: apiAgent?.currentModel || def.defaultModel,
+      skills: apiAgent?.skills || def.defaultSkills,
+      sessions: apiAgent?.sessions || [],
+      totalMessages: apiAgent?.totalMessages || 0,
+      todayMessages: apiAgent?.todayMessages || 0,
+      lastActive: apiAgent?.lastActive || null
+    };
+  }
+}
+
+// =============================================
+// PIXI.JS VIRTUAL OFFICE
+// =============================================
+let pixiApp = null;
+let officeSprites = {};
+let animFrame = 0;
+let selectedAgent = null;
+
+// Room layout constants (in tile coords, each tile = 16px)
+const TILE = 16;
+const OFFICE_W = 60; // tiles wide
+const OFFICE_H = 40; // tiles tall
+
+// Room definitions (in tile coords)
+const ROOMS = {
+  'comms-center':    { x: 1,  y: 1,  w: 18, h: 14, label: 'COMMS CENTER', color: 0x06b6d4 },
+  'conference':      { x: 20, y: 1,  w: 20, h: 14, label: 'CONFERENCE ROOM', color: 0x8b8f9e },
+  'code-lab':        { x: 41, y: 1,  w: 18, h: 14, label: 'CODE LAB', color: 0xf97316 },
+  'mission-control': { x: 1,  y: 16, w: 18, h: 12, label: 'MISSION CONTROL', color: 0xa855f7 },
+  'break-room':      { x: 20, y: 16, w: 20, h: 12, label: 'BREAK ROOM', color: 0xeab308 },
+  'intel-room':      { x: 41, y: 29, w: 18, h: 10, label: 'INTEL ROOM', color: 0x3b82f6 },
+  'server-room':     { x: 1,  y: 29, w: 18, h: 10, label: 'SERVER ROOM', color: 0xa855f7 }
+};
+
+// Agent desk positions (tile coords)
+const DESK_POS = {
+  cody:      { x: 8,  y: 21, room: 'mission-control' },
+  main:      { x: 6,  y: 33, room: 'server-room' },
+  fish:      { x: 9,  y: 6,  room: 'comms-center' },
+  goku:      { x: 50, y: 6,  room: 'code-lab' },
+  lake:      { x: 50, y: 33, room: 'intel-room' },
+  blockhead: { x: 14, y: 33, room: 'server-room' }
+};
+
+// Break room position for idle agents
+const BREAK_POS = { x: 28, y: 21 };
+
+function initPixi() {
+  const container = document.getElementById('canvasArea');
+  const w = container.clientWidth;
+  const h = container.clientHeight;
+
+  pixiApp = new PIXI.Application({
+    width: w,
+    height: h,
+    backgroundColor: 0x0d0f14,
+    antialias: false,
+    resolution: 1,
+    autoDensity: true
+  });
+  document.getElementById('pixiContainer').appendChild(pixiApp.view);
+  pixiApp.view.style.width = '100%';
+  pixiApp.view.style.height = '100%';
+  pixiApp.view.style.imageRendering = 'pixelated';
+
+  // Create main container with scaling
+  const world = new PIXI.Container();
+  pixiApp.stage.addChild(world);
+  world.name = 'world';
+
+  // Calculate scale to fit
+  const scaleX = w / (OFFICE_W * TILE);
+  const scaleY = h / (OFFICE_H * TILE);
+  const scale = Math.min(scaleX, scaleY);
+  world.scale.set(scale);
+  world.x = (w - OFFICE_W * TILE * scale) / 2;
+  world.y = (h - OFFICE_H * TILE * scale) / 2;
+
+  drawOffice(world);
+  drawAgents(world);
+
+  // Animation loop
+  pixiApp.ticker.add(() => {
+    animFrame++;
+    updateAnimations();
+  });
+
+  // Click handling
+  pixiApp.view.addEventListener('click', (e) => {
+    const rect = pixiApp.view.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * (pixiApp.renderer.width / rect.width);
+    const my = (e.clientY - rect.top) * (pixiApp.renderer.height / rect.height);
+    const wx = (mx - world.x) / world.scale.x;
+    const wy = (my - world.y) / world.scale.y;
+    handleClick(wx, wy);
+  });
+
+  // Resize handler
+  window.addEventListener('resize', () => {
+    if (!pixiApp) return;
+    const c = document.getElementById('canvasArea');
+    const nw = c.clientWidth;
+    const nh = c.clientHeight;
+    pixiApp.renderer.resize(nw, nh);
+    const sx = nw / (OFFICE_W * TILE);
+    const sy = nh / (OFFICE_H * TILE);
+    const s = Math.min(sx, sy);
+    world.scale.set(s);
+    world.x = (nw - OFFICE_W * TILE * s) / 2;
+    world.y = (nh - OFFICE_H * TILE * s) / 2;
+  });
+}
+
+function drawOffice(world) {
+  const g = new PIXI.Graphics();
+
+  // Floor background
+  g.beginFill(0x12141a);
+  g.drawRect(0, 0, OFFICE_W * TILE, OFFICE_H * TILE);
+  g.endFill();
+
+  // Floor grid pattern (carpet tiles)
+  for (let tx = 0; tx < OFFICE_W; tx++) {
+    for (let ty = 0; ty < OFFICE_H; ty++) {
+      const shade = (tx + ty) % 2 === 0 ? 0x14161e : 0x161824;
+      g.beginFill(shade);
+      g.drawRect(tx * TILE, ty * TILE, TILE, TILE);
+      g.endFill();
+    }
+  }
+
+  // Draw rooms
+  for (const [roomId, room] of Object.entries(ROOMS)) {
+    const rx = room.x * TILE;
+    const ry = room.y * TILE;
+    const rw = room.w * TILE;
+    const rh = room.h * TILE;
+
+    // Room floor (slightly brighter)
+    g.beginFill(0x1a1d28, 0.6);
+    g.drawRect(rx, ry, rw, rh);
+    g.endFill();
+
+    // Room walls
+    g.lineStyle(2, room.color, 0.4);
+    g.drawRect(rx, ry, rw, rh);
+    g.lineStyle(0);
+
+    // Wall top accent
+    g.beginFill(room.color, 0.15);
+    g.drawRect(rx, ry, rw, 3);
+    g.endFill();
+
+    // Corner decorations
+    const cd = 4;
+    g.beginFill(room.color, 0.5);
+    g.drawRect(rx, ry, cd, cd);
+    g.drawRect(rx + rw - cd, ry, cd, cd);
+    g.drawRect(rx, ry + rh - cd, cd, cd);
+    g.drawRect(rx + rw - cd, ry + rh - cd, cd, cd);
+    g.endFill();
+  }
+
+  // Draw hallway lines
+  g.lineStyle(1, 0x2a2d3a, 0.3);
+  // Horizontal hallway between top and middle rows
+  g.moveTo(0, 15 * TILE);
+  g.lineTo(OFFICE_W * TILE, 15 * TILE);
+  // Between middle and bottom rows
+  g.moveTo(0, 28 * TILE);
+  g.lineTo(OFFICE_W * TILE, 28 * TILE);
+  // Vertical separators
+  g.moveTo(19 * TILE, 0);
+  g.lineTo(19 * TILE, OFFICE_H * TILE);
+  g.moveTo(40 * TILE, 0);
+  g.lineTo(40 * TILE, OFFICE_H * TILE);
+  g.lineStyle(0);
+
+  world.addChild(g);
+
+  // Room labels
+  for (const [roomId, room] of Object.entries(ROOMS)) {
+    const label = new PIXI.Text(room.label, {
+      fontFamily: 'Press Start 2P, monospace',
+      fontSize: 6,
+      fill: room.color,
+      align: 'center',
+      letterSpacing: 1
+    });
+    label.x = (room.x + room.w / 2) * TILE;
+    label.y = (room.y + 0.6) * TILE;
+    label.anchor.set(0.5, 0);
+    label.alpha = 0.7;
+    world.addChild(label);
+  }
+
+  // Draw furniture in rooms
+  drawFurniture(world);
+}
+
+function drawFurniture(world) {
+  const g = new PIXI.Graphics();
+
+  // Conference table (center of conference room)
+  const confRoom = ROOMS['conference'];
+  const tableX = (confRoom.x + confRoom.w / 2) * TILE;
+  const tableY = (confRoom.y + confRoom.h / 2) * TILE;
+  g.beginFill(0x3d2b1f);
+  g.drawRoundedRect(tableX - 40, tableY - 16, 80, 32, 4);
+  g.endFill();
+  g.beginFill(0x4a3728);
+  g.drawRoundedRect(tableX - 38, tableY - 14, 76, 28, 3);
+  g.endFill();
+  // Chairs around table
+  for (let i = 0; i < 6; i++) {
+    const cx = tableX - 36 + i * 14;
+    g.beginFill(0x2a2d3a);
+    g.drawCircle(cx, tableY - 22, 4);
+    g.drawCircle(cx, tableY + 22, 4);
+    g.endFill();
+  }
+
+  // Break room items
+  const brRoom = ROOMS['break-room'];
+  // Coffee machine
+  g.beginFill(0x4a3728);
+  g.drawRect((brRoom.x + 2) * TILE, (brRoom.y + 2) * TILE, 12, 14);
+  g.endFill();
+  g.beginFill(0x6b4226);
+  g.drawRect((brRoom.x + 2) * TILE + 2, (brRoom.y + 2) * TILE + 2, 8, 6);
+  g.endFill();
+  // Small tables
+  g.beginFill(0x3d2b1f);
+  g.drawCircle((brRoom.x + 8) * TILE, (brRoom.y + 7) * TILE, 10);
+  g.drawCircle((brRoom.x + 15) * TILE, (brRoom.y + 7) * TILE, 10);
+  g.endFill();
+  // Couch
+  g.beginFill(0x2d4a3a);
+  g.drawRoundedRect((brRoom.x + 10) * TILE, (brRoom.y + 10) * TILE, 48, 16, 3);
+  g.endFill();
+
+  // Server racks in server room
+  const srvRoom = ROOMS['server-room'];
+  for (let i = 0; i < 3; i++) {
+    const sx = (srvRoom.x + 2 + i * 4) * TILE;
+    const sy = (srvRoom.y + 2) * TILE;
+    // Rack body
+    g.beginFill(0x2a2d3a);
+    g.drawRect(sx, sy, 12, 40);
+    g.endFill();
+    // Rack lights (blinking)
+    for (let j = 0; j < 5; j++) {
+      g.beginFill(0x22c55e, 0.6);
+      g.drawRect(sx + 2, sy + 4 + j * 8, 3, 2);
+      g.endFill();
+      g.beginFill(0x3b82f6, 0.4);
+      g.drawRect(sx + 7, sy + 4 + j * 8, 3, 2);
+      g.endFill();
+    }
+  }
+
+  // Research boards in intel room
+  const intRoom = ROOMS['intel-room'];
+  // Whiteboard
+  g.beginFill(0x1e2840);
+  g.drawRect((intRoom.x + 2) * TILE, (intRoom.y + 1.5) * TILE, 64, 8);
+  g.endFill();
+  g.lineStyle(1, 0x3b82f6, 0.5);
+  g.drawRect((intRoom.x + 2) * TILE, (intRoom.y + 1.5) * TILE, 64, 8);
+  g.lineStyle(0);
+  // Sticky notes on board
+  const noteColors = [0xeab308, 0x22c55e, 0xef4444, 0x3b82f6];
+  for (let i = 0; i < 4; i++) {
+    g.beginFill(noteColors[i], 0.7);
+    g.drawRect((intRoom.x + 3 + i * 2.5) * TILE, (intRoom.y + 1.8) * TILE, 6, 5);
+    g.endFill();
+  }
+
+  // Chat screens in comms center
+  const comRoom = ROOMS['comms-center'];
+  for (let i = 0; i < 2; i++) {
+    const mx = (comRoom.x + 2 + i * 8) * TILE;
+    const my = (comRoom.y + 2) * TILE;
+    // Screen
+    g.beginFill(0x0a2a2a);
+    g.drawRect(mx, my, 24, 18);
+    g.endFill();
+    g.lineStyle(1, 0x06b6d4, 0.5);
+    g.drawRect(mx, my, 24, 18);
+    g.lineStyle(0);
+    // Chat lines on screen
+    for (let j = 0; j < 3; j++) {
+      g.beginFill(0x06b6d4, 0.3);
+      g.drawRect(mx + 3, my + 3 + j * 5, 12 + (j % 2) * 6, 2);
+      g.endFill();
+    }
+  }
+
+  // Code monitors in code lab
+  const codeRoom = ROOMS['code-lab'];
+  for (let i = 0; i < 3; i++) {
+    const mx = (codeRoom.x + 2 + i * 5) * TILE;
+    const my = (codeRoom.y + 2) * TILE;
+    g.beginFill(0x1a0f0a);
+    g.drawRect(mx, my, 20, 16);
+    g.endFill();
+    g.lineStyle(1, 0xf97316, 0.4);
+    g.drawRect(mx, my, 20, 16);
+    g.lineStyle(0);
+    // Code lines
+    for (let j = 0; j < 4; j++) {
+      g.beginFill(0xf97316, 0.25);
+      g.drawRect(mx + 2, my + 2 + j * 3, 8 + (j * 3 % 7), 1);
+      g.endFill();
+    }
+  }
+
+  // Mission control big screen
+  const mcRoom = ROOMS['mission-control'];
+  g.beginFill(0x1a0f2a);
+  g.drawRect((mcRoom.x + 3) * TILE, (mcRoom.y + 1.5) * TILE, 80, 24);
+  g.endFill();
+  g.lineStyle(2, 0xa855f7, 0.5);
+  g.drawRect((mcRoom.x + 3) * TILE, (mcRoom.y + 1.5) * TILE, 80, 24);
+  g.lineStyle(0);
+  // Dashboard lines on big screen
+  for (let j = 0; j < 3; j++) {
+    g.beginFill(0xa855f7, 0.3);
+    g.drawRect((mcRoom.x + 3.5) * TILE, (mcRoom.y + 2) * TILE + j * 6, 20 + j * 10, 2);
+    g.endFill();
+  }
+  // Small monitors on MC desk area
+  for (let i = 0; i < 2; i++) {
+    const mx = (mcRoom.x + 4 + i * 6) * TILE;
+    const my = (mcRoom.y + 6) * TILE;
+    g.beginFill(0x1a0f2a);
+    g.drawRect(mx, my, 18, 14);
+    g.endFill();
+    g.lineStyle(1, 0xa855f7, 0.3);
+    g.drawRect(mx, my, 18, 14);
+    g.lineStyle(0);
+  }
+
+  world.addChild(g);
+}
+
+function drawAgents(world) {
+  for (const [agentId, def] of Object.entries(AGENT_DEFS)) {
+    const pos = DESK_POS[agentId];
+    const container = new PIXI.Container();
+    container.x = pos.x * TILE;
+    container.y = pos.y * TILE;
+    container.name = agentId;
+
+    // Desk
+    const desk = new PIXI.Graphics();
+    desk.beginFill(0x3d2b1f);
+    desk.drawRect(-14, 2, 28, 14);
+    desk.endFill();
+    desk.beginFill(0x4a3728);
+    desk.drawRect(-12, 4, 24, 10);
+    desk.endFill();
+
+    // Monitor on desk
+    const monitor = new PIXI.Graphics();
+    monitor.beginFill(0x0d0f14);
+    monitor.drawRect(-8, -4, 16, 10);
+    monitor.endFill();
+    monitor.name = 'monitor';
+
+    // Monitor screen content (will animate)
+    const screenGlow = new PIXI.Graphics();
+    screenGlow.name = 'screenGlow';
+    drawMonitorContent(screenGlow, agentId, 'offline');
+
+    // Monitor frame
+    const monFrame = new PIXI.Graphics();
+    const col = parseInt(def.color.replace('#', ''), 16);
+    monFrame.lineStyle(1, col, 0.6);
+    monFrame.drawRect(-8, -4, 16, 10);
+    monFrame.lineStyle(0);
+    // Monitor stand
+    monFrame.beginFill(0x2a2d3a);
+    monFrame.drawRect(-2, 6, 4, 3);
+    monFrame.endFill();
+
+    // Agent character sprite
+    const sprite = new PIXI.Graphics();
+    sprite.name = 'sprite';
+    drawAgentSprite(sprite, agentId, 'offline', 0);
+
+    // Name label
+    const nameLabel = new PIXI.Text(def.name, {
+      fontFamily: 'Press Start 2P, monospace',
+      fontSize: 5,
+      fill: parseInt(def.color.replace('#', ''), 16),
+      align: 'center'
+    });
+    nameLabel.anchor.set(0.5, 0);
+    nameLabel.y = 18;
+    nameLabel.name = 'nameLabel';
+
+    // Status indicator
+    const statusInd = new PIXI.Graphics();
+    statusInd.name = 'statusInd';
+    statusInd.beginFill(0xef4444);
+    statusInd.drawCircle(12, -14, 3);
+    statusInd.endFill();
+
+    container.addChild(desk);
+    container.addChild(monitor);
+    container.addChild(screenGlow);
+    container.addChild(monFrame);
+    container.addChild(sprite);
+    container.addChild(nameLabel);
+    container.addChild(statusInd);
+
+    // Make interactive
+    container.eventMode = 'static';
+    container.cursor = 'pointer';
+
+    world.addChild(container);
+    officeSprites[agentId] = container;
+  }
+}
+
+function drawAgentSprite(g, agentId, status, frame) {
+  g.clear();
+  const def = AGENT_DEFS[agentId];
+  const col = parseInt(def.color.replace('#', ''), 16);
+  const isOffline = status === 'offline';
+  const alpha = isOffline ? 0.3 : 1.0;
+  const bodyCol = isOffline ? 0x3a3d4a : col;
+  const skinCol = isOffline ? 0x555555 : 0xf0c8a0;
+  const hairCol = isOffline ? 0x444444 : darkenColor(col, 0.5);
+
+  // Breathing/typing animation offset
+  const breathOffset = status === 'offline' ? 0 : Math.sin(frame * 0.05) * 0.5;
+  const typingOffset = (status === 'online' || status === 'working') ? Math.abs(Math.sin(frame * 0.15)) * 2 : 0;
+
+  // Shadow
+  g.beginFill(0x000000, 0.2);
+  g.drawEllipse(0, 2, 6, 2);
+  g.endFill();
+
+  // Body (shirt)
+  g.beginFill(bodyCol, alpha);
+  g.drawRoundedRect(-5, -6 + breathOffset, 10, 8, 2);
+  g.endFill();
+
+  // Head
+  g.beginFill(skinCol, alpha);
+  g.drawCircle(0, -10 + breathOffset, 5);
+  g.endFill();
+
+  // Hair
+  g.beginFill(hairCol, alpha);
+  g.drawRect(-5, -15 + breathOffset, 10, 4);
+  g.endFill();
+
+  // Eyes
+  if (!isOffline) {
+    const blinkFrame = frame % 120;
+    if (blinkFrame < 115) {
+      g.beginFill(0xffffff);
+      g.drawRect(-3, -11 + breathOffset, 2, 2);
+      g.drawRect(1, -11 + breathOffset, 2, 2);
+      g.endFill();
+      g.beginFill(0x111111);
+      g.drawRect(-2.5, -10.5 + breathOffset, 1, 1);
+      g.drawRect(1.5, -10.5 + breathOffset, 1, 1);
+      g.endFill();
+    } else {
+      // Blinking
+      g.beginFill(skinCol);
+      g.drawRect(-3, -10.5 + breathOffset, 2, 1);
+      g.drawRect(1, -10.5 + breathOffset, 2, 1);
+      g.endFill();
+    }
+  } else {
+    // X eyes for offline
+    g.lineStyle(1, 0x555555, 0.5);
+    g.moveTo(-3, -12); g.lineTo(-1, -10);
+    g.moveTo(-1, -12); g.lineTo(-3, -10);
+    g.moveTo(1, -12); g.lineTo(3, -10);
+    g.moveTo(3, -12); g.lineTo(1, -10);
+    g.lineStyle(0);
+  }
+
+  // Arms (typing animation)
+  if (status === 'online' || status === 'working') {
+    // Left arm reaching toward keyboard
+    g.beginFill(skinCol, alpha);
+    g.drawRect(-7, -2 + breathOffset - typingOffset * 0.3, 3, 3);
+    g.endFill();
+    // Right arm
+    g.beginFill(skinCol, alpha);
+    g.drawRect(4, -2 + breathOffset + typingOffset * 0.3, 3, 3);
+    g.endFill();
+  } else if (!isOffline) {
+    // Idle arms at sides
+    g.beginFill(skinCol, alpha);
+    g.drawRect(-7, -4 + breathOffset, 3, 5);
+    g.drawRect(4, -4 + breathOffset, 3, 5);
+    g.endFill();
+  }
+}
+
+function drawMonitorContent(g, agentId, status) {
+  g.clear();
+  if (status === 'offline') {
+    // Static / noise
+    g.beginFill(0x1a1d28, 0.5);
+    g.drawRect(-7, -3, 14, 8);
+    g.endFill();
+    return;
+  }
+  // Active screen content
+  const def = AGENT_DEFS[agentId];
+  const col = parseInt(def.color.replace('#', ''), 16);
+  g.beginFill(col, 0.1);
+  g.drawRect(-7, -3, 14, 8);
+  g.endFill();
+  // Scan line
+  for (let i = 0; i < 4; i++) {
+    g.beginFill(col, 0.15 + Math.random() * 0.15);
+    g.drawRect(-6, -2 + i * 2, 6 + Math.random() * 6, 1);
+    g.endFill();
+  }
+}
+
+function darkenColor(hex, factor) {
+  const r = Math.floor(((hex >> 16) & 0xFF) * factor);
+  const gg = Math.floor(((hex >> 8) & 0xFF) * factor);
+  const b = Math.floor((hex & 0xFF) * factor);
+  return (r << 16) | (gg << 8) | b;
+}
+
+function updateAnimations() {
+  for (const [agentId, container] of Object.entries(officeSprites)) {
+    const state = agentStates[agentId];
+    if (!state) continue;
+    const status = state.status;
+
+    // Update sprite
+    const sprite = container.getChildByName('sprite');
+    if (sprite && animFrame % 3 === 0) {
+      drawAgentSprite(sprite, agentId, status, animFrame);
+    }
+
+    // Update monitor content with flicker
+    const screenGlow = container.getChildByName('screenGlow');
+    if (screenGlow && animFrame % 20 === 0) {
+      drawMonitorContent(screenGlow, agentId, status);
+    }
+
+    // Update status indicator
+    const statusInd = container.getChildByName('statusInd');
+    if (statusInd) {
+      statusInd.clear();
+      const statusColor = status === 'online' ? 0x22c55e : status === 'working' ? 0x3b82f6 : status === 'idle' ? 0xeab308 : 0xef4444;
+      statusInd.beginFill(statusColor);
+      statusInd.drawCircle(12, -14, 3);
+      statusInd.endFill();
+      // Pulse for online/working
+      if (status === 'online' || status === 'working') {
+        const pulseAlpha = 0.3 + Math.sin(animFrame * 0.08) * 0.2;
+        statusInd.beginFill(statusColor, pulseAlpha);
+        statusInd.drawCircle(12, -14, 5);
+        statusInd.endFill();
+      }
+    }
+
+    // Server room rack lights blink
+    if (animFrame % 30 === 0 && (agentId === 'main' || agentId === 'blockhead')) {
+      // Handled globally in the static graphics -- no per-agent update needed
+    }
+  }
+
+  // Animate server rack lights (global overlay)
+  if (animFrame % 15 === 0) {
+    updateServerLights();
+  }
+}
+
+let serverLightsContainer = null;
+function updateServerLights() {
+  const world = pixiApp.stage.getChildByName('world');
+  if (!world) return;
+  if (serverLightsContainer) {
+    world.removeChild(serverLightsContainer);
+  }
+  serverLightsContainer = new PIXI.Graphics();
+  const srvRoom = ROOMS['server-room'];
+  for (let i = 0; i < 3; i++) {
+    const sx = (srvRoom.x + 2 + i * 4) * TILE;
+    const sy = (srvRoom.y + 2) * TILE;
+    for (let j = 0; j < 5; j++) {
+      const on = Math.random() > 0.3;
+      serverLightsContainer.beginFill(on ? 0x22c55e : 0x0a1a0a, on ? 0.8 : 0.3);
+      serverLightsContainer.drawRect(sx + 2, sy + 4 + j * 8, 3, 2);
+      serverLightsContainer.endFill();
+      const on2 = Math.random() > 0.4;
+      serverLightsContainer.beginFill(on2 ? 0x3b82f6 : 0x0a0a1a, on2 ? 0.6 : 0.2);
+      serverLightsContainer.drawRect(sx + 7, sy + 4 + j * 8, 3, 2);
+      serverLightsContainer.endFill();
+    }
+  }
+  world.addChild(serverLightsContainer);
+}
+
+function handleClick(wx, wy) {
+  // Check if click is near any agent
+  for (const [agentId, pos] of Object.entries(DESK_POS)) {
+    const ax = pos.x * TILE;
+    const ay = pos.y * TILE;
+    const dist = Math.sqrt((wx - ax) ** 2 + (wy - ay) ** 2);
+    if (dist < 24) {
+      showAgentPopup(agentId);
+      return;
+    }
+  }
+  closePopup();
+}
+
+function showAgentPopup(agentId) {
+  const state = agentStates[agentId];
+  if (!state) return;
+  selectedAgent = agentId;
+
+  // Highlight in sidebar
+  document.querySelectorAll('.agent-list-item').forEach(el => el.classList.remove('selected'));
+  const sidebarItem = document.querySelector(`[data-agent-id="${agentId}"]`);
+  if (sidebarItem) sidebarItem.classList.add('selected');
+
+  const statusColors = { online: '#22c55e', idle: '#eab308', working: '#3b82f6', offline: '#ef4444' };
+  const statusBgs = { online: '#0f2b1a', idle: '#2b2a15', working: '#152040', offline: '#2a1a1a' };
+  const sc = statusColors[state.status] || statusColors.offline;
+  const sb = statusBgs[state.status] || statusBgs.offline;
+
+  const popup = document.getElementById('agentPopup');
+  document.getElementById('agentPopupContent').innerHTML = `
+    <div class="agent-popup-header">
+      <div class="agent-popup-avatar" style="background:${state.color}22;color:${state.color};font-size:20px;">${state.emoji}</div>
+      <div>
+        <div class="agent-popup-name" style="color:${state.color}">${state.name}</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">${state.role}</div>
+      </div>
+      <div class="agent-popup-status" style="background:${sb};color:${sc};margin-left:auto;">${state.status.toUpperCase()}</div>
+    </div>
+    <div class="agent-popup-grid">
+      <div class="agent-popup-field">
+        <div class="agent-popup-label">MODEL</div>
+        <div class="agent-popup-value">${state.currentModel || 'Unknown'}</div>
+      </div>
+      <div class="agent-popup-field">
+        <div class="agent-popup-label">CHANNEL</div>
+        <div class="agent-popup-value">${state.channel}</div>
+      </div>
+      <div class="agent-popup-field">
+        <div class="agent-popup-label">SESSIONS</div>
+        <div class="agent-popup-value">${state.sessions.length}</div>
+      </div>
+      <div class="agent-popup-field">
+        <div class="agent-popup-label">LAST ACTIVE</div>
+        <div class="agent-popup-value">${state.lastActive ? new Date(state.lastActive).toLocaleString() : 'Never'}</div>
+      </div>
+      <div class="agent-popup-field">
+        <div class="agent-popup-label">TOTAL MSGS</div>
+        <div class="agent-popup-value">${state.totalMessages}</div>
+      </div>
+      <div class="agent-popup-field">
+        <div class="agent-popup-label">TODAY</div>
+        <div class="agent-popup-value">${state.todayMessages}</div>
+      </div>
+    </div>
+    <div class="agent-popup-label">SKILLS (${state.skills.length})</div>
+    <div class="agent-popup-skills">
+      ${state.skills.map(s => `<span class="agent-popup-skill">${s}</span>`).join('')}
+    </div>
+  `;
+
+  // Position popup near the agent on screen
+  const container = officeSprites[agentId];
+  if (container && pixiApp) {
+    const world = pixiApp.stage.getChildByName('world');
+    const globalPos = container.toGlobal(new PIXI.Point(0, 0));
+    const canvasRect = document.getElementById('canvasArea').getBoundingClientRect();
+    let px = globalPos.x * (canvasRect.width / pixiApp.renderer.width) + 30;
+    let py = globalPos.y * (canvasRect.height / pixiApp.renderer.height) - 60;
+
+    // Clamp to viewport
+    px = Math.min(px, canvasRect.width - 300);
+    py = Math.max(10, Math.min(py, canvasRect.height - 300));
+
+    popup.style.left = px + 'px';
+    popup.style.top = py + 'px';
+  }
+
+  popup.classList.add('visible');
+}
+
+function closePopup() {
+  document.getElementById('agentPopup').classList.remove('visible');
+  document.querySelectorAll('.agent-list-item').forEach(el => el.classList.remove('selected'));
+  selectedAgent = null;
+}
+
+// =============================================
+// UI RENDERING
+// =============================================
+function renderSidebar() {
+  // Agent list
+  const listEl = document.getElementById('agentList');
+  const agentOrder = ['cody', 'main', 'fish', 'goku', 'lake', 'blockhead'];
+  listEl.innerHTML = agentOrder.map(id => {
+    const a = agentStates[id];
+    if (!a) return '';
+    return `
+      <div class="agent-list-item ${selectedAgent === id ? 'selected' : ''}" data-agent-id="${id}" onclick="showAgentPopup('${id}')">
+        <div class="agent-status-dot ${a.status}"></div>
+        <div style="flex:1;min-width:0;">
+          <div class="agent-list-name" style="color:${a.color}">${a.name}</div>
+          <div class="agent-list-role">${a.role}</div>
+          <div class="agent-list-channel">${a.channel}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Stats
+  const agents = Object.values(agentStates);
+  const online = agents.filter(a => a.status === 'online' || a.status === 'working').length;
+  const totalMsg = agents.reduce((s, a) => s + a.todayMessages, 0);
+  const totalAll = agents.reduce((s, a) => s + a.totalMessages, 0);
+  const totalSess = agents.reduce((s, a) => s + a.sessions.length, 0);
+
+  document.getElementById('officeStats').innerHTML = `
+    <div class="stat-mini">
+      <span class="stat-mini-label">Agents Online</span>
+      <span class="stat-mini-value" style="color:${online > 0 ? 'var(--accent-green)' : 'var(--accent-red)'}">${online}/${agents.length}</span>
+    </div>
+    <div class="stat-mini">
+      <span class="stat-mini-label">Messages Today</span>
+      <span class="stat-mini-value" style="color:var(--accent-cyan)">${totalMsg}</span>
+    </div>
+    <div class="stat-mini">
+      <span class="stat-mini-label">Total Messages</span>
+      <span class="stat-mini-value" style="color:var(--accent-orange)">${totalAll}</span>
+    </div>
+    <div class="stat-mini">
+      <span class="stat-mini-label">Active Sessions</span>
+      <span class="stat-mini-value" style="color:var(--accent-blue)">${totalSess}</span>
+    </div>
+  `;
+
+  // Channels
+  const channels = liveData?.channels || {};
+  document.getElementById('channelList').innerHTML = `
+    <div class="stat-mini">
+      <span class="stat-mini-label">Discord</span>
+      <span class="stat-mini-value" style="color:${channels.discord?.enabled ? 'var(--accent-green)' : 'var(--accent-red)'}">${channels.discord?.enabled ? 'ON' : 'OFF'}</span>
+    </div>
+    <div class="stat-mini">
+      <span class="stat-mini-label">Google Chat</span>
+      <span class="stat-mini-value" style="color:${channels.googlechat?.enabled ? 'var(--accent-green)' : 'var(--accent-red)'}">${channels.googlechat?.enabled ? 'ON' : 'OFF'}</span>
+    </div>
+    <div class="stat-mini">
+      <span class="stat-mini-label">WhatsApp</span>
+      <span class="stat-mini-value" style="color:${channels.whatsapp?.enabled ? 'var(--accent-green)' : 'var(--accent-red)'}">${channels.whatsapp?.enabled ? 'ON' : 'OFF'}</span>
+    </div>
+  `;
+}
+
+function renderActivityFeed() {
+  const feed = liveData?.recentActivity || [];
+  const items = feed.filter(a => a.role === 'assistant').slice(0, 30);
+  const el = document.getElementById('activityFeed');
+
+  if (!items.length) {
+    el.innerHTML = '<div style="color:var(--text-muted);font-size:10px;text-align:center;padding:20px;">No recent activity</div>';
+    return;
+  }
+
+  el.innerHTML = items.map(a => {
+    const agentColor = a.color === 'purple' ? 'var(--accent-purple)' : a.color === 'cyan' ? 'var(--accent-cyan)' : 'var(--text-secondary)';
+    const dotColor = a.color === 'purple' ? '#a855f7' : a.color === 'cyan' ? '#06b6d4' : '#8b8f9e';
+    return `
+      <div class="feed-item">
+        <div class="feed-dot" style="background:${dotColor}"></div>
+        <div class="feed-body">
+          <span class="feed-agent" style="color:${agentColor}">${a.agent}</span>
+          <span class="feed-time">${timeAgo(a.timestamp)}</span>
+          <div class="feed-msg">${escHtml(a.summary)}</div>
+          <div class="feed-channel">via ${a.channel}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function timeAgo(iso) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return mins + 'm ago';
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return hours + 'h ago';
+  const days = Math.floor(hours / 24);
+  return days + 'd ago';
+}
+
+// =============================================
+// CLOCK
+// =============================================
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2, '0');
+  const m = String(now.getMinutes()).padStart(2, '0');
+  const s = String(now.getSeconds()).padStart(2, '0');
+  document.getElementById('topClock').textContent = `${h}:${m}:${s}`;
+}
+
+// =============================================
+// MAIN INIT & FETCH LOOP
+// =============================================
+let appInitialized = false;
+
+async function initApp() {
+  if (appInitialized) return;
+  appInitialized = true;
+
+  // Initialize with offline defaults
+  mergeAgentData(null);
+  initPixi();
+  renderSidebar();
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // Fetch data
+  await fetchAndRender();
+  // Auto-refresh every 30 seconds
+  setInterval(fetchAndRender, 30000);
+
+  // Check API status
+  checkApiStatus();
+}
+
 async function fetchAndRender() {
   try {
     const resp = await fetchWithFallback('/dashboard');
     liveData = await resp.json();
     document.getElementById('liveDot').classList.remove('error');
-    document.getElementById('liveDot').title = `Live (${API_URL}) — updated ${new Date().toLocaleTimeString()}`;
-    renderAll();
+    document.getElementById('liveDot').title = `Live (${API_URL}) - updated ${new Date().toLocaleTimeString()}`;
+    document.getElementById('connectionText').textContent = 'LIVE';
+    document.getElementById('connectionText').style.color = '#22c55e';
+    mergeAgentData(liveData);
+    renderSidebar();
+    renderActivityFeed();
   } catch (err) {
     console.warn('API fetch failed:', err.message);
     document.getElementById('liveDot').classList.add('error');
-    document.getElementById('liveDot').title = 'Offline — ' + err.message;
+    document.getElementById('liveDot').title = 'Offline - ' + err.message;
+    document.getElementById('connectionText').textContent = 'OFFLINE';
+    document.getElementById('connectionText').style.color = '#ef4444';
   }
 }
 
-function renderAll() {
-  if (!liveData) return;
-  renderKPIs();
-  renderActivitySnapshot();
-  renderSessionTable();
-  renderChannels();
-  renderAgentCards();
-  renderActivityFeed();
-  renderStats();
-  renderChart();
-  document.getElementById('agentUpdateTime').textContent = new Date().toLocaleTimeString();
-}
-
-function ts(iso) { return new Date(iso).toLocaleString(); }
-function tsShort(iso) { return new Date(iso).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
-
-// ── KPIs ──
-function renderKPIs() {
-  const d = liveData;
-  const agents = Object.values(d.agents);
-  const online = agents.filter(a => a.status === 'online').length;
-  const totalMsg = agents.reduce((s,a) => s + a.todayMessages, 0);
-  const totalSess = agents.reduce((s,a) => s + a.sessions.length, 0);
-  document.getElementById('kpiRow').innerHTML = `
-    <div class="kpi-card">
-      <div class="kpi-label">Active Agents</div>
-      <div class="kpi-value" style="color:${online===agents.length?'var(--accent-green)':'var(--accent-yellow)'}">${online} / ${agents.length}</div>
-      <div class="kpi-sub">${agents.map(a => `${a.name}: ${a.status}`).join(' | ')}</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">Messages Today</div>
-      <div class="kpi-value" style="color:var(--accent-cyan)">${totalMsg}</div>
-      <div class="kpi-sub">${agents.map(a => `${a.name}: ${a.todayMessages}`).join(' | ')}</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">Total Sessions</div>
-      <div class="kpi-value" style="color:var(--accent-blue)">${totalSess}</div>
-      <div class="kpi-sub">${agents.map(a => `${a.name}: ${a.sessions.length}`).join(' | ')}</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">Total Messages (All Time)</div>
-      <div class="kpi-value" style="color:var(--accent-orange)">${agents.reduce((s,a) => s + a.totalMessages, 0)}</div>
-      <div class="kpi-sub">${agents.map(a => `${a.name}: ${a.totalMessages}`).join(' | ')}</div>
-    </div>
-  `;
-}
-
-// ── Activity Snapshot ──
-function renderActivitySnapshot() {
-  const items = liveData.recentActivity.filter(a => a.role === 'assistant').slice(0, 8);
-  if (!items.length) { document.getElementById('activitySnapshot').innerHTML = '<div class="no-data">No recent activity</div>'; return; }
-  document.getElementById('activitySnapshot').innerHTML = items.map(a => `
-    <div class="agent-activity-item">
-      <div class="agent-dot ${a.color}"></div>
-      <div style="flex:1">
-        <div style="display:flex;align-items:center">
-          <span class="agent-activity-name ${a.color}">${a.agent}</span>
-          <span class="agent-activity-time">${ts(a.timestamp)}</span>
-        </div>
-        <div class="agent-activity-desc">${escHtml(a.summary)}</div>
-      </div>
-    </div>
-  `).join('');
-}
-
-// ── Session Table ──
-function renderSessionTable() {
-  const allSessions = [];
-  for (const agent of Object.values(liveData.agents)) {
-    for (const s of agent.sessions) {
-      allSessions.push({ ...s, agentName: agent.name, color: agent.color });
-    }
-  }
-  allSessions.sort((a,b) => b.updatedAt - a.updatedAt);
-  document.getElementById('sessionTable').innerHTML = `
-    <table style="width:100%;border-collapse:collapse;font-size:13px;">
-      <thead><tr>
-        <th style="text-align:left;padding:10px 8px;color:var(--text-muted);font-size:11px;text-transform:uppercase;border-bottom:1px solid var(--border);">Agent</th>
-        <th style="text-align:left;padding:10px 8px;color:var(--text-muted);font-size:11px;text-transform:uppercase;border-bottom:1px solid var(--border);">Channel</th>
-        <th style="text-align:left;padding:10px 8px;color:var(--text-muted);font-size:11px;text-transform:uppercase;border-bottom:1px solid var(--border);">Origin</th>
-        <th style="text-align:left;padding:10px 8px;color:var(--text-muted);font-size:11px;text-transform:uppercase;border-bottom:1px solid var(--border);">Lines</th>
-        <th style="text-align:left;padding:10px 8px;color:var(--text-muted);font-size:11px;text-transform:uppercase;border-bottom:1px solid var(--border);">Last Updated</th>
-      </tr></thead>
-      <tbody>
-        ${allSessions.map(s => `<tr>
-          <td style="padding:10px 8px;border-bottom:1px solid #1e2130;color:var(--accent-${s.color})">${s.agentName}</td>
-          <td style="padding:10px 8px;border-bottom:1px solid #1e2130;color:var(--text-secondary)">${s.channel}</td>
-          <td style="padding:10px 8px;border-bottom:1px solid #1e2130;color:var(--text-secondary);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(s.origin)}</td>
-          <td style="padding:10px 8px;border-bottom:1px solid #1e2130;color:var(--text-secondary)">${s.lines}</td>
-          <td style="padding:10px 8px;border-bottom:1px solid #1e2130;color:var(--text-muted)">${ts(new Date(s.updatedAt).toISOString())}</td>
-        </tr>`).join('')}
-      </tbody>
-    </table>
-  `;
-}
-
-// ── Channels ──
-function renderChannels() {
-  const ch = liveData.channels;
-  const ms = liveData.modelStack;
-  document.getElementById('channelsList').innerHTML = `
-    <div class="channel-item">
-      <div class="channel-icon discord">&#x1F3AE;</div>
-      <div><div class="channel-name">Discord</div></div>
-      <div class="channel-status ${ch.discord?.enabled ? 'on' : 'off'}">${ch.discord?.enabled ? 'Enabled' : 'Disabled'}</div>
-    </div>
-    <div class="channel-item">
-      <div class="channel-icon gchat">&#x1F4AC;</div>
-      <div><div class="channel-name">Google Chat</div></div>
-      <div class="channel-status ${ch.googlechat?.enabled ? 'on' : 'off'}">${ch.googlechat?.enabled ? 'Enabled' : 'Disabled'}</div>
-    </div>
-    <div class="channel-item">
-      <div class="channel-icon whatsapp">&#x1F4F1;</div>
-      <div><div class="channel-name">WhatsApp</div></div>
-      <div class="channel-status ${ch.whatsapp?.enabled ? 'on' : 'off'}">${ch.whatsapp?.enabled ? 'Enabled' : 'Disabled'}</div>
-    </div>
-    <div style="border-top:1px solid var(--border);margin-top:16px;padding-top:16px;">
-      <div style="font-size:14px;font-weight:600;margin-bottom:12px;">Model Stack</div>
-      <div style="font-size:12px;color:var(--text-secondary);line-height:1.8;">
-        ${ms.map(m => `<div><span style="color:var(--accent-orange)">&#x25CF;</span> ${m.role}: ${m.model}</div>`).join('')}
-      </div>
-    </div>
-  `;
-}
-
-// ── Agent Cards ──
-function renderAgentCards() {
-  const agents = Object.values(liveData.agents);
-  document.getElementById('agentsGrid').innerHTML = agents.map(a => `
-    <div class="agent-card ${a.color}">
-      <div class="agent-card-top">
-        <div class="agent-card-name">
-          <span class="agent-avatar">${a.emoji || ''}</span>
-          <span class="agent-name-text">${a.name}</span>
-        </div>
-        <div class="status-badge ${a.status}"><div class="status-dot ${a.status}"></div>${a.status === 'online' ? 'Connected' : 'Offline'}</div>
-      </div>
-      <div class="agent-info-grid">
-        <div><div class="agent-field-label">Agent ID</div><div class="agent-field-value">${a.id}</div></div>
-        <div><div class="agent-field-label">Model</div><div class="agent-field-value">${a.currentModel || 'unknown'}</div></div>
-        <div><div class="agent-field-label">Sessions</div><div class="agent-field-value">${a.sessions.length}</div></div>
-        <div><div class="agent-field-label">Last Active</div><div class="agent-field-value">${a.lastActive ? ts(a.lastActive) : 'never'}</div></div>
-      </div>
-      <div class="agent-field-label" style="margin-bottom:6px;">Skills (${a.skills.length})</div>
-      <div class="skill-tags">
-        ${a.skills.map(s => `<span class="skill-tag">${s}</span>`).join('')}
-      </div>
-      <div class="agent-card-footer">
-        <div><div class="agent-tasks-label">Total Messages</div><div class="agent-tasks-count">${a.totalMessages}</div></div>
-        <div><div class="agent-tasks-label">Today</div><div class="agent-tasks-count">${a.todayMessages}</div></div>
-      </div>
-    </div>
-  `).join('');
-}
-
-// ── Activity Feed ──
-function renderActivityFeed() {
-  const items = liveData.recentActivity.slice(0, 20);
-  document.getElementById('feedMeta').textContent = `${items.length} entries`;
-  if (!items.length) { document.getElementById('activityFeed').innerHTML = '<div class="no-data">No activity</div>'; return; }
-  document.getElementById('activityFeed').innerHTML = items.map(a => `
-    <div class="feed-item">
-      <div class="feed-avatar ${a.color}">${a.role === 'user' ? '&#x1F464;' : (a.agentId === 'main' ? '&#x1F573;' : '&#x1F41F;')}</div>
-      <div class="feed-content">
-        <div style="display:flex;gap:8px;align-items:center">
-          <span class="feed-name ${a.color}">${a.role === 'user' ? 'Stephen' : a.agent}</span>
-          <span class="feed-time">${ts(a.timestamp)}</span>
-        </div>
-        <div class="feed-desc">${escHtml(a.summary)}</div>
-        <div class="feed-channel">via ${a.channel}</div>
-      </div>
-    </div>
-  `).join('');
-}
-
-// ── Stats ──
-function renderStats() {
-  const agents = Object.values(liveData.agents);
-  const totalMsg = agents.reduce((s,a) => s + a.todayMessages, 0);
-  const totalAll = agents.reduce((s,a) => s + a.totalMessages, 0);
-  const totalSess = agents.reduce((s,a) => s + a.sessions.length, 0);
-  const mostActive = agents.sort((a,b) => b.todayMessages - a.todayMessages)[0];
-  const online = agents.filter(a => a.status === 'online').length;
-  document.getElementById('statsPanel').innerHTML = `
-    <div class="stat-row"><span class="stat-label">Total sessions</span><span class="stat-value">${totalSess}</span></div>
-    <div class="stat-row"><span class="stat-label">Messages today</span><span class="stat-value">${totalMsg}</span></div>
-    <div class="stat-row"><span class="stat-label">Messages all time</span><span class="stat-value">${totalAll}</span></div>
-    <div class="stat-row"><span class="stat-label">Most active today</span><span class="stat-value">${mostActive?.name || '—'}</span></div>
-    <div class="stat-row"><span class="stat-label">Agents online</span><span class="stat-value" style="color:${online===agents.length?'var(--accent-green)':'var(--accent-yellow)'}">${online} / ${agents.length}</span></div>
-    <div class="stat-row"><span class="stat-label">Daily logs</span><span class="stat-value">${liveData.dailyLogs?.length || 0} files</span></div>
-    <div class="stat-row"><span class="stat-label">API timestamp</span><span class="stat-value">${ts(liveData.timestamp)}</span></div>
-  `;
-}
-
-// ── Chart ──
-function renderChart() {
-  const ctx = document.getElementById('pulseChart');
-  if (!ctx) return;
-  if (window._pc) window._pc.destroy();
-  // Build real data: messages per session by agent
-  const agentList = Object.values(liveData.agents);
-  const datasets = agentList.map(a => ({
-    label: a.name,
-    data: a.sessions.map(s => s.lines),
-    borderColor: a.color === 'purple' ? '#a855f7' : '#06b6d4',
-    backgroundColor: a.color === 'purple' ? 'rgba(168,85,247,0.08)' : 'rgba(6,182,212,0.08)',
-    fill: true, tension: 0.4, pointRadius: 4,
-    pointBackgroundColor: a.color === 'purple' ? '#a855f7' : '#06b6d4',
-    borderWidth: 2
-  }));
-  // Labels: session channels
-  const maxSess = Math.max(...agentList.map(a => a.sessions.length));
-  const labels = Array.from({length: maxSess}, (_, i) => `Session ${i+1}`);
-  window._pc = new Chart(ctx, {
-    type: 'bar',
-    data: { labels, datasets },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { labels: { color: '#8b8f9e', font: { size: 11 } } } },
-      scales: {
-        x: { grid: { color: '#1e2130' }, ticks: { color: '#5a5e6e', font: { size: 11 } } },
-        y: { grid: { color: '#1e2130' }, ticks: { color: '#5a5e6e', font: { size: 11 } }, beginAtZero: true, title: { display: true, text: 'JSONL Lines', color: '#5a5e6e' } }
-      }
-    }
-  });
-}
-
-function escHtml(str) {
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-// ══════════════════════════════════════
-// ── MODELS TAB ──
-// ══════════════════════════════════════
-let modelsData = null;
-
-async function fetchModels() {
+async function checkApiStatus() {
+  const statusEl = document.getElementById('apiStatus');
   try {
-    const resp = await fetchWithFallback('/models');
-    modelsData = await resp.json();
-    renderModelsPanel();
-  } catch (err) {
-    document.getElementById('modelsPanel').innerHTML = `<div class="no-data">Cannot load models: ${err.message}</div>`;
+    const resp = await fetchWithFallback('/health');
+    const d = await resp.json();
+    statusEl.textContent = `Connected via ${API_URL} - uptime: ${Math.round(d.uptime)}s`;
+    statusEl.style.background = '#133022'; statusEl.style.color = '#22c55e';
+  } catch {
+    statusEl.textContent = 'Not connected - no data shown';
+    statusEl.style.background = '#3b1518'; statusEl.style.color = '#ef4444';
   }
 }
-
-function renderModelsPanel() {
-  if (!modelsData) return;
-  const { agents, available, providers } = modelsData;
-  const panel = document.getElementById('modelsPanel');
-
-  // Provider credits section
-  const usage = modelsData.usage || {};
-  const providerHTML = providers ? `
-    <div class="card" style="margin-bottom:24px">
-      <div class="card-header"><div class="card-title">Provider Credits</div></div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">
-        ${Object.entries(providers).map(([pid, p]) => {
-          const cr = p.credits;
-          let creditText = 'Unknown';
-          let creditColor = 'var(--text-muted)';
-          if (cr) {
-            if (cr.unit === 'free') { creditText = cr.remaining; creditColor = 'var(--accent-green)'; }
-            else if (cr.remaining !== undefined && typeof cr.remaining === 'number') { creditText = '$' + cr.remaining + ' / $' + cr.limit + (cr.reset ? ' (' + cr.reset + ' reset)' : ''); creditColor = cr.remaining > 0 ? 'var(--accent-green)' : 'var(--accent-red)'; }
-            else if (typeof cr.remaining === 'string') { creditText = cr.remaining; creditColor = 'var(--accent-yellow)'; }
-          }
-          // Sum usage for this provider
-          const providerModels = available.filter(m => m.provider === pid);
-          let providerMsgs = 0;
-          for (const m of providerModels) { providerMsgs += (usage[m.id]?.messages || 0); }
-          return `<div style="background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;padding:14px">
-            <div style="font-size:13px;font-weight:600;margin-bottom:4px">${pid}</div>
-            <div style="font-size:12px;color:${creditColor};margin-bottom:4px">${creditText}</div>
-            <div style="font-size:11px;color:var(--text-muted)">${providerModels.length} model${providerModels.length!==1?'s':''} | ${providerMsgs} msgs</div>
-          </div>`;
-        }).join('')}
-      </div>
-    </div>
-    <div class="card" style="margin-bottom:24px">
-      <div class="card-header"><div class="card-title">Model Usage (All Time)</div></div>
-      ${Object.keys(usage).length === 0 ? '<div class="no-data">No usage data yet</div>' : `
-      <table style="width:100%;border-collapse:collapse;font-size:13px">
-        <thead><tr>
-          <th style="text-align:left;padding:10px 8px;color:var(--text-muted);font-size:11px;text-transform:uppercase;border-bottom:1px solid var(--border)">Model</th>
-          <th style="text-align:left;padding:10px 8px;color:var(--text-muted);font-size:11px;text-transform:uppercase;border-bottom:1px solid var(--border)">Messages</th>
-          <th style="text-align:left;padding:10px 8px;color:var(--text-muted);font-size:11px;text-transform:uppercase;border-bottom:1px solid var(--border)">Sessions</th>
-          <th style="text-align:left;padding:10px 8px;color:var(--text-muted);font-size:11px;text-transform:uppercase;border-bottom:1px solid var(--border)">Agents</th>
-          <th style="text-align:left;padding:10px 8px;color:var(--text-muted);font-size:11px;text-transform:uppercase;border-bottom:1px solid var(--border)">Share</th>
-        </tr></thead>
-        <tbody>
-          ${(() => {
-            const sorted = Object.entries(usage).sort((a,b) => b[1].messages - a[1].messages);
-            const totalMsgs = sorted.reduce((s, [,u]) => s + u.messages, 0);
-            return sorted.map(([model, u]) => {
-              const info = available.find(m => m.id === model);
-              const pct = totalMsgs > 0 ? Math.round(u.messages / totalMsgs * 100) : 0;
-              return `<tr>
-                <td style="padding:10px 8px;border-bottom:1px solid #1e2130;color:var(--text-primary);font-weight:500">${info?.name || model}</td>
-                <td style="padding:10px 8px;border-bottom:1px solid #1e2130;color:var(--accent-cyan);font-weight:600">${u.messages}</td>
-                <td style="padding:10px 8px;border-bottom:1px solid #1e2130;color:var(--text-secondary)">${u.sessions}</td>
-                <td style="padding:10px 8px;border-bottom:1px solid #1e2130;color:var(--text-secondary)">${u.agents.join(', ')}</td>
-                <td style="padding:10px 8px;border-bottom:1px solid #1e2130">
-                  <div style="display:flex;align-items:center;gap:8px">
-                    <div style="flex:1;height:6px;background:var(--bg-primary);border-radius:3px;overflow:hidden;max-width:100px">
-                      <div style="height:100%;width:${pct}%;background:var(--accent-orange);border-radius:3px"></div>
-                    </div>
-                    <span style="font-size:11px;color:var(--text-muted)">${pct}%</span>
-                  </div>
-                </td>
-              </tr>`;
-            }).join('');
-          })()}
-        </tbody>
-      </table>`}
-    </div>
-  ` : '';
-
-  // Agent model config sections
-  const agentHTML = Object.entries(agents).map(([id, agent]) => {
-    const currentFallbacks = agent.fallbacks || [];
-    const usedModels = new Set([agent.primary, ...currentFallbacks]);
-    const unusedModels = available.filter(m => !usedModels.has(m.id));
-
-    return `
-    <div class="model-agent-section card" data-agent="${id}">
-      <div class="model-agent-header">
-        <div class="model-agent-title">${id === 'main' ? '&#x1F573;&#xFE0F;' : '&#x1F41F;'} ${agent.name}</div>
-      </div>
-      <div class="model-row">
-        <div class="model-row-label">Primary</div>
-        <select class="model-select" data-role="primary" data-agent="${id}">
-          ${available.map(m => `<option value="${m.id}" ${m.id === agent.primary ? 'selected' : ''}>${m.name} (${m.provider}) ${m.free ? '— FREE' : '— $'}</option>`).join('')}
-        </select>
-      </div>
-      <div class="model-row" style="align-items:flex-start">
-        <div class="model-row-label" style="margin-top:10px">Fallbacks</div>
-        <div style="flex:1;max-width:480px">
-          <ul class="fallback-list" data-agent="${id}">
-            ${currentFallbacks.map((fb, i) => {
-              const info = available.find(m => m.id === fb) || { name: fb, free: false };
-              return `<li class="fallback-item" draggable="true" data-model="${fb}">
-                <span class="fallback-grip">&#x2630;</span>
-                <span class="fallback-num">${i+1}.</span>
-                <span class="fallback-name">${info.name || fb}</span>
-                <span class="fallback-cost ${info.free ? 'free' : 'paid'}">${info.free ? 'FREE' : 'PAID'}</span>
-                <button class="fallback-remove" onclick="removeFallback('${id}',${i})">&#x2715;</button>
-              </li>`;
-            }).join('')}
-          </ul>
-          <div class="add-fallback-row">
-            <select class="model-select" id="addFb-${id}">
-              <option value="">+ Add fallback...</option>
-              ${unusedModels.map(m => `<option value="${m.id}">${m.name} (${m.provider}) ${m.free ? '— FREE' : '— $'}</option>`).join('')}
-            </select>
-            <button class="btn-add" onclick="addFallback('${id}')">Add</button>
-          </div>
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;margin-top:16px">
-        <button class="btn-save-models" onclick="saveModels('${id}')">Save ${agent.name}</button>
-        <span class="save-status" id="saveStatus-${id}"></span>
-      </div>
-    </div>`;
-  }).join('');
-
-  // Add model form
-  const providerOptions = providers ? Object.keys(providers).map(p => `<option value="${p}">${p}</option>`).join('') : '';
-  const addModelHTML = `
-    <div class="card" style="margin-top:24px">
-      <div class="card-header"><div class="card-title">Add New Model</div></div>
-      <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px">Add a model to an existing provider. The provider must already have an API key configured.</p>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:600px">
-        <div>
-          <div class="agent-field-label" style="margin-bottom:4px">Provider</div>
-          <select class="model-select" id="newModelProvider" style="width:100%">${providerOptions}</select>
-        </div>
-        <div>
-          <div class="agent-field-label" style="margin-bottom:4px">Model ID</div>
-          <input class="model-select" id="newModelId" placeholder="e.g. gpt-4o-mini" style="width:100%">
-        </div>
-        <div>
-          <div class="agent-field-label" style="margin-bottom:4px">Display Name</div>
-          <input class="model-select" id="newModelName" placeholder="e.g. GPT-4o Mini" style="width:100%">
-        </div>
-        <div>
-          <div class="agent-field-label" style="margin-bottom:4px">Context Window</div>
-          <input class="model-select" id="newModelCtx" type="number" value="131072" style="width:100%">
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;gap:12px;margin-top:16px">
-        <label style="font-size:12px;color:var(--text-secondary);display:flex;align-items:center;gap:6px">
-          <input type="checkbox" id="newModelReasoning"> Reasoning model
-        </label>
-      </div>
-      <div style="display:flex;align-items:center;margin-top:16px">
-        <button class="btn-save-models" onclick="addNewModel()">Add Model</button>
-        <span class="save-status" id="addModelStatus"></span>
-      </div>
-    </div>
-  `;
-
-  panel.innerHTML = providerHTML + agentHTML + addModelHTML;
-  setupFallbackDnD();
-}
-
-function removeFallback(agentId, idx) {
-  modelsData.agents[agentId].fallbacks.splice(idx, 1);
-  renderModelsPanel();
-}
-
-function addFallback(agentId) {
-  const sel = document.getElementById('addFb-' + agentId);
-  if (!sel.value) return;
-  modelsData.agents[agentId].fallbacks.push(sel.value);
-  renderModelsPanel();
-}
-
-function setupFallbackDnD() {
-  document.querySelectorAll('.fallback-list').forEach(list => {
-    let dragItem = null;
-    list.querySelectorAll('.fallback-item').forEach(item => {
-      item.addEventListener('dragstart', () => { dragItem = item; item.classList.add('dragging'); });
-      item.addEventListener('dragend', () => { item.classList.remove('dragging'); dragItem = null; });
-      item.addEventListener('dragover', e => { e.preventDefault(); });
-      item.addEventListener('drop', e => {
-        e.preventDefault();
-        if (!dragItem || dragItem === item) return;
-        const agentId = list.dataset.agent;
-        const items = [...list.querySelectorAll('.fallback-item')];
-        const fromIdx = items.indexOf(dragItem);
-        const toIdx = items.indexOf(item);
-        const fb = modelsData.agents[agentId].fallbacks;
-        const [moved] = fb.splice(fromIdx, 1);
-        fb.splice(toIdx, 0, moved);
-        renderModelsPanel();
-      });
-    });
-  });
-}
-
-async function saveModels(agentId) {
-  const section = document.querySelector(`.model-agent-section[data-agent="${agentId}"]`);
-  const primary = section.querySelector('[data-role="primary"]').value;
-  const fallbacks = modelsData.agents[agentId].fallbacks;
-  const statusEl = document.getElementById('saveStatus-' + agentId);
-  const btn = section.querySelector('.btn-save-models');
-
-  btn.disabled = true;
-  statusEl.textContent = 'Saving...';
-  statusEl.style.color = 'var(--text-muted)';
-
-  try {
-    const resp = await fetchWithFallback('/models');  // just to get the right base URL
-    // Use the resolved API_URL
-    const saveResp = await fetch(API_URL + '/models', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agentId, primary, fallbacks })
-    });
-    const result = await saveResp.json();
-    if (result.ok) {
-      statusEl.textContent = 'Saved! Takes effect on next session.';
-      statusEl.style.color = 'var(--accent-green)';
-      // Update local data
-      modelsData.agents[agentId].primary = primary;
-      await fetchModels(); // refresh
-    } else {
-      throw new Error(result.error || 'Unknown error');
-    }
-  } catch (err) {
-    statusEl.textContent = 'Error: ' + err.message;
-    statusEl.style.color = 'var(--accent-red)';
-  }
-  btn.disabled = false;
-}
-
-async function addNewModel() {
-  const provider = document.getElementById('newModelProvider').value;
-  const modelId = document.getElementById('newModelId').value.trim();
-  const name = document.getElementById('newModelName').value.trim();
-  const contextWindow = parseInt(document.getElementById('newModelCtx').value) || 131072;
-  const reasoning = document.getElementById('newModelReasoning').checked;
-  const statusEl = document.getElementById('addModelStatus');
-
-  if (!modelId) { statusEl.textContent = 'Model ID is required'; statusEl.style.color = 'var(--accent-red)'; return; }
-
-  statusEl.textContent = 'Adding...'; statusEl.style.color = 'var(--text-muted)';
-  try {
-    await fetchWithFallback('/models'); // resolve API_URL
-    const resp = await fetch(API_URL + '/models/add', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ provider, modelId, name: name || modelId, reasoning, contextWindow, maxTokens: 8192 })
-    });
-    const result = await resp.json();
-    if (result.ok) {
-      statusEl.textContent = 'Added ' + result.added; statusEl.style.color = 'var(--accent-green)';
-      document.getElementById('newModelId').value = '';
-      document.getElementById('newModelName').value = '';
-      await fetchModels();
-    } else { throw new Error(result.error); }
-  } catch (err) {
-    statusEl.textContent = 'Error: ' + err.message; statusEl.style.color = 'var(--accent-red)';
-  }
-}
-
-// Fetch immediately and every 30s
-fetchAndRender();
-fetchModels();
-setInterval(fetchAndRender, 30000);
-</script>
-
-<!-- Password Gate -->
-<script>
-async function tryUnlock() {
-  const input = document.getElementById('lockPass').value;
-  if (input === atob('U3RlbGxpY2FsZW4xNTIwMjEh')) {
-    sessionStorage.setItem('dtg_unlocked','1');
-    document.getElementById('lock-screen').classList.add('hidden');
-    document.getElementById('app-wrap').classList.add('unlocked');
-    fetchAndRender();
-  } else {
-    document.getElementById('lockError').textContent = 'Wrong password';
-    document.getElementById('lockPass').value = '';
-    document.getElementById('lockPass').focus();
-  }
-}
-if (sessionStorage.getItem('dtg_unlocked') === '1') {
-  document.getElementById('lock-screen').classList.add('hidden');
-  document.getElementById('app-wrap').classList.add('unlocked');
-}
-document.getElementById('lockPass').addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock(); });
-</script>
-
-<!-- API Settings -->
-<div class="api-config">
-  <button onclick="document.getElementById('apiModal').classList.add('show')" title="API Settings">&#x2699;</button>
-</div>
-<div class="api-modal" id="apiModal">
-  <div class="api-modal-box">
-    <h3>API Connection</h3>
-    <div class="api-status" id="apiStatus" style="background:var(--bg-secondary);color:var(--text-muted);">Checking...</div>
-    <input type="text" id="apiUrlInput" value="">
-    <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">URL where server.js is running.</p>
-    <div class="btn-row">
-      <button class="btn-cancel" onclick="document.getElementById('apiModal').classList.remove('show')">Cancel</button>
-      <button class="btn-save" onclick="saveApiUrl()">Save & Test</button>
-    </div>
-  </div>
-</div>
-<script>
-  document.getElementById('apiUrlInput').value = localStorage.getItem('dtg_api_url') || 'https://remote-pc8.tail93ed18.ts.net/api';
-  async function saveApiUrl() {
-    const url = document.getElementById('apiUrlInput').value.replace(/\/+$/, '');
-    const statusEl = document.getElementById('apiStatus');
-    statusEl.textContent = 'Testing...'; statusEl.style.background = 'var(--bg-secondary)'; statusEl.style.color = 'var(--text-muted)';
-    try {
-      const resp = await fetch(url + '/health', { signal: AbortSignal.timeout(5000) });
-      if (resp.ok) {
-        localStorage.setItem('dtg_api_url', url);
-        statusEl.textContent = 'Connected! Reloading...'; statusEl.style.background = '#133022'; statusEl.style.color = '#22c55e';
-        setTimeout(() => location.reload(), 1000);
-      } else throw new Error('Status ' + resp.status);
-    } catch (err) {
-      statusEl.textContent = 'Failed: ' + err.message; statusEl.style.background = '#3b1518'; statusEl.style.color = '#ef4444';
-    }
-  }
-  (async () => {
-    const statusEl = document.getElementById('apiStatus');
-    try {
-      const resp = await fetchWithFallback('/health');
-      const d = await resp.json();
-      statusEl.textContent = `Connected via ${API_URL} — uptime: ${Math.round(d.uptime)}s`;
-      statusEl.style.background = '#133022'; statusEl.style.color = '#22c55e';
-    } catch {
-      statusEl.textContent = 'Not connected — no data shown';
-      statusEl.style.background = '#3b1518'; statusEl.style.color = '#ef4444';
-    }
-  })();
 </script>
 </body>
 </html>
