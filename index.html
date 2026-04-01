@@ -43,6 +43,8 @@
   .live-dot { display: inline-block; width: 8px; height: 8px; background: var(--accent-green); border-radius: 50%; animation: pulse 2s infinite; }
   .live-dot.error { background: var(--accent-red); }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  @keyframes typingBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+  @keyframes screenFlicker { 0% { opacity: 0.2; } 100% { opacity: 0.5; } }
 
   /* Main Layout */
   .main-layout { display: flex; flex: 1; overflow: hidden; }
@@ -51,9 +53,19 @@
   .sidebar-left { width: 220px; background: #0e1018; border-right: 2px solid #1e2130; display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
   .sidebar-section { padding: 12px; border-bottom: 1px solid #1e2130; }
   .sidebar-title { font-family: 'Press Start 2P', monospace; font-size: 7px; color: var(--accent-orange); margin-bottom: 10px; letter-spacing: 1px; text-transform: uppercase; }
-  .agent-list-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 4px; cursor: pointer; margin-bottom: 2px; transition: background 0.15s; }
+  /* Filter tabs */
+  .filter-tabs { display: flex; gap: 4px; margin-bottom: 10px; }
+  .filter-tab { flex: 1; padding: 5px 0; text-align: center; font-size: 8px; font-family: 'Press Start 2P', monospace; color: var(--text-muted); background: transparent; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; transition: all 0.15s; }
+  .filter-tab:hover { background: #1a1d28; color: var(--text-secondary); }
+  .filter-tab.active { background: var(--accent-orange); color: #fff; border-color: var(--accent-orange); }
+
+  .agent-list-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 4px; cursor: pointer; margin-bottom: 2px; transition: background 0.15s; position: relative; }
   .agent-list-item:hover { background: #1a1d28; }
+  .agent-list-item:hover .pin-btn { opacity: 1; }
   .agent-list-item.selected { background: #1f2330; border: 1px solid var(--border); }
+  .pin-btn { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 12px; opacity: 0; transition: opacity 0.15s, color 0.15s; padding: 2px 4px; }
+  .pin-btn:hover { color: var(--accent-orange); }
+  .pin-btn.pinned { opacity: 1; color: var(--accent-orange); }
   .agent-status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
   .agent-status-dot.online { background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); }
   .agent-status-dot.idle { background: var(--accent-yellow); box-shadow: 0 0 6px var(--accent-yellow); }
@@ -62,6 +74,19 @@
   .agent-list-name { font-size: 11px; font-weight: 600; flex: 1; }
   .agent-list-role { font-size: 8px; color: var(--text-muted); }
   .agent-list-channel { font-size: 8px; color: var(--text-muted); font-family: 'Press Start 2P', monospace; font-size: 6px; }
+
+  /* Pinned agent cards on right sidebar */
+  .pinned-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 10px; margin-bottom: 8px; }
+  .pinned-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .pinned-card-avatar { width: 28px; height: 28px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 14px; image-rendering: pixelated; }
+  .pinned-card-name { font-size: 11px; font-weight: 700; }
+  .pinned-card-status { font-size: 8px; padding: 1px 6px; border-radius: 8px; margin-left: auto; }
+  .pinned-card-desk { height: 60px; background: #111318; border-radius: 4px; margin-bottom: 6px; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; }
+  .pinned-card-desk canvas { image-rendering: pixelated; }
+  .pinned-card-task { font-size: 9px; color: var(--text-secondary); line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .pinned-card-task .task-label { color: var(--text-muted); font-size: 7px; font-family: 'Press Start 2P', monospace; display: block; margin-bottom: 2px; }
+  .pinned-unpin { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 10px; padding: 2px; }
+  .pinned-unpin:hover { color: var(--accent-red); }
 
   /* Stats mini cards */
   .stat-mini { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #1a1d28; }
@@ -164,6 +189,12 @@
     <div class="sidebar-left">
       <div class="sidebar-section">
         <div class="sidebar-title">TEAM STATUS</div>
+        <div class="filter-tabs" id="filterTabs">
+          <button class="filter-tab active" data-filter="all" onclick="setFilter('all')">ALL</button>
+          <button class="filter-tab" data-filter="working" onclick="setFilter('working')">WORK</button>
+          <button class="filter-tab" data-filter="idle" onclick="setFilter('idle')">IDLE</button>
+          <button class="filter-tab" data-filter="offline" onclick="setFilter('offline')">OFF</button>
+        </div>
         <div id="agentList"></div>
       </div>
       <div class="sidebar-section">
@@ -188,10 +219,18 @@
     <!-- Right Sidebar -->
     <div class="sidebar-right">
       <div class="feed-header">
-        <div class="feed-title">ACTIVITY FEED</div>
+        <div class="feed-title">PINNED AGENTS</div>
       </div>
-      <div class="feed-scroll" id="activityFeed">
-        <div style="color:var(--text-muted);font-size:10px;text-align:center;padding:20px;">Loading...</div>
+      <div class="feed-scroll" id="pinnedAgents">
+        <div style="color:var(--text-muted);font-size:9px;text-align:center;padding:20px;font-family:'Press Start 2P',monospace;">Pin agents from the left panel</div>
+      </div>
+      <div style="border-top:1px solid #1e2130;">
+        <div class="feed-header">
+          <div class="feed-title">ACTIVITY FEED</div>
+        </div>
+        <div class="feed-scroll" id="activityFeed" style="max-height:250px;">
+          <div style="color:var(--text-muted);font-size:10px;text-align:center;padding:20px;">Loading...</div>
+        </div>
       </div>
     </div>
   </div>
@@ -319,6 +358,8 @@ let pixiApp = null;
 let officeSprites = {};
 let animFrame = 0;
 let selectedAgent = null;
+let currentFilter = 'all';
+let pinnedAgents = new Set(JSON.parse(localStorage.getItem('dtg_pinned') || '[]'));
 
 // Room layout constants (in tile coords, each tile = 16px)
 const TILE = 16;
@@ -1013,13 +1054,33 @@ function closePopup() {
 // =============================================
 // UI RENDERING
 // =============================================
+function setFilter(f) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.toggle('active', t.dataset.filter === f));
+  renderSidebar();
+}
+
+function togglePin(id, e) {
+  e.stopPropagation();
+  if (pinnedAgents.has(id)) pinnedAgents.delete(id);
+  else pinnedAgents.add(id);
+  localStorage.setItem('dtg_pinned', JSON.stringify([...pinnedAgents]));
+  renderSidebar();
+  renderPinnedAgents();
+}
+
 function renderSidebar() {
-  // Agent list
+  // Agent list with filtering
   const listEl = document.getElementById('agentList');
   const agentOrder = ['cody', 'main', 'fish', 'goku', 'lake', 'blockhead'];
   listEl.innerHTML = agentOrder.map(id => {
     const a = agentStates[id];
     if (!a) return '';
+    // Filter logic
+    if (currentFilter === 'working' && a.status !== 'online' && a.status !== 'working') return '';
+    if (currentFilter === 'idle' && a.status !== 'idle') return '';
+    if (currentFilter === 'offline' && a.status !== 'offline') return '';
+    const isPinned = pinnedAgents.has(id);
     return `
       <div class="agent-list-item ${selectedAgent === id ? 'selected' : ''}" data-agent-id="${id}" onclick="showAgentPopup('${id}')">
         <div class="agent-status-dot ${a.status}"></div>
@@ -1028,6 +1089,7 @@ function renderSidebar() {
           <div class="agent-list-role">${a.role}</div>
           <div class="agent-list-channel">${a.channel}</div>
         </div>
+        <button class="pin-btn ${isPinned ? 'pinned' : ''}" onclick="togglePin('${id}', event)" title="${isPinned ? 'Unpin' : 'Pin'}">📌</button>
       </div>
     `;
   }).join('');
@@ -1103,6 +1165,67 @@ function renderActivityFeed() {
   }).join('');
 }
 
+function renderPinnedAgents() {
+  const el = document.getElementById('pinnedAgents');
+  if (!pinnedAgents.size) {
+    el.innerHTML = '<div style="color:var(--text-muted);font-size:9px;text-align:center;padding:20px;font-family:\'Press Start 2P\',monospace;">Pin agents from the left panel</div>';
+    return;
+  }
+  el.innerHTML = [...pinnedAgents].map(id => {
+    const a = agentStates[id];
+    if (!a) return '';
+    const statusColor = a.status === 'online' || a.status === 'working' ? 'var(--accent-green)' : a.status === 'idle' ? 'var(--accent-yellow)' : 'var(--accent-red)';
+    const statusBg = a.status === 'online' || a.status === 'working' ? 'rgba(34,197,94,0.15)' : a.status === 'idle' ? 'rgba(234,179,8,0.15)' : 'rgba(239,68,68,0.15)';
+    const statusLabel = a.status === 'online' ? 'ONLINE' : a.status === 'working' ? 'WORKING' : a.status === 'idle' ? 'IDLE' : 'OFFLINE';
+    // Get latest task from activity feed
+    const feed = liveData?.recentActivity || [];
+    const lastTask = feed.find(f => {
+      const agentId = f.agentId || '';
+      return (agentId === id || f.agent === a.name) && f.role === 'assistant';
+    });
+    const taskText = lastTask ? lastTask.summary : (a.status === 'offline' ? 'Agent is offline' : 'Waiting for tasks...');
+    // Mini desk animation as CSS
+    const isWorking = a.status === 'online' || a.status === 'working';
+    return `
+      <div class="pinned-card">
+        <div class="pinned-card-header">
+          <div class="pinned-card-avatar" style="background:${a.color};color:#fff;">
+            ${a.name.charAt(0)}
+          </div>
+          <div>
+            <div class="pinned-card-name" style="color:${a.color}">${a.name}</div>
+          </div>
+          <span class="pinned-card-status" style="color:${statusColor};background:${statusBg}">${statusLabel}</span>
+          <button class="pinned-unpin" onclick="togglePin('${id}', event)" title="Unpin">✕</button>
+        </div>
+        <div class="pinned-card-desk">
+          <div style="position:relative;width:120px;height:50px;">
+            <!-- Desk -->
+            <div style="position:absolute;bottom:0;left:10px;width:100px;height:12px;background:#3a2a1a;border-radius:2px;"></div>
+            <!-- Monitor -->
+            <div style="position:absolute;bottom:12px;left:35px;width:30px;height:20px;background:${isWorking ? '#1a3a2a' : '#1a1a1a'};border:2px solid #333;border-radius:2px;">
+              ${isWorking ? '<div style="position:absolute;inset:2px;background:#0f0;opacity:0.3;animation:screenFlicker 0.5s infinite alternate;"></div>' : ''}
+            </div>
+            <!-- Monitor stand -->
+            <div style="position:absolute;bottom:12px;left:47px;width:6px;height:3px;background:#333;"></div>
+            <!-- Character -->
+            <div style="position:absolute;bottom:14px;left:42px;width:16px;height:20px;display:flex;flex-direction:column;align-items:center;${isWorking ? 'animation:typingBob 0.6s infinite;' : ''}">
+              <div style="width:10px;height:10px;background:${a.color};border-radius:2px;"></div>
+              <div style="width:12px;height:8px;background:${a.color};opacity:0.8;border-radius:1px;margin-top:1px;"></div>
+            </div>
+            <!-- Keyboard -->
+            ${isWorking ? '<div style="position:absolute;bottom:12px;left:38px;width:24px;height:4px;background:#444;border-radius:1px;"></div>' : ''}
+          </div>
+        </div>
+        <div class="pinned-card-task">
+          <span class="task-label">${isWorking ? 'WORKING ON' : 'STATUS'}</span>
+          ${escHtml(taskText)}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
 function escHtml(str) {
   if (!str) return '';
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -1166,6 +1289,7 @@ async function fetchAndRender() {
     mergeAgentData(liveData);
     renderSidebar();
     renderActivityFeed();
+    renderPinnedAgents();
   } catch (err) {
     console.warn('API fetch failed:', err.message);
     document.getElementById('liveDot').classList.add('error');
