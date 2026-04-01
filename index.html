@@ -78,7 +78,8 @@
   /* Pinned agent cards on right sidebar */
   .pinned-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 10px; margin-bottom: 8px; }
   .pinned-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-  .pinned-card-avatar { width: 28px; height: 28px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 14px; image-rendering: pixelated; }
+  .pinned-card-avatar { width: 28px; height: 28px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 14px; image-rendering: pixelated; overflow: hidden; }
+  .pinned-card-avatar canvas { image-rendering: pixelated; width: 100%; height: 100%; }
   .pinned-card-name { font-size: 11px; font-weight: 700; }
   .pinned-card-status { font-size: 8px; padding: 1px 6px; border-radius: 8px; margin-left: auto; }
   .pinned-card-desk { height: 60px; background: #111318; border-radius: 4px; margin-bottom: 6px; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; }
@@ -96,7 +97,7 @@
 
   /* Canvas Area */
   .canvas-area { flex: 1; position: relative; overflow: hidden; background: #0d0f14; }
-  #pixiCanvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+  #officeCanvas { display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
 
   /* Right Sidebar - Activity Feed */
   .sidebar-right { width: 280px; background: #0e1018; border-left: 2px solid #1e2130; display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; }
@@ -116,7 +117,8 @@
   .agent-popup { position: absolute; z-index: 200; background: var(--bg-card); border: 2px solid var(--border); border-radius: 8px; padding: 16px; min-width: 280px; box-shadow: 0 8px 32px rgba(0,0,0,0.6); display: none; pointer-events: auto; }
   .agent-popup.visible { display: block; }
   .agent-popup-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-  .agent-popup-avatar { width: 32px; height: 32px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-family: 'Press Start 2P', monospace; image-rendering: pixelated; }
+  .agent-popup-avatar { width: 32px; height: 32px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-family: 'Press Start 2P', monospace; image-rendering: pixelated; overflow: hidden; }
+  .agent-popup-avatar canvas { image-rendering: pixelated; width: 100%; height: 100%; }
   .agent-popup-name { font-size: 14px; font-weight: 700; }
   .agent-popup-status { font-size: 10px; padding: 2px 8px; border-radius: 10px; }
   .agent-popup-close { position: absolute; top: 8px; right: 10px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 16px; }
@@ -209,7 +211,7 @@
 
     <!-- Canvas Area -->
     <div class="canvas-area" id="canvasArea">
-      <div id="pixiContainer"></div>
+      <canvas id="officeCanvas"></canvas>
       <div class="agent-popup" id="agentPopup">
         <button class="agent-popup-close" onclick="closePopup()">&times;</button>
         <div id="agentPopupContent"></div>
@@ -253,10 +255,9 @@
   </div>
 </div>
 
-<script src="https://pixijs.download/v7.3.2/pixi.min.js"></script>
 <script>
 // =============================================
-// PASSWORD GATE (preserved from original)
+// PASSWORD GATE (preserved)
 // =============================================
 async function tryUnlock() {
   const input = document.getElementById('lockPass').value;
@@ -279,7 +280,7 @@ if (sessionStorage.getItem('dtg_unlocked') === '1') {
 document.getElementById('lockPass').addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock(); });
 
 // =============================================
-// API CONNECTION (preserved from original)
+// API CONNECTION (preserved)
 // =============================================
 const isSameOrigin = location.hostname !== 'stephen395.github.io';
 const API_ENDPOINTS = [
@@ -320,7 +321,7 @@ async function saveApiUrl() {
 }
 
 // =============================================
-// AGENT DEFINITIONS
+// AGENT DEFINITIONS (preserved)
 // =============================================
 const AGENT_DEFS = {
   cody: { id: 'cody', apiId: null, name: 'Cody', role: 'Mission Control / Delegator', emoji: '\u{1F573}\u{FE0F}', color: '#a855f7', colorName: 'purple', channel: '#cody-control', room: 'mission-control', defaultModel: 'Unknown', defaultSkills: ['delegation', 'task-routing', 'mission-planning'] },
@@ -331,7 +332,6 @@ const AGENT_DEFS = {
   blockhead: { id: 'blockhead', apiId: null, name: 'Blockhead', role: 'Tencent VPS Bot', emoji: '\u{1F4E6}', color: '#6b7280', colorName: 'gray', channel: '#blockhead', room: 'server-room', defaultModel: 'Unknown', defaultSkills: ['discord-bot'] }
 };
 
-// Merged agent data (API + defaults)
 let agentStates = {};
 
 function mergeAgentData(apiData) {
@@ -352,32 +352,119 @@ function mergeAgentData(apiData) {
 }
 
 // =============================================
-// PIXI.JS VIRTUAL OFFICE
+// SPRITE ASSET LOADER
 // =============================================
-let pixiApp = null;
-let officeSprites = {};
+const ASSETS_BASE = 'assets/';
+const spriteImages = {};
+let assetsLoaded = false;
+let assetsToLoad = 0;
+let assetsLoadedCount = 0;
+
+// Agent-to-character-sprite mapping (char_0 through char_5)
+const AGENT_CHAR_MAP = {
+  cody: 3,      // char_3 - purple toned
+  main: 3,      // char_3 - same purple (FallingCave)
+  fish: 1,      // char_1 - blue toned
+  goku: 2,      // char_2 - warm toned
+  lake: 0,      // char_0 - blue themed
+  blockhead: 5  // char_5 - neutral/gray
+};
+
+// Character sprite sheet layout: 112x96
+// 7 frames x 16px = 112 wide
+// 3 directions x 32px = 96 tall (8px top padding per frame, 24px sprite)
+// Row 0=down, Row 1=up, Row 2=right
+// Frames: walk1, walk2(idle), walk3, type1, type2, read1, read2
+const CHAR_FRAME_W = 16;
+const CHAR_FRAME_H = 32;
+const CHAR_DIRECTIONS = { down: 0, up: 1, right: 2 };
+
+function loadImage(key, src) {
+  assetsToLoad++;
+  const img = new Image();
+  img.onload = () => {
+    spriteImages[key] = img;
+    assetsLoadedCount++;
+    if (assetsLoadedCount >= assetsToLoad) {
+      assetsLoaded = true;
+      if (officeCtx) renderOffice();
+    }
+  };
+  img.onerror = () => {
+    console.warn('Failed to load:', src);
+    assetsLoadedCount++;
+    if (assetsLoadedCount >= assetsToLoad) {
+      assetsLoaded = true;
+      if (officeCtx) renderOffice();
+    }
+  };
+  img.src = src;
+}
+
+function loadAllAssets() {
+  // Floor tiles
+  for (let i = 0; i <= 5; i++) loadImage('floor_' + i, ASSETS_BASE + 'tiles/floor_' + i + '.png');
+  // Wall
+  loadImage('wall', ASSETS_BASE + 'tiles/wall_0.png');
+  // Furniture
+  loadImage('desk_front', ASSETS_BASE + 'furniture/desk_front.png');
+  loadImage('desk_side', ASSETS_BASE + 'furniture/desk_side.png');
+  loadImage('pc_on_1', ASSETS_BASE + 'furniture/pc_on_1.png');
+  loadImage('pc_on_2', ASSETS_BASE + 'furniture/pc_on_2.png');
+  loadImage('pc_on_3', ASSETS_BASE + 'furniture/pc_on_3.png');
+  loadImage('pc_off', ASSETS_BASE + 'furniture/pc_off.png');
+  loadImage('chair_front', ASSETS_BASE + 'furniture/chair_front.png');
+  loadImage('chair_back', ASSETS_BASE + 'furniture/chair_back.png');
+  loadImage('bookshelf', ASSETS_BASE + 'furniture/bookshelf.png');
+  loadImage('double_bookshelf', ASSETS_BASE + 'furniture/double_bookshelf.png');
+  loadImage('whiteboard', ASSETS_BASE + 'furniture/whiteboard.png');
+  loadImage('sofa_front', ASSETS_BASE + 'furniture/sofa_front.png');
+  loadImage('coffee_table', ASSETS_BASE + 'furniture/coffee_table.png');
+  loadImage('table_front', ASSETS_BASE + 'furniture/table_front.png');
+  loadImage('small_table', ASSETS_BASE + 'furniture/small_table.png');
+  loadImage('wooden_chair', ASSETS_BASE + 'furniture/wooden_chair.png');
+  // Decorations
+  loadImage('plant', ASSETS_BASE + 'decorations/plant.png');
+  loadImage('plant2', ASSETS_BASE + 'decorations/plant2.png');
+  loadImage('large_plant', ASSETS_BASE + 'decorations/large_plant.png');
+  loadImage('cactus', ASSETS_BASE + 'decorations/cactus.png');
+  loadImage('hanging_plant', ASSETS_BASE + 'decorations/hanging_plant.png');
+  loadImage('large_painting', ASSETS_BASE + 'decorations/large_painting.png');
+  loadImage('small_painting', ASSETS_BASE + 'decorations/small_painting.png');
+  loadImage('small_painting2', ASSETS_BASE + 'decorations/small_painting2.png');
+  loadImage('clock', ASSETS_BASE + 'decorations/clock.png');
+  loadImage('coffee', ASSETS_BASE + 'decorations/coffee.png');
+  loadImage('bin', ASSETS_BASE + 'decorations/bin.png');
+  loadImage('pot', ASSETS_BASE + 'decorations/pot.png');
+  // Characters
+  for (let i = 0; i <= 5; i++) loadImage('char_' + i, ASSETS_BASE + 'characters/char_' + i + '.png');
+}
+
+// =============================================
+// CANVAS-BASED VIRTUAL OFFICE (replaces PixiJS)
+// =============================================
+let officeCanvas = null;
+let officeCtx = null;
 let animFrame = 0;
 let selectedAgent = null;
 let currentFilter = 'all';
 let pinnedAgents = new Set(JSON.parse(localStorage.getItem('dtg_pinned') || '[]'));
 
-// Room layout constants (in tile coords, each tile = 16px)
 const TILE = 16;
-const OFFICE_W = 60; // tiles wide
-const OFFICE_H = 40; // tiles tall
+const SCALE = 3; // Render at 3x native for crisp pixel art
+const OFFICE_W = 60;
+const OFFICE_H = 40;
 
-// Room definitions (in tile coords)
 const ROOMS = {
-  'comms-center':    { x: 1,  y: 1,  w: 18, h: 14, label: 'COMMS CENTER', color: 0x06b6d4 },
-  'conference':      { x: 20, y: 1,  w: 20, h: 14, label: 'CONFERENCE ROOM', color: 0x8b8f9e },
-  'code-lab':        { x: 41, y: 1,  w: 18, h: 14, label: 'CODE LAB', color: 0xf97316 },
-  'mission-control': { x: 1,  y: 16, w: 18, h: 12, label: 'MISSION CONTROL', color: 0xa855f7 },
-  'break-room':      { x: 20, y: 16, w: 20, h: 12, label: 'BREAK ROOM', color: 0xeab308 },
-  'intel-room':      { x: 41, y: 29, w: 18, h: 10, label: 'INTEL ROOM', color: 0x3b82f6 },
-  'server-room':     { x: 1,  y: 29, w: 18, h: 10, label: 'SERVER ROOM', color: 0xa855f7 }
+  'comms-center':    { x: 1,  y: 1,  w: 18, h: 14, label: 'COMMS CENTER', color: '#06b6d4' },
+  'conference':      { x: 20, y: 1,  w: 20, h: 14, label: 'CONFERENCE ROOM', color: '#8b8f9e' },
+  'code-lab':        { x: 41, y: 1,  w: 18, h: 14, label: 'CODE LAB', color: '#f97316' },
+  'mission-control': { x: 1,  y: 16, w: 18, h: 12, label: 'MISSION CONTROL', color: '#a855f7' },
+  'break-room':      { x: 20, y: 16, w: 20, h: 12, label: 'BREAK ROOM', color: '#eab308' },
+  'intel-room':      { x: 41, y: 29, w: 18, h: 10, label: 'INTEL ROOM', color: '#3b82f6' },
+  'server-room':     { x: 1,  y: 29, w: 18, h: 10, label: 'SERVER ROOM', color: '#a855f7' }
 };
 
-// Agent desk positions (tile coords)
 const DESK_POS = {
   cody:      { x: 8,  y: 21, room: 'mission-control' },
   main:      { x: 6,  y: 33, room: 'server-room' },
@@ -387,593 +474,467 @@ const DESK_POS = {
   blockhead: { x: 14, y: 33, room: 'server-room' }
 };
 
-// Break room position for idle agents
-const BREAK_POS = { x: 28, y: 21 };
+// Floor tile assignments per room (which floor_X.png to use)
+const ROOM_FLOOR = {
+  'comms-center': 1,
+  'conference': 2,
+  'code-lab': 3,
+  'mission-control': 4,
+  'break-room': 5,
+  'intel-room': 1,
+  'server-room': 0
+};
 
-function initPixi() {
-  const container = document.getElementById('canvasArea');
-  const w = container.clientWidth;
-  const h = container.clientHeight;
+function initCanvas() {
+  officeCanvas = document.getElementById('officeCanvas');
+  officeCtx = officeCanvas.getContext('2d');
+  // Disable smoothing for pixel-perfect rendering
+  officeCtx.imageSmoothingEnabled = false;
 
-  pixiApp = new PIXI.Application({
-    width: w,
-    height: h,
-    backgroundColor: 0x0d0f14,
-    antialias: false,
-    resolution: 1,
-    autoDensity: true
-  });
-  document.getElementById('pixiContainer').appendChild(pixiApp.view);
-  pixiApp.view.style.width = '100%';
-  pixiApp.view.style.height = '100%';
-  pixiApp.view.style.imageRendering = 'pixelated';
-
-  // Create main container with scaling
-  const world = new PIXI.Container();
-  pixiApp.stage.addChild(world);
-  world.name = 'world';
-
-  // Calculate scale to fit
-  const scaleX = w / (OFFICE_W * TILE);
-  const scaleY = h / (OFFICE_H * TILE);
-  const scale = Math.min(scaleX, scaleY);
-  world.scale.set(scale);
-  world.x = (w - OFFICE_W * TILE * scale) / 2;
-  world.y = (h - OFFICE_H * TILE * scale) / 2;
-
-  drawOffice(world);
-  drawAgents(world);
-
-  // Animation loop
-  pixiApp.ticker.add(() => {
-    animFrame++;
-    updateAnimations();
-  });
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
 
   // Click handling
-  pixiApp.view.addEventListener('click', (e) => {
-    const rect = pixiApp.view.getBoundingClientRect();
-    const mx = (e.clientX - rect.left) * (pixiApp.renderer.width / rect.width);
-    const my = (e.clientY - rect.top) * (pixiApp.renderer.height / rect.height);
-    const wx = (mx - world.x) / world.scale.x;
-    const wy = (my - world.y) / world.scale.y;
-    handleClick(wx, wy);
-  });
+  officeCanvas.addEventListener('click', handleCanvasClick);
 
-  // Resize handler
-  window.addEventListener('resize', () => {
-    if (!pixiApp) return;
-    const c = document.getElementById('canvasArea');
-    const nw = c.clientWidth;
-    const nh = c.clientHeight;
-    pixiApp.renderer.resize(nw, nh);
-    const sx = nw / (OFFICE_W * TILE);
-    const sy = nh / (OFFICE_H * TILE);
-    const s = Math.min(sx, sy);
-    world.scale.set(s);
-    world.x = (nw - OFFICE_W * TILE * s) / 2;
-    world.y = (nh - OFFICE_H * TILE * s) / 2;
-  });
+  // Start animation loop
+  requestAnimationFrame(gameLoop);
 }
 
-function drawOffice(world) {
-  const g = new PIXI.Graphics();
+function resizeCanvas() {
+  const container = document.getElementById('canvasArea');
+  const cw = container.clientWidth;
+  const ch = container.clientHeight;
 
-  // Floor background
-  g.beginFill(0x12141a);
-  g.drawRect(0, 0, OFFICE_W * TILE, OFFICE_H * TILE);
-  g.endFill();
+  // Calculate scale to fit the office in the viewport
+  const nativeW = OFFICE_W * TILE;
+  const nativeH = OFFICE_H * TILE;
+  const fitScale = Math.min(cw / nativeW, ch / nativeH);
+  // Use integer-ish scale for crispness, minimum 2
+  const renderScale = Math.max(2, Math.floor(fitScale * 2) / 2);
 
-  // Floor grid pattern (carpet tiles)
-  for (let tx = 0; tx < OFFICE_W; tx++) {
-    for (let ty = 0; ty < OFFICE_H; ty++) {
-      const shade = (tx + ty) % 2 === 0 ? 0x14161e : 0x161824;
-      g.beginFill(shade);
-      g.drawRect(tx * TILE, ty * TILE, TILE, TILE);
-      g.endFill();
+  officeCanvas.width = Math.floor(nativeW * renderScale);
+  officeCanvas.height = Math.floor(nativeH * renderScale);
+
+  // CSS size = fill container, centered
+  officeCanvas.style.width = officeCanvas.width + 'px';
+  officeCanvas.style.height = officeCanvas.height + 'px';
+  officeCanvas.style.position = 'absolute';
+  officeCanvas.style.left = Math.max(0, (cw - officeCanvas.width) / 2) + 'px';
+  officeCanvas.style.top = Math.max(0, (ch - officeCanvas.height) / 2) + 'px';
+
+  officeCtx.imageSmoothingEnabled = false;
+  officeCtx.setTransform(renderScale, 0, 0, renderScale, 0, 0);
+
+  renderOffice();
+}
+
+let lastRenderScale = 1;
+function getRenderScale() {
+  if (!officeCanvas) return 2;
+  return officeCanvas.width / (OFFICE_W * TILE);
+}
+
+function gameLoop(timestamp) {
+  animFrame++;
+  if (animFrame % 4 === 0) { // ~15fps for pixel art feel
+    renderOffice();
+  }
+  requestAnimationFrame(gameLoop);
+}
+
+// =============================================
+// RENDERING
+// =============================================
+function renderOffice() {
+  if (!officeCtx) return;
+  const ctx = officeCtx;
+
+  // Clear
+  ctx.fillStyle = '#0d0f14';
+  ctx.fillRect(0, 0, OFFICE_W * TILE, OFFICE_H * TILE);
+
+  // Draw floors
+  drawFloors(ctx);
+  // Draw room walls and borders
+  drawRoomBorders(ctx);
+  // Draw hallway indicators
+  drawHallways(ctx);
+  // Draw furniture (z-sorted)
+  drawAllFurniture(ctx);
+  // Draw agents (z-sorted)
+  drawAllAgents(ctx);
+  // Draw room labels on top
+  drawRoomLabels(ctx);
+}
+
+function drawFloors(ctx) {
+  // Draw tiled floor for each room
+  for (const [roomId, room] of Object.entries(ROOMS)) {
+    const floorIdx = ROOM_FLOOR[roomId] || 0;
+    const floorImg = spriteImages['floor_' + floorIdx];
+    for (let tx = room.x; tx < room.x + room.w; tx++) {
+      for (let ty = room.y; ty < room.y + room.h; ty++) {
+        if (floorImg) {
+          ctx.drawImage(floorImg, tx * TILE, ty * TILE, TILE, TILE);
+        } else {
+          // Fallback checkerboard
+          ctx.fillStyle = (tx + ty) % 2 === 0 ? '#1a1d28' : '#1e2130';
+          ctx.fillRect(tx * TILE, ty * TILE, TILE, TILE);
+        }
+      }
     }
   }
 
-  // Draw rooms
+  // Hallway floors (darker pattern)
+  const hallFloor = spriteImages['floor_0'];
+  for (let tx = 0; tx < OFFICE_W; tx++) {
+    for (let ty = 0; ty < OFFICE_H; ty++) {
+      // Check if tile is inside any room
+      let inRoom = false;
+      for (const room of Object.values(ROOMS)) {
+        if (tx >= room.x && tx < room.x + room.w && ty >= room.y && ty < room.y + room.h) {
+          inRoom = true; break;
+        }
+      }
+      if (!inRoom) {
+        if (hallFloor) {
+          ctx.globalAlpha = 0.4;
+          ctx.drawImage(hallFloor, tx * TILE, ty * TILE, TILE, TILE);
+          ctx.globalAlpha = 1.0;
+        } else {
+          ctx.fillStyle = (tx + ty) % 2 === 0 ? '#111318' : '#131520';
+          ctx.fillRect(tx * TILE, ty * TILE, TILE, TILE);
+        }
+      }
+    }
+  }
+}
+
+function drawRoomBorders(ctx) {
   for (const [roomId, room] of Object.entries(ROOMS)) {
     const rx = room.x * TILE;
     const ry = room.y * TILE;
     const rw = room.w * TILE;
     const rh = room.h * TILE;
 
-    // Room floor (slightly brighter)
-    g.beginFill(0x1a1d28, 0.6);
-    g.drawRect(rx, ry, rw, rh);
-    g.endFill();
+    // Wall top strip using wall sprite if available
+    const wallImg = spriteImages['wall'];
+    if (wallImg) {
+      // Draw wall segments along the top of each room
+      // wall_0.png is 64x128, we'll use the top portion as a horizontal wall
+      for (let wx = 0; wx < rw; wx += TILE) {
+        // Use a 16x16 section of the wall for the top border
+        ctx.drawImage(wallImg, 0, 0, 16, 16, rx + wx, ry - TILE, TILE, TILE);
+      }
+    }
 
-    // Room walls
-    g.lineStyle(2, room.color, 0.4);
-    g.drawRect(rx, ry, rw, rh);
-    g.lineStyle(0);
+    // Room border
+    ctx.strokeStyle = room.color;
+    ctx.globalAlpha = 0.5;
+    ctx.lineWidth = 2 / getRenderScale();
+    ctx.strokeRect(rx, ry, rw, rh);
 
-    // Wall top accent
-    g.beginFill(room.color, 0.15);
-    g.drawRect(rx, ry, rw, 3);
-    g.endFill();
+    // Top accent glow
+    ctx.fillStyle = room.color;
+    ctx.globalAlpha = 0.2;
+    ctx.fillRect(rx, ry, rw, 3);
 
-    // Corner decorations
-    const cd = 4;
-    g.beginFill(room.color, 0.5);
-    g.drawRect(rx, ry, cd, cd);
-    g.drawRect(rx + rw - cd, ry, cd, cd);
-    g.drawRect(rx, ry + rh - cd, cd, cd);
-    g.drawRect(rx + rw - cd, ry + rh - cd, cd, cd);
-    g.endFill();
+    // Corner dots
+    ctx.globalAlpha = 0.6;
+    const cd = 3;
+    ctx.fillRect(rx, ry, cd, cd);
+    ctx.fillRect(rx + rw - cd, ry, cd, cd);
+    ctx.fillRect(rx, ry + rh - cd, cd, cd);
+    ctx.fillRect(rx + rw - cd, ry + rh - cd, cd, cd);
+
+    ctx.globalAlpha = 1.0;
+    ctx.lineWidth = 1;
   }
-
-  // Draw hallway lines
-  g.lineStyle(1, 0x2a2d3a, 0.3);
-  // Horizontal hallway between top and middle rows
-  g.moveTo(0, 15 * TILE);
-  g.lineTo(OFFICE_W * TILE, 15 * TILE);
-  // Between middle and bottom rows
-  g.moveTo(0, 28 * TILE);
-  g.lineTo(OFFICE_W * TILE, 28 * TILE);
-  // Vertical separators
-  g.moveTo(19 * TILE, 0);
-  g.lineTo(19 * TILE, OFFICE_H * TILE);
-  g.moveTo(40 * TILE, 0);
-  g.lineTo(40 * TILE, OFFICE_H * TILE);
-  g.lineStyle(0);
-
-  world.addChild(g);
-
-  // Room labels
-  for (const [roomId, room] of Object.entries(ROOMS)) {
-    const label = new PIXI.Text(room.label, {
-      fontFamily: 'Press Start 2P, monospace',
-      fontSize: 6,
-      fill: room.color,
-      align: 'center',
-      letterSpacing: 1
-    });
-    label.x = (room.x + room.w / 2) * TILE;
-    label.y = (room.y + 0.6) * TILE;
-    label.anchor.set(0.5, 0);
-    label.alpha = 0.7;
-    world.addChild(label);
-  }
-
-  // Draw furniture in rooms
-  drawFurniture(world);
 }
 
-function drawFurniture(world) {
-  const g = new PIXI.Graphics();
+function drawHallways(ctx) {
+  ctx.strokeStyle = '#2a2d3a';
+  ctx.globalAlpha = 0.3;
+  ctx.lineWidth = 1 / getRenderScale();
+  ctx.beginPath();
+  ctx.moveTo(0, 15 * TILE); ctx.lineTo(OFFICE_W * TILE, 15 * TILE);
+  ctx.moveTo(0, 28 * TILE); ctx.lineTo(OFFICE_W * TILE, 28 * TILE);
+  ctx.moveTo(19 * TILE, 0); ctx.lineTo(19 * TILE, OFFICE_H * TILE);
+  ctx.moveTo(40 * TILE, 0); ctx.lineTo(40 * TILE, OFFICE_H * TILE);
+  ctx.stroke();
+  ctx.globalAlpha = 1.0;
+}
 
+function drawSprite(ctx, key, x, y, w, h, alpha) {
+  const img = spriteImages[key];
+  if (!img) return false;
+  if (alpha !== undefined) ctx.globalAlpha = alpha;
+  ctx.drawImage(img, x, y, w || img.width, h || img.height);
+  if (alpha !== undefined) ctx.globalAlpha = 1.0;
+  return true;
+}
+
+function drawAllFurniture(ctx) {
   // Conference table (center of conference room)
   const confRoom = ROOMS['conference'];
-  const tableX = (confRoom.x + confRoom.w / 2) * TILE;
-  const tableY = (confRoom.y + confRoom.h / 2) * TILE;
-  g.beginFill(0x3d2b1f);
-  g.drawRoundedRect(tableX - 40, tableY - 16, 80, 32, 4);
-  g.endFill();
-  g.beginFill(0x4a3728);
-  g.drawRoundedRect(tableX - 38, tableY - 14, 76, 28, 3);
-  g.endFill();
+  const confCX = (confRoom.x + confRoom.w / 2) * TILE;
+  const confCY = (confRoom.y + confRoom.h / 2) * TILE;
+  // Big table from table_front asset
+  drawSprite(ctx, 'table_front', confCX - 24, confCY - 32, 48, 64);
   // Chairs around table
-  for (let i = 0; i < 6; i++) {
-    const cx = tableX - 36 + i * 14;
-    g.beginFill(0x2a2d3a);
-    g.drawCircle(cx, tableY - 22, 4);
-    g.drawCircle(cx, tableY + 22, 4);
-    g.endFill();
+  for (let i = 0; i < 5; i++) {
+    const cx = confCX - 28 + i * 14;
+    drawSprite(ctx, 'wooden_chair', cx, confCY - 28, 10, 16);
+    drawSprite(ctx, 'chair_front', cx, confCY + 20, 10, 10);
   }
 
-  // Break room items
+  // Break room
   const brRoom = ROOMS['break-room'];
-  // Coffee machine
-  g.beginFill(0x4a3728);
-  g.drawRect((brRoom.x + 2) * TILE, (brRoom.y + 2) * TILE, 12, 14);
-  g.endFill();
-  g.beginFill(0x6b4226);
-  g.drawRect((brRoom.x + 2) * TILE + 2, (brRoom.y + 2) * TILE + 2, 8, 6);
-  g.endFill();
+  // Coffee machine (top-left area)
+  drawSprite(ctx, 'coffee', (brRoom.x + 2) * TILE, (brRoom.y + 2) * TILE, 16, 16);
   // Small tables
-  g.beginFill(0x3d2b1f);
-  g.drawCircle((brRoom.x + 8) * TILE, (brRoom.y + 7) * TILE, 10);
-  g.drawCircle((brRoom.x + 15) * TILE, (brRoom.y + 7) * TILE, 10);
-  g.endFill();
-  // Couch
-  g.beginFill(0x2d4a3a);
-  g.drawRoundedRect((brRoom.x + 10) * TILE, (brRoom.y + 10) * TILE, 48, 16, 3);
-  g.endFill();
+  drawSprite(ctx, 'small_table', (brRoom.x + 6) * TILE, (brRoom.y + 5) * TILE, 32, 32);
+  drawSprite(ctx, 'small_table', (brRoom.x + 13) * TILE, (brRoom.y + 5) * TILE, 32, 32);
+  drawSprite(ctx, 'coffee_table', (brRoom.x + 10) * TILE, (brRoom.y + 3) * TILE, 32, 32);
+  // Sofa
+  drawSprite(ctx, 'sofa_front', (brRoom.x + 7) * TILE, (brRoom.y + 9) * TILE, 32, 16);
+  drawSprite(ctx, 'sofa_front', (brRoom.x + 12) * TILE, (brRoom.y + 9) * TILE, 32, 16);
+  // Plants
+  drawSprite(ctx, 'large_plant', (brRoom.x + 1) * TILE, (brRoom.y + 8) * TILE - 16, 32, 48);
+  drawSprite(ctx, 'cactus', (brRoom.x + 18) * TILE, (brRoom.y + 1) * TILE, 16, 32);
 
-  // Server racks in server room
+  // Server room - racks (using double_bookshelf as server racks)
   const srvRoom = ROOMS['server-room'];
   for (let i = 0; i < 3; i++) {
     const sx = (srvRoom.x + 2 + i * 4) * TILE;
     const sy = (srvRoom.y + 2) * TILE;
-    // Rack body
-    g.beginFill(0x2a2d3a);
-    g.drawRect(sx, sy, 12, 40);
-    g.endFill();
-    // Rack lights (blinking)
-    for (let j = 0; j < 5; j++) {
-      g.beginFill(0x22c55e, 0.6);
-      g.drawRect(sx + 2, sy + 4 + j * 8, 3, 2);
-      g.endFill();
-      g.beginFill(0x3b82f6, 0.4);
-      g.drawRect(sx + 7, sy + 4 + j * 8, 3, 2);
-      g.endFill();
-    }
+    drawSprite(ctx, 'double_bookshelf', sx, sy, 32, 32);
+    // Blinking server lights overlay
+    drawServerLights(ctx, sx, sy);
   }
+  drawSprite(ctx, 'bin', (srvRoom.x + 16) * TILE, (srvRoom.y + 8) * TILE, 16, 16);
 
-  // Research boards in intel room
+  // Intel room
   const intRoom = ROOMS['intel-room'];
-  // Whiteboard
-  g.beginFill(0x1e2840);
-  g.drawRect((intRoom.x + 2) * TILE, (intRoom.y + 1.5) * TILE, 64, 8);
-  g.endFill();
-  g.lineStyle(1, 0x3b82f6, 0.5);
-  g.drawRect((intRoom.x + 2) * TILE, (intRoom.y + 1.5) * TILE, 64, 8);
-  g.lineStyle(0);
-  // Sticky notes on board
-  const noteColors = [0xeab308, 0x22c55e, 0xef4444, 0x3b82f6];
-  for (let i = 0; i < 4; i++) {
-    g.beginFill(noteColors[i], 0.7);
-    g.drawRect((intRoom.x + 3 + i * 2.5) * TILE, (intRoom.y + 1.8) * TILE, 6, 5);
-    g.endFill();
-  }
+  drawSprite(ctx, 'whiteboard', (intRoom.x + 2) * TILE, (intRoom.y + 1) * TILE, 32, 32);
+  drawSprite(ctx, 'whiteboard', (intRoom.x + 6) * TILE, (intRoom.y + 1) * TILE, 32, 32);
+  drawSprite(ctx, 'bookshelf', (intRoom.x + 14) * TILE, (intRoom.y + 1) * TILE, 32, 16);
+  drawSprite(ctx, 'plant', (intRoom.x + 16) * TILE, (intRoom.y + 6) * TILE - 16, 16, 32);
 
-  // Chat screens in comms center
+  // Comms center - screens (using desk+pc combos)
   const comRoom = ROOMS['comms-center'];
+  // Large screens represented by desk with multiple PCs
   for (let i = 0; i < 2; i++) {
     const mx = (comRoom.x + 2 + i * 8) * TILE;
     const my = (comRoom.y + 2) * TILE;
-    // Screen
-    g.beginFill(0x0a2a2a);
-    g.drawRect(mx, my, 24, 18);
-    g.endFill();
-    g.lineStyle(1, 0x06b6d4, 0.5);
-    g.drawRect(mx, my, 24, 18);
-    g.lineStyle(0);
-    // Chat lines on screen
-    for (let j = 0; j < 3; j++) {
-      g.beginFill(0x06b6d4, 0.3);
-      g.drawRect(mx + 3, my + 3 + j * 5, 12 + (j % 2) * 6, 2);
-      g.endFill();
-    }
+    drawSprite(ctx, 'desk_front', mx, my + 16, 48, 32);
+    // Monitors on desk
+    const pcKey = 'pc_on_' + (1 + (animFrame >> 4) % 3);
+    drawSprite(ctx, pcKey, mx + 4, my, 16, 32);
+    drawSprite(ctx, pcKey, mx + 24, my, 16, 32);
   }
+  drawSprite(ctx, 'plant2', (comRoom.x + 16) * TILE, (comRoom.y + 1) * TILE - 16, 16, 32);
+  drawSprite(ctx, 'clock', (comRoom.x + 1) * TILE, (comRoom.y + 1) * TILE, 16, 32);
 
-  // Code monitors in code lab
+  // Code lab - multiple workstations
   const codeRoom = ROOMS['code-lab'];
   for (let i = 0; i < 3; i++) {
     const mx = (codeRoom.x + 2 + i * 5) * TILE;
     const my = (codeRoom.y + 2) * TILE;
-    g.beginFill(0x1a0f0a);
-    g.drawRect(mx, my, 20, 16);
-    g.endFill();
-    g.lineStyle(1, 0xf97316, 0.4);
-    g.drawRect(mx, my, 20, 16);
-    g.lineStyle(0);
-    // Code lines
-    for (let j = 0; j < 4; j++) {
-      g.beginFill(0xf97316, 0.25);
-      g.drawRect(mx + 2, my + 2 + j * 3, 8 + (j * 3 % 7), 1);
-      g.endFill();
-    }
+    drawSprite(ctx, 'desk_front', mx, my + 16, 48, 32);
+    const pcKey = 'pc_on_' + (1 + ((animFrame >> 5) + i) % 3);
+    drawSprite(ctx, pcKey, mx + 16, my, 16, 32);
   }
+  drawSprite(ctx, 'large_painting', (codeRoom.x + 1) * TILE, (codeRoom.y + 1) * TILE, 32, 32);
+  drawSprite(ctx, 'cactus', (codeRoom.x + 16) * TILE, (codeRoom.y + 10) * TILE, 16, 32);
 
-  // Mission control big screen
+  // Mission control - big screen + desk
   const mcRoom = ROOMS['mission-control'];
-  g.beginFill(0x1a0f2a);
-  g.drawRect((mcRoom.x + 3) * TILE, (mcRoom.y + 1.5) * TILE, 80, 24);
-  g.endFill();
-  g.lineStyle(2, 0xa855f7, 0.5);
-  g.drawRect((mcRoom.x + 3) * TILE, (mcRoom.y + 1.5) * TILE, 80, 24);
-  g.lineStyle(0);
-  // Dashboard lines on big screen
-  for (let j = 0; j < 3; j++) {
-    g.beginFill(0xa855f7, 0.3);
-    g.drawRect((mcRoom.x + 3.5) * TILE, (mcRoom.y + 2) * TILE + j * 6, 20 + j * 10, 2);
-    g.endFill();
-  }
-  // Small monitors on MC desk area
-  for (let i = 0; i < 2; i++) {
-    const mx = (mcRoom.x + 4 + i * 6) * TILE;
-    const my = (mcRoom.y + 6) * TILE;
-    g.beginFill(0x1a0f2a);
-    g.drawRect(mx, my, 18, 14);
-    g.endFill();
-    g.lineStyle(1, 0xa855f7, 0.3);
-    g.drawRect(mx, my, 18, 14);
-    g.lineStyle(0);
-  }
+  // Big screen wall (whiteboards as screens)
+  drawSprite(ctx, 'whiteboard', (mcRoom.x + 3) * TILE, (mcRoom.y + 1) * TILE, 32, 32);
+  drawSprite(ctx, 'whiteboard', (mcRoom.x + 7) * TILE, (mcRoom.y + 1) * TILE, 32, 32);
+  drawSprite(ctx, 'large_painting', (mcRoom.x + 11) * TILE, (mcRoom.y + 1) * TILE, 32, 32);
+  // Control desk area
+  drawSprite(ctx, 'desk_front', (mcRoom.x + 3) * TILE, (mcRoom.y + 5) * TILE + 16, 48, 32);
+  const mcPcKey = 'pc_on_' + (1 + (animFrame >> 4) % 3);
+  drawSprite(ctx, mcPcKey, (mcRoom.x + 4) * TILE, (mcRoom.y + 5) * TILE, 16, 32);
+  drawSprite(ctx, mcPcKey, (mcRoom.x + 7) * TILE, (mcRoom.y + 5) * TILE, 16, 32);
+  drawSprite(ctx, 'hanging_plant', (mcRoom.x + 1) * TILE, (mcRoom.y + 1) * TILE, 16, 32);
+  drawSprite(ctx, 'small_painting', (mcRoom.x + 15) * TILE, (mcRoom.y + 1) * TILE, 16, 32);
 
-  world.addChild(g);
-}
-
-function drawAgents(world) {
-  for (const [agentId, def] of Object.entries(AGENT_DEFS)) {
-    const pos = DESK_POS[agentId];
-    const container = new PIXI.Container();
-    container.x = pos.x * TILE;
-    container.y = pos.y * TILE;
-    container.name = agentId;
-
-    // Desk
-    const desk = new PIXI.Graphics();
-    desk.beginFill(0x3d2b1f);
-    desk.drawRect(-14, 2, 28, 14);
-    desk.endFill();
-    desk.beginFill(0x4a3728);
-    desk.drawRect(-12, 4, 24, 10);
-    desk.endFill();
-
+  // Agent workstation desks
+  for (const [agentId, pos] of Object.entries(DESK_POS)) {
+    const dx = pos.x * TILE - 24;
+    const dy = pos.y * TILE + 4;
+    drawSprite(ctx, 'desk_front', dx, dy, 48, 32);
+    // Chair behind desk
+    drawSprite(ctx, 'chair_back', pos.x * TILE - 4, pos.y * TILE + 20, 10, 10);
     // Monitor on desk
-    const monitor = new PIXI.Graphics();
-    monitor.beginFill(0x0d0f14);
-    monitor.drawRect(-8, -4, 16, 10);
-    monitor.endFill();
-    monitor.name = 'monitor';
-
-    // Monitor screen content (will animate)
-    const screenGlow = new PIXI.Graphics();
-    screenGlow.name = 'screenGlow';
-    drawMonitorContent(screenGlow, agentId, 'offline');
-
-    // Monitor frame
-    const monFrame = new PIXI.Graphics();
-    const col = parseInt(def.color.replace('#', ''), 16);
-    monFrame.lineStyle(1, col, 0.6);
-    monFrame.drawRect(-8, -4, 16, 10);
-    monFrame.lineStyle(0);
-    // Monitor stand
-    monFrame.beginFill(0x2a2d3a);
-    monFrame.drawRect(-2, 6, 4, 3);
-    monFrame.endFill();
-
-    // Agent character sprite
-    const sprite = new PIXI.Graphics();
-    sprite.name = 'sprite';
-    drawAgentSprite(sprite, agentId, 'offline', 0);
-
-    // Name label
-    const nameLabel = new PIXI.Text(def.name, {
-      fontFamily: 'Press Start 2P, monospace',
-      fontSize: 5,
-      fill: parseInt(def.color.replace('#', ''), 16),
-      align: 'center'
-    });
-    nameLabel.anchor.set(0.5, 0);
-    nameLabel.y = 18;
-    nameLabel.name = 'nameLabel';
-
-    // Status indicator
-    const statusInd = new PIXI.Graphics();
-    statusInd.name = 'statusInd';
-    statusInd.beginFill(0xef4444);
-    statusInd.drawCircle(12, -14, 3);
-    statusInd.endFill();
-
-    container.addChild(desk);
-    container.addChild(monitor);
-    container.addChild(screenGlow);
-    container.addChild(monFrame);
-    container.addChild(sprite);
-    container.addChild(nameLabel);
-    container.addChild(statusInd);
-
-    // Make interactive
-    container.eventMode = 'static';
-    container.cursor = 'pointer';
-
-    world.addChild(container);
-    officeSprites[agentId] = container;
-  }
-}
-
-function drawAgentSprite(g, agentId, status, frame) {
-  g.clear();
-  const def = AGENT_DEFS[agentId];
-  const col = parseInt(def.color.replace('#', ''), 16);
-  const isOffline = status === 'offline';
-  const alpha = isOffline ? 0.3 : 1.0;
-  const bodyCol = isOffline ? 0x3a3d4a : col;
-  const skinCol = isOffline ? 0x555555 : 0xf0c8a0;
-  const hairCol = isOffline ? 0x444444 : darkenColor(col, 0.5);
-
-  // Breathing/typing animation offset
-  const breathOffset = status === 'offline' ? 0 : Math.sin(frame * 0.05) * 0.5;
-  const typingOffset = (status === 'online' || status === 'working') ? Math.abs(Math.sin(frame * 0.15)) * 2 : 0;
-
-  // Shadow
-  g.beginFill(0x000000, 0.2);
-  g.drawEllipse(0, 2, 6, 2);
-  g.endFill();
-
-  // Body (shirt)
-  g.beginFill(bodyCol, alpha);
-  g.drawRoundedRect(-5, -6 + breathOffset, 10, 8, 2);
-  g.endFill();
-
-  // Head
-  g.beginFill(skinCol, alpha);
-  g.drawCircle(0, -10 + breathOffset, 5);
-  g.endFill();
-
-  // Hair
-  g.beginFill(hairCol, alpha);
-  g.drawRect(-5, -15 + breathOffset, 10, 4);
-  g.endFill();
-
-  // Eyes
-  if (!isOffline) {
-    const blinkFrame = frame % 120;
-    if (blinkFrame < 115) {
-      g.beginFill(0xffffff);
-      g.drawRect(-3, -11 + breathOffset, 2, 2);
-      g.drawRect(1, -11 + breathOffset, 2, 2);
-      g.endFill();
-      g.beginFill(0x111111);
-      g.drawRect(-2.5, -10.5 + breathOffset, 1, 1);
-      g.drawRect(1.5, -10.5 + breathOffset, 1, 1);
-      g.endFill();
-    } else {
-      // Blinking
-      g.beginFill(skinCol);
-      g.drawRect(-3, -10.5 + breathOffset, 2, 1);
-      g.drawRect(1, -10.5 + breathOffset, 2, 1);
-      g.endFill();
-    }
-  } else {
-    // X eyes for offline
-    g.lineStyle(1, 0x555555, 0.5);
-    g.moveTo(-3, -12); g.lineTo(-1, -10);
-    g.moveTo(-1, -12); g.lineTo(-3, -10);
-    g.moveTo(1, -12); g.lineTo(3, -10);
-    g.moveTo(3, -12); g.lineTo(1, -10);
-    g.lineStyle(0);
-  }
-
-  // Arms (typing animation)
-  if (status === 'online' || status === 'working') {
-    // Left arm reaching toward keyboard
-    g.beginFill(skinCol, alpha);
-    g.drawRect(-7, -2 + breathOffset - typingOffset * 0.3, 3, 3);
-    g.endFill();
-    // Right arm
-    g.beginFill(skinCol, alpha);
-    g.drawRect(4, -2 + breathOffset + typingOffset * 0.3, 3, 3);
-    g.endFill();
-  } else if (!isOffline) {
-    // Idle arms at sides
-    g.beginFill(skinCol, alpha);
-    g.drawRect(-7, -4 + breathOffset, 3, 5);
-    g.drawRect(4, -4 + breathOffset, 3, 5);
-    g.endFill();
-  }
-}
-
-function drawMonitorContent(g, agentId, status) {
-  g.clear();
-  if (status === 'offline') {
-    // Static / noise
-    g.beginFill(0x1a1d28, 0.5);
-    g.drawRect(-7, -3, 14, 8);
-    g.endFill();
-    return;
-  }
-  // Active screen content
-  const def = AGENT_DEFS[agentId];
-  const col = parseInt(def.color.replace('#', ''), 16);
-  g.beginFill(col, 0.1);
-  g.drawRect(-7, -3, 14, 8);
-  g.endFill();
-  // Scan line
-  for (let i = 0; i < 4; i++) {
-    g.beginFill(col, 0.15 + Math.random() * 0.15);
-    g.drawRect(-6, -2 + i * 2, 6 + Math.random() * 6, 1);
-    g.endFill();
-  }
-}
-
-function darkenColor(hex, factor) {
-  const r = Math.floor(((hex >> 16) & 0xFF) * factor);
-  const gg = Math.floor(((hex >> 8) & 0xFF) * factor);
-  const b = Math.floor((hex & 0xFF) * factor);
-  return (r << 16) | (gg << 8) | b;
-}
-
-function updateAnimations() {
-  for (const [agentId, container] of Object.entries(officeSprites)) {
     const state = agentStates[agentId];
-    if (!state) continue;
-    const status = state.status;
+    const isActive = state && (state.status === 'online' || state.status === 'working');
+    const pcKey = isActive ? ('pc_on_' + (1 + (animFrame >> 4) % 3)) : 'pc_off';
+    drawSprite(ctx, pcKey, pos.x * TILE - 8, pos.y * TILE - 16, 16, 32);
+  }
+}
 
-    // Update sprite
-    const sprite = container.getChildByName('sprite');
-    if (sprite && animFrame % 3 === 0) {
-      drawAgentSprite(sprite, agentId, status, animFrame);
-    }
+function drawServerLights(ctx, sx, sy) {
+  // Animated blinking lights on server racks
+  for (let j = 0; j < 6; j++) {
+    const on1 = ((animFrame + j * 7) % 20) > 5;
+    const on2 = ((animFrame + j * 11) % 25) > 8;
+    ctx.fillStyle = on1 ? '#22c55e' : '#0a1a0a';
+    ctx.globalAlpha = on1 ? 0.9 : 0.3;
+    ctx.fillRect(sx + 4, sy + 4 + j * 5, 3, 2);
+    ctx.fillStyle = on2 ? '#3b82f6' : '#0a0a1a';
+    ctx.globalAlpha = on2 ? 0.7 : 0.2;
+    ctx.fillRect(sx + 10, sy + 4 + j * 5, 3, 2);
+  }
+  ctx.globalAlpha = 1.0;
+}
 
-    // Update monitor content with flicker
-    const screenGlow = container.getChildByName('screenGlow');
-    if (screenGlow && animFrame % 20 === 0) {
-      drawMonitorContent(screenGlow, agentId, status);
-    }
+function drawAllAgents(ctx) {
+  // Draw agents sorted by Y position for proper overlap
+  const agentOrder = Object.entries(DESK_POS).sort((a, b) => a[1].y - b[1].y);
 
-    // Update status indicator
-    const statusInd = container.getChildByName('statusInd');
-    if (statusInd) {
-      statusInd.clear();
-      const statusColor = status === 'online' ? 0x22c55e : status === 'working' ? 0x3b82f6 : status === 'idle' ? 0xeab308 : 0xef4444;
-      statusInd.beginFill(statusColor);
-      statusInd.drawCircle(12, -14, 3);
-      statusInd.endFill();
-      // Pulse for online/working
+  for (const [agentId, pos] of agentOrder) {
+    const state = agentStates[agentId];
+    const status = state ? state.status : 'offline';
+    const charIdx = AGENT_CHAR_MAP[agentId];
+    const charImg = spriteImages['char_' + charIdx];
+
+    const agentX = pos.x * TILE;
+    const agentY = pos.y * TILE;
+
+    if (charImg) {
+      // Extract the correct frame from the sprite sheet
+      // Direction: down (row 0), Frame selection based on status
+      let frameIdx;
+      if (status === 'online' || status === 'working') {
+        // Type animation: alternate between frames 3 and 4 (type1, type2)
+        frameIdx = 3 + ((animFrame >> 3) % 2);
+      } else if (status === 'idle') {
+        // Idle: use walk2 (standing pose), frame 1
+        frameIdx = 1;
+      } else {
+        // Offline: standing, frame 1
+        frameIdx = 1;
+      }
+
+      const srcX = frameIdx * CHAR_FRAME_W;
+      const srcY = 0; // Down-facing row
+      const drawW = CHAR_FRAME_W;
+      const drawH = CHAR_FRAME_H;
+
+      // Breathing animation
+      const breathOff = status !== 'offline' ? Math.sin(animFrame * 0.08) * 0.5 : 0;
+
+      // Alpha for offline agents
+      if (status === 'offline') ctx.globalAlpha = 0.35;
+
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      ctx.beginPath();
+      ctx.ellipse(agentX, agentY + 2, 7, 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Draw the character sprite
+      ctx.drawImage(
+        charImg,
+        srcX, srcY, CHAR_FRAME_W, CHAR_FRAME_H,
+        agentX - drawW / 2, agentY - drawH + 8 + breathOff, drawW, drawH
+      );
+
+      ctx.globalAlpha = 1.0;
+
+      // Status indicator dot
+      const statusColor = status === 'online' ? '#22c55e' : status === 'working' ? '#3b82f6' : status === 'idle' ? '#eab308' : '#ef4444';
+      ctx.fillStyle = statusColor;
+      ctx.beginPath();
+      ctx.arc(agentX + 10, agentY - 22, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Pulse for active agents
       if (status === 'online' || status === 'working') {
         const pulseAlpha = 0.3 + Math.sin(animFrame * 0.08) * 0.2;
-        statusInd.beginFill(statusColor, pulseAlpha);
-        statusInd.drawCircle(12, -14, 5);
-        statusInd.endFill();
+        ctx.fillStyle = statusColor;
+        ctx.globalAlpha = pulseAlpha;
+        ctx.beginPath();
+        ctx.arc(agentX + 10, agentY - 22, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
       }
+    } else {
+      // Fallback: draw simple colored rectangle if sprite not loaded
+      drawFallbackAgent(ctx, agentId, agentX, agentY, status);
     }
 
-    // Server room rack lights blink
-    if (animFrame % 30 === 0 && (agentId === 'main' || agentId === 'blockhead')) {
-      // Handled globally in the static graphics -- no per-agent update needed
-    }
-  }
-
-  // Animate server rack lights (global overlay)
-  if (animFrame % 15 === 0) {
-    updateServerLights();
+    // Name label
+    const def = AGENT_DEFS[agentId];
+    ctx.fillStyle = def.color;
+    ctx.font = '5px "Press Start 2P", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(def.name, agentX, agentY + 14);
+    ctx.textAlign = 'left';
   }
 }
 
-let serverLightsContainer = null;
-function updateServerLights() {
-  const world = pixiApp.stage.getChildByName('world');
-  if (!world) return;
-  if (serverLightsContainer) {
-    world.removeChild(serverLightsContainer);
-  }
-  serverLightsContainer = new PIXI.Graphics();
-  const srvRoom = ROOMS['server-room'];
-  for (let i = 0; i < 3; i++) {
-    const sx = (srvRoom.x + 2 + i * 4) * TILE;
-    const sy = (srvRoom.y + 2) * TILE;
-    for (let j = 0; j < 5; j++) {
-      const on = Math.random() > 0.3;
-      serverLightsContainer.beginFill(on ? 0x22c55e : 0x0a1a0a, on ? 0.8 : 0.3);
-      serverLightsContainer.drawRect(sx + 2, sy + 4 + j * 8, 3, 2);
-      serverLightsContainer.endFill();
-      const on2 = Math.random() > 0.4;
-      serverLightsContainer.beginFill(on2 ? 0x3b82f6 : 0x0a0a1a, on2 ? 0.6 : 0.2);
-      serverLightsContainer.drawRect(sx + 7, sy + 4 + j * 8, 3, 2);
-      serverLightsContainer.endFill();
-    }
-  }
-  world.addChild(serverLightsContainer);
+function drawFallbackAgent(ctx, agentId, x, y, status) {
+  const def = AGENT_DEFS[agentId];
+  const col = def.color;
+  const isOffline = status === 'offline';
+  ctx.globalAlpha = isOffline ? 0.3 : 1.0;
+
+  // Body
+  ctx.fillStyle = col;
+  ctx.fillRect(x - 5, y - 6, 10, 8);
+  // Head
+  ctx.fillStyle = isOffline ? '#555' : '#f0c8a0';
+  ctx.beginPath();
+  ctx.arc(x, y - 10, 5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.globalAlpha = 1.0;
 }
 
-function handleClick(wx, wy) {
-  // Check if click is near any agent
+function drawRoomLabels(ctx) {
+  ctx.font = '5px "Press Start 2P", monospace';
+  ctx.textAlign = 'center';
+  for (const [roomId, room] of Object.entries(ROOMS)) {
+    ctx.fillStyle = room.color;
+    ctx.globalAlpha = 0.8;
+    ctx.fillText(room.label, (room.x + room.w / 2) * TILE, (room.y + 0.8) * TILE);
+  }
+  ctx.globalAlpha = 1.0;
+  ctx.textAlign = 'left';
+}
+
+// =============================================
+// CLICK HANDLING
+// =============================================
+function handleCanvasClick(e) {
+  const rect = officeCanvas.getBoundingClientRect();
+  const scale = getRenderScale();
+  const mx = (e.clientX - rect.left) * (officeCanvas.width / rect.width) / scale;
+  const my = (e.clientY - rect.top) * (officeCanvas.height / rect.height) / scale;
+
   for (const [agentId, pos] of Object.entries(DESK_POS)) {
     const ax = pos.x * TILE;
     const ay = pos.y * TILE;
-    const dist = Math.sqrt((wx - ax) ** 2 + (wy - ay) ** 2);
+    const dist = Math.sqrt((mx - ax) ** 2 + (my - ay) ** 2);
     if (dist < 24) {
-      showAgentPopup(agentId);
+      showAgentPopup(agentId, e);
       return;
     }
   }
   closePopup();
 }
 
-function showAgentPopup(agentId) {
+function showAgentPopup(agentId, clickEvent) {
   const state = agentStates[agentId];
   if (!state) return;
   selectedAgent = agentId;
 
-  // Highlight in sidebar
   document.querySelectorAll('.agent-list-item').forEach(el => el.classList.remove('selected'));
   const sidebarItem = document.querySelector(`[data-agent-id="${agentId}"]`);
   if (sidebarItem) sidebarItem.classList.add('selected');
@@ -983,10 +944,19 @@ function showAgentPopup(agentId) {
   const sc = statusColors[state.status] || statusColors.offline;
   const sb = statusBgs[state.status] || statusBgs.offline;
 
+  // Create avatar canvas with sprite
+  const charIdx = AGENT_CHAR_MAP[agentId];
+  const charImg = spriteImages['char_' + charIdx];
+  let avatarHtml = `<div class="agent-popup-avatar" style="background:${state.color}22;color:${state.color};font-size:20px;">${state.emoji}</div>`;
+
+  if (charImg) {
+    avatarHtml = `<div class="agent-popup-avatar" style="background:${state.color}22;" id="popupAvatar_${agentId}"></div>`;
+  }
+
   const popup = document.getElementById('agentPopup');
   document.getElementById('agentPopupContent').innerHTML = `
     <div class="agent-popup-header">
-      <div class="agent-popup-avatar" style="background:${state.color}22;color:${state.color};font-size:20px;">${state.emoji}</div>
+      ${avatarHtml}
       <div>
         <div class="agent-popup-name" style="color:${state.color}">${state.name}</div>
         <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">${state.role}</div>
@@ -1025,19 +995,26 @@ function showAgentPopup(agentId) {
     </div>
   `;
 
-  // Position popup near the agent on screen
-  const container = officeSprites[agentId];
-  if (container && pixiApp) {
-    const world = pixiApp.stage.getChildByName('world');
-    const globalPos = container.toGlobal(new PIXI.Point(0, 0));
-    const canvasRect = document.getElementById('canvasArea').getBoundingClientRect();
-    let px = globalPos.x * (canvasRect.width / pixiApp.renderer.width) + 30;
-    let py = globalPos.y * (canvasRect.height / pixiApp.renderer.height) - 60;
+  // Render avatar sprite
+  if (charImg) {
+    const avatarEl = document.getElementById('popupAvatar_' + agentId);
+    if (avatarEl) {
+      const c = document.createElement('canvas');
+      c.width = CHAR_FRAME_W; c.height = CHAR_FRAME_H;
+      const ac = c.getContext('2d');
+      ac.imageSmoothingEnabled = false;
+      ac.drawImage(charImg, CHAR_FRAME_W, 0, CHAR_FRAME_W, CHAR_FRAME_H, 0, 0, CHAR_FRAME_W, CHAR_FRAME_H);
+      avatarEl.appendChild(c);
+    }
+  }
 
-    // Clamp to viewport
+  // Position popup
+  if (clickEvent) {
+    const canvasRect = document.getElementById('canvasArea').getBoundingClientRect();
+    let px = clickEvent.clientX - canvasRect.left + 20;
+    let py = clickEvent.clientY - canvasRect.top - 60;
     px = Math.min(px, canvasRect.width - 300);
     py = Math.max(10, Math.min(py, canvasRect.height - 300));
-
     popup.style.left = px + 'px';
     popup.style.top = py + 'px';
   }
@@ -1052,7 +1029,7 @@ function closePopup() {
 }
 
 // =============================================
-// UI RENDERING
+// UI RENDERING (preserved logic)
 // =============================================
 function setFilter(f) {
   currentFilter = f;
@@ -1070,13 +1047,11 @@ function togglePin(id, e) {
 }
 
 function renderSidebar() {
-  // Agent list with filtering
   const listEl = document.getElementById('agentList');
   const agentOrder = ['cody', 'main', 'fish', 'goku', 'lake', 'blockhead'];
   listEl.innerHTML = agentOrder.map(id => {
     const a = agentStates[id];
     if (!a) return '';
-    // Filter logic
     if (currentFilter === 'working' && a.status !== 'online' && a.status !== 'working') return '';
     if (currentFilter === 'idle' && a.status !== 'idle') return '';
     if (currentFilter === 'offline' && a.status !== 'offline') return '';
@@ -1089,7 +1064,7 @@ function renderSidebar() {
           <div class="agent-list-role">${a.role}</div>
           <div class="agent-list-channel">${a.channel}</div>
         </div>
-        <button class="pin-btn ${isPinned ? 'pinned' : ''}" onclick="togglePin('${id}', event)" title="${isPinned ? 'Unpin' : 'Pin'}">📌</button>
+        <button class="pin-btn ${isPinned ? 'pinned' : ''}" onclick="togglePin('${id}', event)" title="${isPinned ? 'Unpin' : 'Pin'}">&#x1F4CC;</button>
       </div>
     `;
   }).join('');
@@ -1120,7 +1095,6 @@ function renderSidebar() {
     </div>
   `;
 
-  // Channels
   const channels = liveData?.channels || {};
   document.getElementById('channelList').innerHTML = `
     <div class="stat-mini">
@@ -1177,45 +1151,25 @@ function renderPinnedAgents() {
     const statusColor = a.status === 'online' || a.status === 'working' ? 'var(--accent-green)' : a.status === 'idle' ? 'var(--accent-yellow)' : 'var(--accent-red)';
     const statusBg = a.status === 'online' || a.status === 'working' ? 'rgba(34,197,94,0.15)' : a.status === 'idle' ? 'rgba(234,179,8,0.15)' : 'rgba(239,68,68,0.15)';
     const statusLabel = a.status === 'online' ? 'ONLINE' : a.status === 'working' ? 'WORKING' : a.status === 'idle' ? 'IDLE' : 'OFFLINE';
-    // Get latest task from activity feed
     const feed = liveData?.recentActivity || [];
     const lastTask = feed.find(f => {
       const agentId = f.agentId || '';
       return (agentId === id || f.agent === a.name) && f.role === 'assistant';
     });
     const taskText = lastTask ? lastTask.summary : (a.status === 'offline' ? 'Agent is offline' : 'Waiting for tasks...');
-    // Mini desk animation as CSS
     const isWorking = a.status === 'online' || a.status === 'working';
     return `
       <div class="pinned-card">
         <div class="pinned-card-header">
-          <div class="pinned-card-avatar" style="background:${a.color};color:#fff;">
-            ${a.name.charAt(0)}
+          <div class="pinned-card-avatar" style="background:${a.color}33;" id="pinnedAvatar_${id}">
           </div>
           <div>
             <div class="pinned-card-name" style="color:${a.color}">${a.name}</div>
           </div>
           <span class="pinned-card-status" style="color:${statusColor};background:${statusBg}">${statusLabel}</span>
-          <button class="pinned-unpin" onclick="togglePin('${id}', event)" title="Unpin">✕</button>
+          <button class="pinned-unpin" onclick="togglePin('${id}', event)" title="Unpin">&#x2715;</button>
         </div>
-        <div class="pinned-card-desk">
-          <div style="position:relative;width:120px;height:50px;">
-            <!-- Desk -->
-            <div style="position:absolute;bottom:0;left:10px;width:100px;height:12px;background:#3a2a1a;border-radius:2px;"></div>
-            <!-- Monitor -->
-            <div style="position:absolute;bottom:12px;left:35px;width:30px;height:20px;background:${isWorking ? '#1a3a2a' : '#1a1a1a'};border:2px solid #333;border-radius:2px;">
-              ${isWorking ? '<div style="position:absolute;inset:2px;background:#0f0;opacity:0.3;animation:screenFlicker 0.5s infinite alternate;"></div>' : ''}
-            </div>
-            <!-- Monitor stand -->
-            <div style="position:absolute;bottom:12px;left:47px;width:6px;height:3px;background:#333;"></div>
-            <!-- Character -->
-            <div style="position:absolute;bottom:14px;left:42px;width:16px;height:20px;display:flex;flex-direction:column;align-items:center;${isWorking ? 'animation:typingBob 0.6s infinite;' : ''}">
-              <div style="width:10px;height:10px;background:${a.color};border-radius:2px;"></div>
-              <div style="width:12px;height:8px;background:${a.color};opacity:0.8;border-radius:1px;margin-top:1px;"></div>
-            </div>
-            <!-- Keyboard -->
-            ${isWorking ? '<div style="position:absolute;bottom:12px;left:38px;width:24px;height:4px;background:#444;border-radius:1px;"></div>' : ''}
-          </div>
+        <div class="pinned-card-desk" id="pinnedDesk_${id}">
         </div>
         <div class="pinned-card-task">
           <span class="task-label">${isWorking ? 'WORKING ON' : 'STATUS'}</span>
@@ -1224,6 +1178,82 @@ function renderPinnedAgents() {
       </div>
     `;
   }).join('');
+
+  // Render mini sprite canvases for pinned agents
+  for (const id of pinnedAgents) {
+    renderPinnedMiniScene(id);
+  }
+}
+
+function renderPinnedMiniScene(agentId) {
+  const a = agentStates[agentId];
+  if (!a) return;
+  const charIdx = AGENT_CHAR_MAP[agentId];
+  const charImg = spriteImages['char_' + charIdx];
+  const isWorking = a.status === 'online' || a.status === 'working';
+
+  // Avatar
+  const avatarEl = document.getElementById('pinnedAvatar_' + agentId);
+  if (avatarEl && charImg) {
+    const ac = document.createElement('canvas');
+    ac.width = CHAR_FRAME_W; ac.height = CHAR_FRAME_H;
+    const actx = ac.getContext('2d');
+    actx.imageSmoothingEnabled = false;
+    actx.drawImage(charImg, CHAR_FRAME_W, 0, CHAR_FRAME_W, CHAR_FRAME_H, 0, 0, CHAR_FRAME_W, CHAR_FRAME_H);
+    ac.style.imageRendering = 'pixelated';
+    avatarEl.appendChild(ac);
+  }
+
+  // Mini desk scene
+  const deskEl = document.getElementById('pinnedDesk_' + agentId);
+  if (!deskEl) return;
+  const mc = document.createElement('canvas');
+  mc.width = 120; mc.height = 60;
+  mc.style.imageRendering = 'pixelated';
+  mc.style.width = '120px';
+  mc.style.height = '60px';
+  const mctx = mc.getContext('2d');
+  mctx.imageSmoothingEnabled = false;
+
+  // Scale up 2x for the mini scene
+  mctx.scale(2, 2);
+
+  // Floor
+  const floorImg = spriteImages['floor_' + (ROOM_FLOOR[a.room] || 0)];
+  if (floorImg) {
+    for (let fx = 0; fx < 4; fx++) {
+      for (let fy = 0; fy < 2; fy++) {
+        mctx.drawImage(floorImg, fx * 16, fy * 16, 16, 16);
+      }
+    }
+  } else {
+    mctx.fillStyle = '#1a1d28';
+    mctx.fillRect(0, 0, 60, 30);
+  }
+
+  // Desk
+  const deskImg = spriteImages['desk_front'];
+  if (deskImg) {
+    mctx.drawImage(deskImg, 8, 16, 48, 16);
+  }
+
+  // Monitor
+  const pcKey = isWorking ? ('pc_on_' + (1 + (animFrame >> 4) % 3)) : 'pc_off';
+  const pcImg = spriteImages[pcKey];
+  if (pcImg) {
+    mctx.drawImage(pcImg, 22, 0, 16, 20);
+  }
+
+  // Character
+  if (charImg) {
+    const frameIdx = isWorking ? (3 + ((animFrame >> 3) % 2)) : 1;
+    const srcX = frameIdx * CHAR_FRAME_W;
+    if (a.status === 'offline') mctx.globalAlpha = 0.4;
+    mctx.drawImage(charImg, srcX, 0, CHAR_FRAME_W, CHAR_FRAME_H, 22, -4, CHAR_FRAME_W, CHAR_FRAME_H);
+    mctx.globalAlpha = 1.0;
+  }
+
+  deskEl.appendChild(mc);
 }
 
 function escHtml(str) {
@@ -1262,19 +1292,15 @@ async function initApp() {
   if (appInitialized) return;
   appInitialized = true;
 
-  // Initialize with offline defaults
   mergeAgentData(null);
-  initPixi();
+  loadAllAssets();
+  initCanvas();
   renderSidebar();
   updateClock();
   setInterval(updateClock, 1000);
 
-  // Fetch data
   await fetchAndRender();
-  // Auto-refresh every 30 seconds
   setInterval(fetchAndRender, 30000);
-
-  // Check API status
   checkApiStatus();
 }
 
