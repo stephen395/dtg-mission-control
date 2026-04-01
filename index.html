@@ -312,9 +312,9 @@ async function saveApiUrl() {
 // AGENT DEFINITIONS
 // =============================================
 const AGENTS = {
-  cody: { name: 'Cody', role: 'Mission Control / Delegator', color: '#a855f7', channel: '#cody-control', defaultModel: 'Unknown', defaultSkills: ['delegation', 'task-routing', 'mission-planning'] },
-  goku: { name: 'Goku', role: 'Coder / Tool Builder', color: '#f97316', channel: '#goku-forge', defaultModel: 'qwen3-coder:480b', defaultSkills: ['coding', 'tool-building', 'debugging'] },
-  lake: { name: 'Lake', role: 'Research / Intelligence', color: '#3b82f6', channel: '#lake-intel', defaultModel: 'glm-5', defaultSkills: ['research', 'analysis', 'web-search'] },
+  cody: { name: 'Cody', role: 'Mission Control / Delegator', color: '#a855f7', channel: '#cody-control', defaultModel: 'minimax-m2.7', defaultSkills: ['delegation', 'task-routing', 'mission-planning'], hermes: true },
+  goku: { name: 'Goku', role: 'Coder / Tool Builder', color: '#f97316', channel: '#goku-forge', defaultModel: 'qwen3-coder:480b', defaultSkills: ['coding', 'tool-building', 'debugging'], hermes: true },
+  lake: { name: 'Lake', role: 'Research / Intelligence', color: '#3b82f6', channel: '#lake-intel', defaultModel: 'glm-5', defaultSkills: ['research', 'analysis', 'web-search'], hermes: true },
   fish: { name: 'Fish', role: 'Discord + Google Chat', color: '#06b6d4', channel: '#fish', defaultModel: 'claude-sonnet-4', defaultSkills: ['hubspot', 'email', 'discord', 'google-chat'] }
 };
 
@@ -325,7 +325,7 @@ function mergeAgentData(apiData) {
     agentStates[key] = {
       ...def,
       id: key,
-      status: apiAgent ? apiAgent.status : 'offline',
+      status: apiAgent ? apiAgent.status : (def.hermes ? 'online' : 'offline'),
       currentModel: apiAgent?.currentModel || def.defaultModel,
       skills: apiAgent?.skills || def.defaultSkills,
       sessions: apiAgent?.sessions || [],
@@ -825,8 +825,10 @@ function prerenderSprite(agentId, frameData, palette, suffix) {
     if (!row) continue;
     for (let x = 0; x < SPRITE_W; x++) {
       const ci = row[x];
-      if (ci === 0) continue;
-      octx.fillStyle = palette[ci];
+      if (!ci) continue;
+      const color = palette[ci];
+      if (!color || color === 'transparent') continue;
+      octx.fillStyle = color;
       octx.fillRect(x * PX, y * PX, PX, PX);
     }
   }
@@ -844,8 +846,9 @@ function prerenderGraySprite(agentId, frameData, palette, suffix) {
     if (!row) continue;
     for (let x = 0; x < SPRITE_W; x++) {
       const ci = row[x];
-      if (ci === 0) continue;
+      if (!ci) continue;
       const hex = palette[ci];
+      if (!hex || hex === 'transparent') continue;
       const rgb = hexToRgb(hex);
       const gray = Math.round(rgb.r * 0.3 + rgb.g * 0.5 + rgb.b * 0.2);
       const dg = Math.max(0, gray - 30);
