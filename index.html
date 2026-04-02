@@ -123,6 +123,11 @@ body:not(.chat-open) main{transition:margin-right 0.25s ease}
 .req-row:last-child{border-bottom:none}
 .trashed-row{display:flex;justify-content:space-between;align-items:center;padding:5px 10px;font-size:10px;color:var(--text3);border-bottom:1px solid rgba(255,255,255,0.03)}
 .trashed-row:last-child{border-bottom:none}
+.heartbeat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-left:auto}
+.heartbeat-dot.alive{background:var(--green);box-shadow:0 0 6px var(--green);animation:hbPulse 2s ease-in-out infinite}
+.heartbeat-dot.stale{background:var(--yellow);box-shadow:0 0 6px var(--yellow);animation:hbPulse 1.5s ease-in-out infinite}
+.heartbeat-dot.dead{background:var(--red);box-shadow:0 0 8px var(--red);animation:hbPulse 1s ease-in-out infinite}
+@keyframes hbPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.85)}}
 </style>
 </head>
 <body>
@@ -140,6 +145,7 @@ body:not(.chat-open) main{transition:margin-right 0.25s ease}
   </div>
   <div style="display:flex;align-items:center;gap:16px">
     <div style="display:flex;align-items:center;gap:6px"><div class="dot pulse" style="width:7px;height:7px;background:var(--green)"></div><span class="mono" style="font-size:11px;color:var(--green)">5/6 Online</span></div>
+    <button class="chat-toggle" style="color:var(--red);border-color:rgba(239,68,68,0.2)" onclick="openReportIssue()"><span class="material-symbols-outlined" style="font-size:15px;vertical-align:-3px">bug_report</span> Report</button>
     <button class="chat-toggle" id="chatToggle" onclick="toggleChat()"><span class="material-symbols-outlined" style="font-size:15px;vertical-align:-3px">chat</span> Comms<span class="chat-badge" id="chatBadge">0</span></button>
     <span class="mono" style="font-size:11px;color:var(--text3)" id="clock"></span>
   </div>
@@ -544,7 +550,14 @@ function resumeQuest(id){const q=quests.find(x=>x.id===id);if(q){q.status=q.prev
 // ===== WORKFLOW TAB =====
 // Request queue
 function loadRequests(){try{return JSON.parse(localStorage.getItem('bastion_workflow_requests'))||[]}catch{return[]}}
-function saveRequests(r){localStorage.setItem('bastion_workflow_requests',JSON.stringify(r))}
+function saveRequests(r){localStorage.setItem('bastion_workflow_requests',JSON.stringify(r));
+  fetch(API+'/api/requests/sync',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(r)}).catch(()=>{});
+}
+function fetchRequests(){
+  fetch(API+'/api/requests').then(r=>r.json()).then(data=>{
+    if(Array.isArray(data)&&data.length){localStorage.setItem('bastion_workflow_requests',JSON.stringify(data));if(currentTab==='workflow')renderContent();}
+  }).catch(()=>{});
+}
 let wfRequests=loadRequests();
 if(!wfRequests.length){
   wfRequests=[
@@ -580,6 +593,27 @@ const PIPELINE_TRASHED=[
   {file:'2026-04-04-search-strategies.md',reason:"Lake's research methodology",expiresAt:'2026-04-05T18:00:00Z'}
 ];
 let trashedOpen=false;
+
+// Heartbeat tracking — last activity timestamps per pipeline stage
+const PIPELINE_HEARTBEATS={
+  research: PIPELINE_RESEARCH.length ? '2026-04-02T18:00:00Z' : null,
+  build: PIPELINE_BUILDS.length ? PIPELINE_BUILDS[0].time : null,
+  test: null,
+  done: null
+};
+function updateHeartbeat(stage){PIPELINE_HEARTBEATS[stage]=new Date().toISOString();localStorage.setItem('bastion_pipeline_heartbeats',JSON.stringify(PIPELINE_HEARTBEATS));}
+// Load persisted heartbeats
+try{const hb=JSON.parse(localStorage.getItem('bastion_pipeline_heartbeats'));if(hb)Object.assign(PIPELINE_HEARTBEATS,hb)}catch{}
+// Heartbeat status: alive (<5min), stale (5-15min), dead (>15min or null)
+function hbStatus(stage){
+  const ts=PIPELINE_HEARTBEATS[stage];if(!ts)return'dead';
+  const mins=(Date.now()-new Date(ts).getTime())/60000;
+  if(mins<5)return'alive';if(mins<15)return'stale';return'dead';
+}
+function hbLabel(stage){
+  const ts=PIPELINE_HEARTBEATS[stage];if(!ts)return'No activity';
+  return'Last: '+timeAgo(ts);
+}
 
 function timeAgo(iso){
   if(!iso)return'';const ms=Date.now()-new Date(iso).getTime();
@@ -626,7 +660,7 @@ function renderWorkflow(){
     <div class="pipeline">
       <!-- RESEARCH COLUMN -->
       <div class="pipeline-col">
-        <div class="pipeline-col-head" style="background:rgba(59,130,246,0.1);color:var(--blue)"><span class="material-symbols-outlined" style="font-size:14px">science</span>Research (Lake)</div>
+        <div class="pipeline-col-head" style="background:rgba(59,130,246,0.1);color:var(--blue)"><span class="material-symbols-outlined" style="font-size:14px">science</span>Research (Lake)<div class="heartbeat-dot ${hbStatus('research')}" title="${hbLabel('research')}"></div></div>
         ${PIPELINE_RESEARCH.map(r=>`
           <div class="pipeline-card pc-blue">
             <div style="font-weight:600;color:var(--text);margin-bottom:3px">${r.topic}</div>
@@ -635,7 +669,7 @@ function renderWorkflow(){
       </div>
       <!-- BUILD COLUMN -->
       <div class="pipeline-col">
-        <div class="pipeline-col-head" style="background:rgba(168,85,247,0.1);color:var(--purple)"><span class="material-symbols-outlined" style="font-size:14px">code</span>Build (Claude Code)</div>
+        <div class="pipeline-col-head" style="background:rgba(168,85,247,0.1);color:var(--purple)"><span class="material-symbols-outlined" style="font-size:14px">code</span>Build (Claude Code)<div class="heartbeat-dot ${hbStatus('build')}" title="${hbLabel('build')}"></div></div>
         ${PIPELINE_BUILDS.map(b=>`
           <div class="pipeline-card pc-purple${b.status==='active'?' building':''}">
             <div style="font-weight:600;color:var(--text);margin-bottom:3px">${b.title}</div>
@@ -652,7 +686,7 @@ function renderWorkflow(){
       </div>
       <!-- TEST COLUMN -->
       <div class="pipeline-col">
-        <div class="pipeline-col-head" style="background:rgba(249,115,22,0.1);color:var(--orange)"><span class="material-symbols-outlined" style="font-size:14px">bug_report</span>Test (Goku)</div>
+        <div class="pipeline-col-head" style="background:rgba(249,115,22,0.1);color:var(--orange)"><span class="material-symbols-outlined" style="font-size:14px">bug_report</span>Test (Goku)<div class="heartbeat-dot ${hbStatus('test')}" title="${hbLabel('test')}"></div></div>
         ${testing.length?testing.map(r=>`
           <div class="pipeline-card pc-orange">
             <div style="font-weight:600;color:var(--text);margin-bottom:3px">${r.title}</div>
@@ -661,7 +695,7 @@ function renderWorkflow(){
       </div>
       <!-- DONE COLUMN -->
       <div class="pipeline-col">
-        <div class="pipeline-col-head" style="background:rgba(34,197,94,0.1);color:var(--green)"><span class="material-symbols-outlined" style="font-size:14px">check_circle</span>Done</div>
+        <div class="pipeline-col-head" style="background:rgba(34,197,94,0.1);color:var(--green)"><span class="material-symbols-outlined" style="font-size:14px">check_circle</span>Done<div class="heartbeat-dot ${hbStatus('done')}" title="${hbLabel('done')}"></div></div>
         ${done.length?done.map(r=>`
           <div class="pipeline-card ${r.status==='done'?'pc-green':'pc-red'}">
             <div style="font-weight:600;color:var(--text);margin-bottom:3px">${r.title}</div>
@@ -754,6 +788,48 @@ function updateRequestStatus(id,status,result){
   wfRequests=loadRequests();const r=wfRequests.find(x=>x.id===id);
   if(r){r.status=status;if(result)r.result=result;if(status==='done'||status==='failed')r.completedAt=new Date().toISOString();saveRequests(wfRequests);
   dispatchEvent('workflow_request_updated',{requestId:id,status,targets:[]});renderContent();}
+}
+
+// ===== REPORT ISSUE =====
+function openReportIssue(){
+  document.getElementById('modal-root').innerHTML=`
+  <div class="modal-bg" onclick="closeModal()">
+    <div class="modal" onclick="event.stopPropagation()" style="width:480px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <span class="material-symbols-outlined" style="color:var(--red);font-size:28px">bug_report</span>
+        <div><div style="font-size:16px;font-weight:700">Report Issue</div><div style="font-size:11px;color:var(--text3)">Describe the problem. Cody will triage and create a request for Claude Code.</div></div>
+      </div>
+      <label>What's wrong?</label>
+      <textarea id="issueDesc" rows="4" placeholder="Describe the issue — what happened, what should happen, where you saw it..." style="margin-bottom:12px;resize:vertical"></textarea>
+      <label>Severity</label>
+      <select id="issueSeverity" style="margin-bottom:12px">
+        <option value="critical">Critical — blocking work</option>
+        <option value="high" selected>High — needs fix soon</option>
+        <option value="normal">Normal — annoying but not blocking</option>
+        <option value="low">Low — nice to fix eventually</option>
+      </select>
+      <label>Related to (optional)</label>
+      <select id="issueRelated" style="margin-bottom:16px">
+        <option value="">None</option>
+        ${PROJECTS.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}
+      </select>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-sm btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-sm" style="background:var(--red);color:#fff" onclick="submitIssue()"><span class="material-symbols-outlined" style="font-size:12px;vertical-align:-2px">send</span> Report</button>
+      </div>
+    </div>
+  </div>`;
+}
+function submitIssue(){
+  const desc=document.getElementById('issueDesc').value.trim();
+  if(!desc)return;
+  const severity=document.getElementById('issueSeverity').value;
+  const related=document.getElementById('issueRelated').value;
+  const title='['+severity.toUpperCase()+'] '+desc.slice(0,80)+(desc.length>80?'...':'');
+  const req={id:'req_'+Date.now().toString(36),title,source:'stephen',sourceDetail:'Issue report'+(related?' ('+related+')':''),status:'queued',createdAt:new Date().toISOString(),assignedTo:'claude-code',result:null,completedAt:null,severity,fullDescription:desc};
+  wfRequests=loadRequests();wfRequests.push(req);saveRequests(wfRequests);
+  dispatchEvent('issue_reported',{requestId:req.id,title,severity,targets:['cody']});
+  closeModal();renderContent();
 }
 
 // ===== PROJECT REMOVAL =====
@@ -1575,6 +1651,8 @@ if(!chatMessages.length){
 // Init: render immediately, then try API sync in background
 renderContent();
 initQuests();
+fetchRequests();
+setInterval(fetchRequests,30000); // poll requests every 30s
 </script>
 </body>
 </html>
