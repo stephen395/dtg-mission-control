@@ -6,184 +6,182 @@
 <title>BASTION - DTG Mission Control</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏰</text></svg>"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-tailwind.config={theme:{extend:{
-  colors:{
-    "bg":"#0f1117","card":"#161920","card-hover":"#1c1f2a","border":"#252a36","border-light":"#2f3545",
-    "text-primary":"#e2e4ea","text-secondary":"#9ca0ad","text-dim":"#5d6272",
-    "green":"#34d399","blue":"#60a5fa","orange":"#fb923c","amber":"#fbbf24","purple":"#a78bfa","pink":"#f472b6","cyan":"#22d3ee","red":"#f87171",
-  },
-  fontFamily:{"sans":["Inter"],"mono":["JetBrains Mono"]},
-}}}
-</script>
 <style>
-  body { background:#0f1117; font-family:'Inter',sans-serif; }
-  .sprite { image-rendering:pixelated; image-rendering:crisp-edges; }
-  ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-track{background:#161920} ::-webkit-scrollbar-thumb{background:#252a36;border-radius:2px}
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0d1a;--surface:rgba(255,255,255,0.04);--surface-hover:rgba(255,255,255,0.07);--elevated:rgba(255,255,255,0.09);
+  --border:rgba(255,255,255,0.07);--border-light:rgba(255,255,255,0.12);
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+  --green:#22c55e;--yellow:#eab308;--red:#ef4444;--blue:#3b82f6;--purple:#a855f7;--orange:#f97316;--pink:#ec4899;--cyan:#06b6d4;
+  --glass:12px;--radius:12px;
+}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.mono{font-family:'JetBrains Mono',monospace}
+.glass{background:var(--surface);backdrop-filter:blur(var(--glass));-webkit-backdrop-filter:blur(var(--glass));border:1px solid var(--border);border-radius:var(--radius)}
+.glass:hover{background:var(--surface-hover);border-color:var(--border-light)}
+.sprite{image-rendering:pixelated;image-rendering:crisp-edges}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.bar{height:4px;border-radius:2px;background:rgba(255,255,255,0.06);overflow:hidden}
+.bar-fill{height:100%;border-radius:2px;transition:width 0.3s}
+.pulse{animation:p 2.5s ease-in-out infinite}@keyframes p{0%,100%{opacity:1}50%{opacity:0.35}}
+.module{padding:6px 4px;text-align:center;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:all 0.15s}
+.module:hover{background:rgba(255,255,255,0.07);border-color:var(--border-light)}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px}
 </style>
 </head>
-
-<body class="text-text-primary h-screen flex flex-col overflow-hidden">
+<body>
 
 <!-- HEADER -->
-<header class="flex items-center justify-between px-5 py-2.5 bg-bg border-b border-border shrink-0">
-  <div class="flex items-center gap-4">
-    <h1 class="text-base font-bold tracking-widest text-white">BASTION</h1>
-    <span class="text-xs text-text-dim">DTG Mission Control</span>
+<header style="padding:10px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-shrink:0;background:rgba(13,13,26,0.9);backdrop-filter:blur(8px)">
+  <div style="display:flex;align-items:center;gap:16px">
+    <span style="font-size:15px;font-weight:700;letter-spacing:0.15em;color:#fff">BASTION</span>
+    <span style="font-size:11px;color:var(--text3)">DTG Mission Control</span>
   </div>
-  <div class="flex items-center gap-4">
-    <div class="flex items-center gap-2">
-      <div class="w-2 h-2 rounded-full bg-green"></div>
-      <span class="text-xs font-mono text-green font-medium">5/6 Online</span>
+  <div style="display:flex;align-items:center;gap:16px">
+    <div style="display:flex;align-items:center;gap:6px">
+      <div class="dot pulse" style="width:7px;height:7px;background:var(--green)"></div>
+      <span class="mono" style="font-size:11px;color:var(--green)">5/6 Online</span>
     </div>
-    <span class="text-xs text-text-dim font-mono" id="clock"></span>
+    <span class="mono" style="font-size:11px;color:var(--text3)" id="clock"></span>
   </div>
 </header>
 
 <!-- MAIN -->
-<main class="flex-1 flex overflow-hidden">
+<main style="flex:1;display:flex;overflow:hidden;padding:10px;gap:10px">
 
-  <!-- Agent Grid -->
-  <section class="flex-1 p-3 overflow-y-auto">
-    <div class="grid grid-cols-3 gap-3" id="grid"></div>
-  </section>
+  <!-- GRID -->
+  <section style="flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-content:start" id="grid"></section>
 
-  <!-- Sidebar -->
-  <aside class="w-[300px] shrink-0 flex flex-col gap-2 p-2 pl-0 overflow-hidden">
-    <div class="flex-1 bg-card rounded-lg border border-border flex flex-col overflow-hidden">
-      <div class="px-3 py-2 border-b border-border flex items-center gap-2 shrink-0">
-        <span class="material-symbols-outlined text-cyan text-base">monitoring</span>
-        <span class="text-xs text-text-secondary font-semibold">Agent Status</span>
+  <!-- SIDEBAR -->
+  <aside style="width:290px;flex-shrink:0;display:flex;flex-direction:column;gap:10px;overflow:hidden">
+    <!-- Status -->
+    <div class="glass" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+      <div style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:600;color:var(--text2);display:flex;align-items:center;gap:6px;flex-shrink:0">
+        <span class="material-symbols-outlined" style="font-size:16px;color:var(--cyan)">monitoring</span>Agent Status
       </div>
-      <div class="flex-1 overflow-y-auto" id="status-panel"></div>
+      <div style="flex:1;overflow-y:auto" id="status"></div>
     </div>
-    <div class="h-[240px] bg-card rounded-lg border border-border flex flex-col overflow-hidden">
-      <div class="px-3 py-2 border-b border-border flex items-center gap-2 shrink-0">
-        <span class="material-symbols-outlined text-cyan text-base">terminal</span>
-        <span class="text-xs text-text-secondary font-semibold">Activity Log</span>
+    <!-- Log -->
+    <div class="glass" style="height:230px;display:flex;flex-direction:column;overflow:hidden">
+      <div style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:600;color:var(--text2);display:flex;align-items:center;gap:6px;flex-shrink:0">
+        <span class="material-symbols-outlined" style="font-size:16px;color:var(--cyan)">terminal</span>Activity Log
       </div>
-      <div class="flex-1 overflow-y-auto p-2 space-y-0.5" id="log-panel"></div>
+      <div style="flex:1;overflow-y:auto;padding:8px 10px" id="log"></div>
     </div>
   </aside>
 </main>
 
 <script>
-const B = location.pathname.endsWith('/') ? location.pathname : location.pathname + '/';
-const A = [
-  { id:'cody',name:'Cody',role:'Mission Control',status:'working',task:'Fleet monitoring',progress:100,color:'green',hex:'#34d399',
-    health:'98%',specs:'Hermes v0.6 \u00b7 minimax-m2.7',desc:'24/7 fleet coordinator',
-    activity:['Fleet health check \u2014 nominal','Pinged Lake for research ETA','Routed pixel task to Goku','Bastion Protocol deployed','Cleared stale queue'],
-    modules:['Fleet Monitor','Cron Jobs','Triggers','Timers','Heartbeat'] },
-  { id:'lake',name:'Lake',role:'Research & Intel',status:'working',task:'Scanning news feeds',progress:72,color:'blue',hex:'#60a5fa',
-    health:'95%',specs:'Hermes v0.6 \u00b7 glm-5',desc:'Deep research agent',
-    activity:['AI dashboard tech research','Pixel art animation study','Collab workflow paper','Carrier news scan done'],
-    modules:['Research Q','Web Scrape','Transcripts','Intel','Archive'] },
-  { id:'goku',name:'Goku',role:'Coder & Builder',status:'idle',task:'Awaiting tasks',progress:0,color:'orange',hex:'#fb923c',
-    health:'100%',specs:'Hermes v0.6 \u00b7 qwen3-coder',desc:'Builds features & reviews PRs',
-    activity:['Bastion scaffold created','PixiJS v8 migration','Waiting for review','Pkg cleanup'],
-    modules:['Build Queue','Git Ops','Tests','Deploy','Review'] },
-  { id:'fallingcave',name:'FallingCave',role:'AWS & Deploy',status:'online',task:'Monitoring infra',progress:45,color:'amber',hex:'#fbbf24',
-    health:'87%',specs:'AWS \u00b7 3.25.96.134',desc:'Cloud infra & deployments',
-    activity:['AWS health: all green','SSL cert renewed','Disk alert cleared','CloudWatch pulled'],
-    modules:['AWS','Deploys','SSL','Scaling','Costs'] },
-  { id:'blockhead',name:'Blockhead',role:'Tencent VPS',status:'offline',task:'Standby',progress:0,color:'purple',hex:'#a78bfa',
-    health:'\u2014',specs:'Tencent \u00b7 43.134.78.224',desc:'Chinese platform agent',
-    activity:['Last seen 6h ago','Standby mode','Memory cleanup'],
-    modules:['Tencent','WeChat','Discord','Health','Logs'] },
-  { id:'fish',name:'Fish',role:'NemoClaw / GPU',status:'online',task:'Local inference',progress:30,color:'pink',hex:'#f472b6',
-    health:'91%',specs:'NemoClaw \u00b7 Local GPU',desc:'ML inference & chat bots',
-    activity:['Batch 47 done (312 t/s)','Model swap glm-5','HubSpot scan','Discord relay'],
-    modules:['Inference','GPU','Models','Chat','HubSpot'] },
+const B=location.pathname.endsWith('/')?location.pathname:location.pathname+'/';
+const A=[
+  {id:'cody',name:'Cody',role:'Mission Control',s:'working',task:'Fleet monitoring',p:100,c:'var(--green)',
+   hp:'98%',specs:'Hermes v0.6 · minimax-m2.7',
+   acts:['Fleet health check — nominal','Pinged Lake for research ETA','Routed pixel task to Goku','Bastion Protocol deployed','Cleared stale queue'],
+   mods:['Fleet Monitor','Cron Jobs','Triggers','Timers','Heartbeat']},
+  {id:'lake',name:'Lake',role:'Research & Intel',s:'working',task:'Scanning news feeds',p:72,c:'var(--blue)',
+   hp:'95%',specs:'Hermes v0.6 · glm-5',
+   acts:['AI dashboard tech research','Pixel art animation study','Collab workflow paper','Carrier news scan done'],
+   mods:['Research Q','Web Scrape','Transcripts','Intel','Archive']},
+  {id:'goku',name:'Goku',role:'Coder & Builder',s:'idle',task:'Awaiting tasks',p:0,c:'var(--orange)',
+   hp:'100%',specs:'Hermes v0.6 · qwen3-coder',
+   acts:['Bastion scaffold created','PixiJS v8 migration','Waiting for review','Pkg cleanup'],
+   mods:['Build Queue','Git Ops','Tests','Deploy','Review']},
+  {id:'fallingcave',name:'FallingCave',role:'AWS & Deploy',s:'online',task:'Monitoring infra',p:45,c:'var(--orange)',
+   hp:'87%',specs:'AWS · 3.25.96.134',
+   acts:['AWS health: all green','SSL cert renewed','Disk alert cleared','CloudWatch pulled'],
+   mods:['AWS Health','Deploys','SSL Certs','Scaling','Costs']},
+  {id:'blockhead',name:'Blockhead',role:'Tencent VPS',s:'offline',task:'Standby',p:0,c:'var(--purple)',
+   hp:'—',specs:'Tencent · 43.134.78.224',
+   acts:['Last seen 6h ago','Standby mode','Memory cleanup'],
+   mods:['Tencent','WeChat','Discord','Health','Logs']},
+  {id:'fish',name:'Fish',role:'NemoClaw / GPU',s:'online',task:'Local inference',p:30,c:'var(--pink)',
+   hp:'91%',specs:'NemoClaw · Local GPU',
+   acts:['Batch 47 done (312 t/s)','Model swap glm-5','HubSpot scan','Discord relay'],
+   mods:['Inference','GPU Stats','Models','Chat','HubSpot']},
 ];
+const SL={online:'Online',working:'Working',idle:'Idle',offline:'Offline'};
+const SC={online:'var(--green)',working:'var(--yellow)',idle:'var(--blue)',offline:'var(--text3)'};
 
-const SL={online:'Online',working:'Working',idle:'Idle',offline:'Offline',error:'Error'};
-const SC={online:'text-green',working:'text-amber',idle:'text-blue',offline:'text-text-dim',error:'text-red'};
-const DC={online:'bg-green',working:'bg-amber',idle:'bg-blue',offline:'bg-text-dim',error:'bg-red'};
-
-// ---- RENDER ALL CARDS (no expand/collapse) ----
 function render(){
-  document.getElementById('grid').innerHTML = A.map(a => {
-    const off = a.status==='offline';
-    return `
-    <div class="bg-card rounded-lg border border-border hover:border-border-light transition-colors ${off?'opacity-40':''}">
-      <!-- Top: Avatar + Name + Status -->
-      <div class="flex items-start gap-3 p-3 pb-2">
-        <div class="w-16 h-16 bg-bg rounded border border-border flex items-center justify-center shrink-0 overflow-hidden">
-          <img src="${B}sprites/${a.id}.png" class="sprite h-[58px] w-auto" alt="${a.name}"/>
+  // Cards
+  document.getElementById('grid').innerHTML=A.map(a=>{
+    const off=a.s==='offline';
+    return `<div class="glass" style="display:flex;flex-direction:column;${off?'opacity:0.35':''}">
+      <!-- Header -->
+      <div style="padding:12px 14px 8px;display:flex;gap:12px;align-items:flex-start">
+        <div style="width:56px;height:56px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+          <img src="${B}sprites/${a.id}.png" class="sprite" style="height:50px" alt="${a.name}"/>
         </div>
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center justify-between">
-            <h3 class="text-sm font-bold text-white">${a.name}</h3>
-            <span class="${SC[a.status]} text-[11px] font-mono font-medium">${SL[a.status]}</span>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:14px;font-weight:700;color:#fff">${a.name}</span>
+            <span class="mono" style="font-size:10px;color:${SC[a.s]};font-weight:500">${SL[a.s]}</span>
           </div>
-          <div class="text-[11px] text-text-dim mt-0.5">${a.role}</div>
-          <div class="flex items-center gap-3 mt-1.5 text-[11px]">
-            <span class="text-text-secondary">Health <span class="text-${a.color} font-medium">${a.health}</span></span>
-            <span class="text-text-dim">${a.specs}</span>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">${a.role}</div>
+          <div style="display:flex;gap:12px;margin-top:6px;font-size:11px">
+            <span style="color:var(--text2)">Health <span style="color:${a.c};font-weight:600">${a.hp}</span></span>
+            <span class="mono" style="color:var(--text3);font-size:10px">${a.specs}</span>
           </div>
         </div>
       </div>
 
       <!-- Activity -->
-      <div class="mx-3 mb-2 bg-bg rounded border border-border p-2 max-h-[90px] overflow-y-auto">
-        <div class="text-[10px] text-text-dim uppercase tracking-wider mb-1">Recent Activity</div>
-        ${a.activity.map((act,i) => `<div class="text-[11px] text-text-secondary leading-relaxed flex gap-1.5"><span class="text-text-dim shrink-0 font-mono">${String(14-i).padStart(2,'0')}:${String(30-i*7).padStart(2,'0')}</span>${act}</div>`).join('')}
+      <div style="margin:0 12px 8px;padding:8px 10px;background:rgba(0,0,0,0.25);border-radius:8px;border:1px solid rgba(255,255,255,0.04);max-height:80px;overflow-y:auto">
+        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Recent Activity</div>
+        ${a.acts.map((act,i)=>`<div style="font-size:11px;color:var(--text2);line-height:1.6;display:flex;gap:6px"><span class="mono" style="color:var(--text3);flex-shrink:0;font-size:10px">${String(14-i).padStart(2,'0')}:${String(30-i*7).padStart(2,'0')}</span>${act}</div>`).join('')}
       </div>
 
       <!-- Task + Progress -->
-      <div class="mx-3 mb-2">
-        <div class="flex items-center justify-between text-[11px] mb-1">
-          <span class="text-text-secondary truncate">${a.task}</span>
-          <span class="text-text-dim font-mono ml-2">${a.progress}%</span>
+      <div style="padding:0 14px 8px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
+          <span style="color:var(--text2)">${a.task}</span>
+          <span class="mono" style="color:var(--text3)">${a.p}%</span>
         </div>
-        <div class="h-1 w-full bg-bg rounded-full overflow-hidden">
-          <div class="h-full rounded-full" style="width:${a.progress}%;background:${a.hex}"></div>
-        </div>
+        <div class="bar"><div class="bar-fill" style="width:${a.p}%;background:${a.c}"></div></div>
       </div>
 
       <!-- Modules -->
-      <div class="flex gap-1 mx-3 mb-3">
-        ${a.modules.map(m => `<div class="flex-1 bg-bg border border-border rounded py-1 text-center hover:border-border-light hover:bg-card-hover transition-colors cursor-pointer"><span class="text-[8px] text-text-dim uppercase">${m}</span></div>`).join('')}
+      <div style="display:flex;gap:4px;padding:0 12px 10px;margin-top:auto">
+        ${a.mods.map(m=>`<div class="module" style="flex:1"><span style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:0.04em">${m}</span></div>`).join('')}
       </div>
     </div>`;
   }).join('');
 
   // Status panel
-  document.getElementById('status-panel').innerHTML = A.map(a => `
-    <div class="flex items-center gap-2.5 px-3 py-2 hover:bg-card-hover transition-colors border-b border-border/50">
-      <div class="w-2 h-2 rounded-full shrink-0 ${DC[a.status]}"></div>
-      <div class="flex-1 min-w-0">
-        <div class="flex items-center justify-between">
-          <span class="text-[12px] font-semibold text-white">${a.name}</span>
-          <span class="${SC[a.status]} text-[10px] font-mono">${SL[a.status]}</span>
+  document.getElementById('status').innerHTML=A.map(a=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer" onmouseenter="this.style.background='var(--surface-hover)'" onmouseleave="this.style.background='transparent'">
+      <div class="dot${a.s!=='offline'?' pulse':''}" style="background:${SC[a.s]}"></div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:12px;font-weight:600;color:#fff">${a.name}</span>
+          <span class="mono" style="font-size:10px;color:${SC[a.s]}">${SL[a.s]}</span>
         </div>
-        <div class="text-[11px] text-text-dim truncate">${a.task}</div>
-        <div class="h-0.5 w-full bg-bg rounded-full mt-1.5 overflow-hidden"><div class="h-full rounded-full" style="width:${a.progress}%;background:${a.hex}"></div></div>
+        <div style="font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.task}</div>
+        <div class="bar" style="margin-top:6px;height:3px"><div class="bar-fill" style="width:${a.p}%;background:${a.c}"></div></div>
       </div>
     </div>
   `).join('');
 
   // Log
-  const logs=[
-    {t:'14:32',a:'Lake',c:'text-blue',m:'Research: AI dashboard innovations'},
-    {t:'14:28',a:'Cody',c:'text-green',m:'Fleet health check \u2014 nominal'},
-    {t:'14:15',a:'Claude',c:'text-cyan',m:'Bastion v0.5 deployed'},
-    {t:'14:02',a:'Lake',c:'text-blue',m:'Agent collab workflow done'},
-    {t:'13:55',a:'Goku',c:'text-orange',m:'Awaiting code review'},
-    {t:'13:40',a:'Fish',c:'text-pink',m:'Batch 47 done (312 tok/s)'},
-    {t:'13:22',a:'Cody',c:'text-green',m:'Protocol deployed to workspace'},
-    {t:'13:10',a:'FallingCave',c:'text-amber',m:'AWS: all instances green'},
-    {t:'12:58',a:'Lake',c:'text-blue',m:'Pixel art research complete'},
-    {t:'12:44',a:'Cody',c:'text-green',m:'Heartbeat sweep 5/6'},
+  const L=[
+    {t:'14:32',a:'Lake',c:'var(--blue)',m:'Research: AI dashboard innovations'},
+    {t:'14:28',a:'Cody',c:'var(--green)',m:'Fleet health check — nominal'},
+    {t:'14:15',a:'Claude',c:'var(--cyan)',m:'Bastion v0.7 deployed'},
+    {t:'14:02',a:'Lake',c:'var(--blue)',m:'Agent collab workflow done'},
+    {t:'13:55',a:'Goku',c:'var(--orange)',m:'Awaiting code review'},
+    {t:'13:40',a:'Fish',c:'var(--pink)',m:'Batch 47 done (312 tok/s)'},
+    {t:'13:22',a:'Cody',c:'var(--green)',m:'Protocol deployed'},
+    {t:'13:10',a:'FallingCave',c:'var(--orange)',m:'AWS: all green'},
+    {t:'12:58',a:'Lake',c:'var(--blue)',m:'Pixel art research complete'},
+    {t:'12:44',a:'Cody',c:'var(--green)',m:'Heartbeat sweep 5/6'},
   ];
-  document.getElementById('log-panel').innerHTML = logs.map(l => `
-    <div class="flex gap-2 text-[11px] leading-relaxed py-0.5">
-      <span class="text-text-dim shrink-0 font-mono">${l.t}</span>
-      <span class="${l.c} shrink-0 font-medium">${l.a}</span>
-      <span class="text-text-secondary">${l.m}</span>
+  document.getElementById('log').innerHTML=L.map(l=>`
+    <div style="display:flex;gap:8px;font-size:11px;line-height:1.7">
+      <span class="mono" style="color:var(--text3);flex-shrink:0;font-size:10px">${l.t}</span>
+      <span style="color:${l.c};font-weight:600;flex-shrink:0">${l.a}</span>
+      <span style="color:var(--text2)">${l.m}</span>
     </div>
   `).join('');
 }
