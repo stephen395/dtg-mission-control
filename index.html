@@ -108,6 +108,21 @@ body:not(.chat-open) main{transition:margin-right 0.25s ease}
 .mention-opt img{height:22px}
 .mention-opt .name{font-size:12px;color:#fff;font-weight:600}
 .mention-opt .role{font-size:10px;color:var(--text3)}
+/* Workflow pipeline */
+.pipeline{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;min-height:220px}
+.pipeline-col{display:flex;flex-direction:column;gap:6px}
+.pipeline-col-head{padding:8px 10px;border-radius:8px 8px 0 0;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;display:flex;align-items:center;gap:6px}
+.pipeline-card{padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:11px;transition:all 0.15s;border-left:3px solid transparent}
+.pipeline-card:hover{background:var(--surface-hover);border-color:var(--border-light)}
+.pipeline-card.pc-blue{border-left-color:var(--blue)}.pipeline-card.pc-purple{border-left-color:var(--purple)}
+.pipeline-card.pc-orange{border-left-color:var(--orange)}.pipeline-card.pc-green{border-left-color:var(--green)}.pipeline-card.pc-red{border-left-color:var(--red)}
+@keyframes bldPulse{0%,100%{box-shadow:0 0 0 0 rgba(168,85,247,0)}50%{box-shadow:0 0 8px 2px rgba(168,85,247,0.2)}}
+.pipeline-card.building{animation:bldPulse 2s ease-in-out infinite}
+.req-row{display:grid;grid-template-columns:1fr 80px 70px 60px;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);font-size:11px;transition:background 0.1s}
+.req-row:hover{background:rgba(255,255,255,0.02)}
+.req-row:last-child{border-bottom:none}
+.trashed-row{display:flex;justify-content:space-between;align-items:center;padding:5px 10px;font-size:10px;color:var(--text3);border-bottom:1px solid rgba(255,255,255,0.03)}
+.trashed-row:last-child{border-bottom:none}
 </style>
 </head>
 <body>
@@ -120,6 +135,7 @@ body:not(.chat-open) main{transition:margin-right 0.25s ease}
       <button type="button" class="tab active" data-tab="agents"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:-3px">group</span> Agents</button>
       <button type="button" class="tab" data-tab="projects"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:-3px">folder_open</span> Projects</button>
       <button type="button" class="tab" data-tab="quests"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:-3px">assignment</span> Quest Board</button>
+      <button type="button" class="tab" data-tab="workflow"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:-3px">route</span> Workflow</button>
     </div>
   </div>
   <div style="display:flex;align-items:center;gap:16px">
@@ -308,6 +324,7 @@ function switchTab(tab){
 function renderContent(){
   if(currentTab==='agents') renderAgents();
   else if(currentTab==='projects') renderProjects();
+  else if(currentTab==='workflow') renderWorkflow();
   else renderQuests();
   renderSidebar();
 }
@@ -523,6 +540,221 @@ function submitCompleteQuest(id){
 function archiveQuest(id){const q=quests.find(x=>x.id===id);if(q){q.status='archived';saveQuests(quests);dispatchEvent('quest_archived',{questId:id,title:q.title});renderContent()}}
 function pauseQuest(id){const q=quests.find(x=>x.id===id);if(q){q.prevStatus=q.status;q.status='paused';q.notes.push({time:new Date().toISOString(),agent:'stephen',text:'Quest paused by Stephen.'});saveQuests(quests);dispatchEvent('quest_paused',{questId:id,title:q.title,agents:q.assignedTo||[]});renderContent()}}
 function resumeQuest(id){const q=quests.find(x=>x.id===id);if(q){q.status=q.prevStatus||'active';delete q.prevStatus;q.notes.push({time:new Date().toISOString(),agent:'stephen',text:'Quest resumed by Stephen.'});saveQuests(quests);dispatchEvent('quest_resumed',{questId:id,title:q.title,agents:q.assignedTo||[]});renderContent()}}
+
+// ===== WORKFLOW TAB =====
+// Request queue
+function loadRequests(){try{return JSON.parse(localStorage.getItem('bastion_workflow_requests'))||[]}catch{return[]}}
+function saveRequests(r){localStorage.setItem('bastion_workflow_requests',JSON.stringify(r))}
+let wfRequests=loadRequests();
+if(!wfRequests.length){
+  wfRequests=[
+    {id:'req_001',title:'Build rate plan comparison API',source:'stephen',sourceDetail:'Mission Comms',status:'queued',createdAt:'2026-04-02T14:00:00Z',assignedTo:'claude-code',result:null,completedAt:null},
+    {id:'req_002',title:'Add SSE live status to dashboard',source:'research',sourceDetail:'research/2026-04-01-realtime-status.md',status:'queued',createdAt:'2026-04-02T10:00:00Z',assignedTo:'claude-code',result:null,completedAt:null},
+    {id:'req_003',title:'Heartbeat stale-agent auto-restart',source:'cody',sourceDetail:'Cody delegation',status:'queued',createdAt:'2026-04-02T16:00:00Z',assignedTo:'claude-code',result:null,completedAt:null}
+  ];
+  saveRequests(wfRequests);
+}
+
+// Seed pipeline data
+const PIPELINE_RESEARCH=[
+  {file:'2026-04-02-event-sourcing-bastion.md',topic:'Event Sourcing for Bastion',date:'2026-04-02'},
+  {file:'2026-04-02-agent-collaboration-workflows.md',topic:'Agent Collaboration Workflows',date:'2026-04-02'},
+  {file:'2026-04-02-ai-dashboard-updates.md',topic:'AI Dashboard Innovations',date:'2026-04-02'},
+  {file:'2026-04-03.md',topic:'Self-Improvement Techniques (Reflexion)',date:'2026-04-02'},
+  {file:'2026-04-04.md',topic:'Hallucination Detection (SelfCheckGPT)',date:'2026-04-02'},
+  {file:'2026-04-04-search-strategies.md',topic:'Search Query Optimization',date:'2026-04-02'}
+];
+const PIPELINE_BUILDS=[
+  {title:'Research Verifier CLI',time:'2026-04-02T16:30:00Z',files:['research_verifier.py'],status:'done'},
+  {title:'Reflection Buffer Module',time:'2026-04-02T09:30:00Z',files:['bastion-pipeline/reflection_buffer.py'],status:'done'},
+  {title:'Agent Capabilities Router',time:'2026-04-02T08:00:00Z',files:['workspace_utils.py'],status:'done'}
+];
+const PIPELINE_TRASHED=[
+  {file:'pixel-art-agent-scenes.md',reason:"Goku's domain — pixel art",expiresAt:'2026-04-05T08:00:00Z'},
+  {file:'pixel-animation-research.md',reason:'Pixel animation — frontend work',expiresAt:'2026-04-05T08:00:00Z'},
+  {file:'2026-04-01-tts-voice-alerts.md',reason:'Browser TTS — frontend',expiresAt:'2026-04-05T08:00:00Z'},
+  {file:'2026-04-01-realtime-status.md',reason:'SSE/Socket.io — Goku domain',expiresAt:'2026-04-05T08:00:00Z'},
+  {file:'lake-research-toolkit.md',reason:"Lake's own tools — not coder domain",expiresAt:'2026-04-05T08:00:00Z'},
+  {file:'2026-04-01-evening-sweep.md',reason:'Informational only — no code deliverable',expiresAt:'2026-04-05T08:00:00Z'},
+  {file:'video_transcripts/*.vtt',reason:'Raw subtitles — no actionable code',expiresAt:'2026-04-05T11:00:00Z'},
+  {file:'2026-04-04-search-strategies.md',reason:"Lake's research methodology",expiresAt:'2026-04-05T18:00:00Z'}
+];
+let trashedOpen=false;
+
+function timeAgo(iso){
+  if(!iso)return'';const ms=Date.now()-new Date(iso).getTime();
+  const m=Math.floor(ms/60000),h=Math.floor(m/60),d=Math.floor(h/24);
+  if(d>0)return d+'d ago';if(h>0)return h+'h ago';if(m>0)return m+'m ago';return'now';
+}
+function daysLeft(iso){
+  const ms=new Date(iso).getTime()-Date.now();const d=Math.ceil(ms/86400000);
+  return d>0?d+'d left':'expired';
+}
+function srcIcon(s){return{stephen:'person',cody:'smart_toy',lake:'science',research:'article'}[s]||'help'}
+
+function renderWorkflow(){
+  const reqs=loadRequests();
+  const queued=reqs.filter(r=>r.status==='queued');
+  const building=reqs.filter(r=>r.status==='building');
+  const testing=reqs.filter(r=>r.status==='testing');
+  const done=reqs.filter(r=>r.status==='done'||r.status==='failed');
+  const activeTrashed=PIPELINE_TRASHED.filter(t=>new Date(t.expiresAt)>new Date());
+
+  document.getElementById('content').innerHTML=`
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <!-- STATS BAR -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+      <div class="glass" style="padding:12px 14px;display:flex;align-items:center;gap:10px">
+        <span class="material-symbols-outlined" style="font-size:22px;color:var(--blue)">science</span>
+        <div><div style="font-size:18px;font-weight:700;color:var(--blue)">${PIPELINE_RESEARCH.length}</div><div style="font-size:10px;color:var(--text3)">Research Filed</div></div>
+      </div>
+      <div class="glass" style="padding:12px 14px;display:flex;align-items:center;gap:10px">
+        <span class="material-symbols-outlined" style="font-size:22px;color:var(--purple)">code</span>
+        <div><div style="font-size:18px;font-weight:700;color:var(--purple)">${PIPELINE_BUILDS.length}</div><div style="font-size:10px;color:var(--text3)">Builds Today</div></div>
+      </div>
+      <div class="glass" style="padding:12px 14px;display:flex;align-items:center;gap:10px">
+        <span class="material-symbols-outlined" style="font-size:22px;color:var(--orange)">bug_report</span>
+        <div><div style="font-size:18px;font-weight:700;color:var(--orange)">${testing.length}</div><div style="font-size:10px;color:var(--text3)">Testing</div></div>
+      </div>
+      <div class="glass" style="padding:12px 14px;display:flex;align-items:center;gap:10px">
+        <span class="material-symbols-outlined" style="font-size:22px;color:var(--green)">check_circle</span>
+        <div><div style="font-size:18px;font-weight:700;color:var(--green)">${done.length}</div><div style="font-size:10px;color:var(--text3)">Completed</div></div>
+      </div>
+    </div>
+
+    <!-- PIPELINE KANBAN -->
+    <div class="pipeline">
+      <!-- RESEARCH COLUMN -->
+      <div class="pipeline-col">
+        <div class="pipeline-col-head" style="background:rgba(59,130,246,0.1);color:var(--blue)"><span class="material-symbols-outlined" style="font-size:14px">science</span>Research (Lake)</div>
+        ${PIPELINE_RESEARCH.map(r=>`
+          <div class="pipeline-card pc-blue">
+            <div style="font-weight:600;color:var(--text);margin-bottom:3px">${r.topic}</div>
+            <div style="font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace">${r.file}</div>
+          </div>`).join('')}
+      </div>
+      <!-- BUILD COLUMN -->
+      <div class="pipeline-col">
+        <div class="pipeline-col-head" style="background:rgba(168,85,247,0.1);color:var(--purple)"><span class="material-symbols-outlined" style="font-size:14px">code</span>Build (Claude Code)</div>
+        ${PIPELINE_BUILDS.map(b=>`
+          <div class="pipeline-card pc-purple${b.status==='active'?' building':''}">
+            <div style="font-weight:600;color:var(--text);margin-bottom:3px">${b.title}</div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace">${(b.files||[]).join(', ')}</span>
+              <span style="font-size:9px;color:var(--text3)">${timeAgo(b.time)}</span>
+            </div>
+          </div>`).join('')}
+        ${building.map(r=>`
+          <div class="pipeline-card pc-purple building">
+            <div style="font-weight:600;color:var(--text);margin-bottom:3px">${r.title}</div>
+            <div style="font-size:9px;color:var(--purple)">Building now...</div>
+          </div>`).join('')}
+      </div>
+      <!-- TEST COLUMN -->
+      <div class="pipeline-col">
+        <div class="pipeline-col-head" style="background:rgba(249,115,22,0.1);color:var(--orange)"><span class="material-symbols-outlined" style="font-size:14px">bug_report</span>Test (Goku)</div>
+        ${testing.length?testing.map(r=>`
+          <div class="pipeline-card pc-orange">
+            <div style="font-weight:600;color:var(--text);margin-bottom:3px">${r.title}</div>
+            <div style="font-size:9px;color:var(--orange)">Testing... ${timeAgo(r.createdAt)}</div>
+          </div>`).join(''):'<div style="padding:20px;text-align:center;font-size:11px;color:var(--text3)">No active tests</div>'}
+      </div>
+      <!-- DONE COLUMN -->
+      <div class="pipeline-col">
+        <div class="pipeline-col-head" style="background:rgba(34,197,94,0.1);color:var(--green)"><span class="material-symbols-outlined" style="font-size:14px">check_circle</span>Done</div>
+        ${done.length?done.map(r=>`
+          <div class="pipeline-card ${r.status==='done'?'pc-green':'pc-red'}">
+            <div style="font-weight:600;color:var(--text);margin-bottom:3px">${r.title}</div>
+            <div style="font-size:9px;color:${r.status==='done'?'var(--green)':'var(--red)'}">${r.status==='done'?'WORKED':'FAILED'}${r.result?' — '+r.result.slice(0,60):''}</div>
+          </div>`).join(''):'<div style="padding:20px;text-align:center;font-size:11px;color:var(--text3)">No results yet</div>'}
+      </div>
+    </div>
+
+    <!-- REQUEST QUEUE -->
+    <div class="glass" style="padding:0;overflow:hidden">
+      <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="material-symbols-outlined" style="font-size:16px;color:var(--purple)">list_alt</span>
+          <span style="font-size:12px;font-weight:700">Request Queue</span>
+          <span class="mono" style="font-size:10px;color:var(--text3)">${reqs.length} items</span>
+        </div>
+        <button class="btn btn-sm btn-primary" onclick="openAddRequest()"><span class="material-symbols-outlined" style="font-size:12px;vertical-align:-2px">add</span> Add Request</button>
+      </div>
+      <div style="padding:2px 0">
+        <div class="req-row" style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;border-bottom:1px solid var(--border)">
+          <span>Title</span><span>Source</span><span>Status</span><span>Time</span>
+        </div>
+        ${reqs.map(r=>`<div class="req-row">
+          <span style="color:var(--text);font-weight:500">${r.title}</span>
+          <span style="display:flex;align-items:center;gap:3px;color:var(--text3)"><span class="material-symbols-outlined" style="font-size:12px">${srcIcon(r.source)}</span>${r.source}</span>
+          <span class="badge badge-${r.status==='queued'?'new':r.status==='building'?'active':r.status==='testing'?'paused':r.status==='done'?'completed':'critical'}">${r.status}</span>
+          <span class="mono" style="color:var(--text3)">${timeAgo(r.createdAt)}</span>
+        </div>`).join('')}
+        ${!reqs.length?'<div style="padding:16px;text-align:center;font-size:11px;color:var(--text3)">No requests queued</div>':''}
+      </div>
+    </div>
+
+    <!-- TRASHED RESEARCH -->
+    <div class="glass" style="padding:0;overflow:hidden">
+      <div style="padding:8px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="trashedOpen=!trashedOpen;renderContent()">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="material-symbols-outlined" style="font-size:14px;color:var(--text3)">delete_sweep</span>
+          <span style="font-size:11px;font-weight:600;color:var(--text3)">Trashed Research</span>
+          <span class="mono" style="font-size:10px;color:var(--text3)">${activeTrashed.length} items</span>
+        </div>
+        <span class="material-symbols-outlined" style="font-size:16px;color:var(--text3);transition:transform 0.2s;${trashedOpen?'transform:rotate(180deg)':''}">expand_more</span>
+      </div>
+      ${trashedOpen?`<div style="border-top:1px solid var(--border)">
+        ${activeTrashed.map(t=>`<div class="trashed-row">
+          <div><span class="mono">${t.file}</span> — ${t.reason}</div>
+          <span class="mono" style="flex-shrink:0;color:var(--yellow)">${daysLeft(t.expiresAt)}</span>
+        </div>`).join('')}
+      </div>`:''}
+    </div>
+  </div>`;
+}
+
+function openAddRequest(){
+  document.getElementById('modal-root').innerHTML=`
+  <div class="modal-bg" onclick="closeModal()">
+    <div class="modal" onclick="event.stopPropagation()" style="width:440px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <span class="material-symbols-outlined" style="color:var(--purple);font-size:28px">add_circle</span>
+        <div style="font-size:16px;font-weight:700">New Request</div>
+      </div>
+      <label>Title</label>
+      <input id="reqTitle" placeholder="What needs to be built?" style="margin-bottom:12px"/>
+      <label>Source</label>
+      <select id="reqSource" style="margin-bottom:12px">
+        <option value="stephen">Stephen (manual)</option>
+        <option value="cody">Cody (delegation)</option>
+        <option value="lake">Lake (research finding)</option>
+        <option value="research">Research file</option>
+      </select>
+      <label>Detail (optional)</label>
+      <input id="reqDetail" placeholder="Source file, chat message, or context" style="margin-bottom:16px"/>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-sm btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-sm btn-primary" onclick="submitRequest()">Add to Queue</button>
+      </div>
+    </div>
+  </div>`;
+}
+function submitRequest(){
+  const title=document.getElementById('reqTitle').value.trim();
+  if(!title)return;
+  const source=document.getElementById('reqSource').value;
+  const detail=document.getElementById('reqDetail').value.trim();
+  const req={id:'req_'+Date.now().toString(36),title,source,sourceDetail:detail||null,status:'queued',createdAt:new Date().toISOString(),assignedTo:'claude-code',result:null,completedAt:null};
+  wfRequests=loadRequests();wfRequests.push(req);saveRequests(wfRequests);
+  dispatchEvent('workflow_request_created',{requestId:req.id,title,source,targets:[]});
+  closeModal();renderContent();
+}
+function updateRequestStatus(id,status,result){
+  wfRequests=loadRequests();const r=wfRequests.find(x=>x.id===id);
+  if(r){r.status=status;if(result)r.result=result;if(status==='done'||status==='failed')r.completedAt=new Date().toISOString();saveRequests(wfRequests);
+  dispatchEvent('workflow_request_updated',{requestId:id,status,targets:[]});renderContent();}
+}
 
 // ===== PROJECT REMOVAL =====
 function confirmRemoveProject(pid){
