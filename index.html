@@ -892,6 +892,25 @@ const SPRITE_DATA = {
   SPRITE_DATA.fish.idle.push(mod(FISH_IDLE_0, [[17,6,1],[17,7,3],[21,7,0],[21,8,0]]));
 })();
 
+// === FOURTH IDLE FRAME: both arms slightly raised (subtle shrug/stretch) ===
+// Combines right-arm and left-arm changes from idle_1 and idle_2. Creates a 4-frame cycle:
+// base → right up → left up → both up → (repeat), giving a natural rhythmic idle sway.
+(function addIdleFrame3() {
+  const mod = (src, changes) => {
+    const f = src.map(r => [...r]);
+    for (const [r, c, v] of changes) f[r][c] = v;
+    return f;
+  };
+  // Cody idle_3: both shoulders rise (union of idle_1 + idle_2 changes, no conflicts)
+  SPRITE_DATA.cody.idle.push(mod(CODY_IDLE_0, [[17,22,3],[17,23,1],[21,21,0],[21,22,0],[17,6,1],[17,7,3],[21,7,0],[21,8,0]]));
+  // Goku idle_3: both arms raised (union of idle_1 + idle_2 changes)
+  SPRITE_DATA.goku.idle.push(mod(GOKU_IDLE_0, [[16,21,3],[16,22,1],[20,20,0],[20,21,0],[16,8,1],[16,9,3],[20,8,0],[20,9,0]]));
+  // Lake idle_3: both arms raised (idle_1 uses row18 for book-hand, idle_2 uses row17 for left arm — no conflicts)
+  SPRITE_DATA.lake.idle.push(mod(LAKE_IDLE_0, [[18,21,20],[18,22,19],[18,23,1],[21,21,0],[21,22,0],[17,6,1],[17,7,3],[21,7,0],[21,8,0]]));
+  // Fish idle_3: both arms raised (union of idle_1 + idle_2 changes)
+  SPRITE_DATA.fish.idle.push(mod(FISH_IDLE_0, [[18,22,3],[18,23,1],[21,21,0],[21,22,0],[17,6,1],[17,7,3],[21,7,0],[21,8,0]]));
+})();
+
 // === SECOND WORK FRAMES: alternate arm/body position so working state actually animates ===
 // Currently work state is completely frozen (1 frame). This adds motion to active agents.
 (function addWorkFrame1() {
@@ -908,6 +927,25 @@ const SPRITE_DATA = {
   SPRITE_DATA.lake.work.push(mod(LAKE_WORK_0, [[17,4,1],[17,5,20],[17,6,19],[21,6,0],[21,7,0]]));
   // Fish work_1: right arm extends 1px at row18 (col22-23), row22 loses col22
   SPRITE_DATA.fish.work.push(mod(FISH_WORK_0, [[18,22,3],[18,23,1],[22,22,0]]));
+})();
+
+// === THIRD WORK FRAMES: midpoint return pose — creates smooth 3-frame work cycle ===
+// work_0 = action start, work_1 = action peak, work_2 = return/recovery (mirrors work_0 subtly)
+// 3-frame cycle at 15fps/frame = 750ms cycle — feels natural for typing/hammering/reading motion
+(function addWorkFrame2() {
+  const mod = (src, changes) => {
+    const f = src.map(r => [...r]);
+    for (const [r, c, v] of changes) f[r][c] = v;
+    return f;
+  };
+  // Cody work_2: arm slightly retracted vs work_0 (recovery phase) — row19 arm pulled back 1px
+  SPRITE_DATA.cody.work.push(mod(CODY_WORK_0, [[19,6,3],[19,7,1],[22,7,0]]));
+  // Goku work_2: hammer arm between base and raised (row18 gains col5-6, row19 loses col5)
+  SPRITE_DATA.goku.work.push(mod(GOKU_WORK_0, [[18,5,1],[18,6,3],[19,5,0]]));
+  // Lake work_2: book arm mid-raise (row18 gains col4-5, row21 loses col5-6)
+  SPRITE_DATA.lake.work.push(mod(LAKE_WORK_0, [[18,4,1],[18,5,20],[21,5,0],[21,6,0]]));
+  // Fish work_2: both arms at mid-reach (row19 arm pulled in 1px each side)
+  SPRITE_DATA.fish.work.push(mod(FISH_WORK_0, [[19,6,3],[19,7,1],[22,7,0]]));
 })();
 
 // Pre-render sprites to offscreen canvases for performance
@@ -1187,6 +1225,20 @@ function drawCodyScene(ctx, state) {
   updateParticles('cody');
   drawParticles(ctx, 'cody');
 
+  // Floor reflections from the 3 monitors — purple screen light pools on desk surface
+  if (state !== 'offline') {
+    const monitors = [{x:40,w:65},{x:118,w:65},{x:196,w:65}];
+    for (const m of monitors) {
+      const screenPulse = 0.06 + Math.sin(frame * 0.04 + m.x * 0.05) * 0.02;
+      const refGrad = ctx.createLinearGradient(m.x, 114, m.x + m.w, 114);
+      refGrad.addColorStop(0, 'rgba(168,85,247,0)');
+      refGrad.addColorStop(0.5, `rgba(168,85,247,${screenPulse})`);
+      refGrad.addColorStop(1, 'rgba(168,85,247,0)');
+      ctx.fillStyle = refGrad;
+      ctx.fillRect(m.x - 4, 114, m.w + 8, 22);
+    }
+  }
+
   // Character
   const charX = 150 - (SPRITE_W*PX)/2;
   const charY = state !== 'offline' ? 62 : 66;
@@ -1315,6 +1367,23 @@ function drawGokuScene(ctx, state) {
   }
   updateParticles('goku');
   drawParticles(ctx, 'goku');
+
+  // Floor reflections — orange forge glow pools on stone floor
+  if (state !== 'offline') {
+    const forgePulse = 0.1 + Math.sin(frame * 0.18) * 0.04;
+    const forgeRef = ctx.createRadialGradient(80, 122, 5, 80, 122, 60);
+    forgeRef.addColorStop(0, `rgba(249,115,22,${forgePulse})`);
+    forgeRef.addColorStop(1, 'rgba(249,115,22,0)');
+    ctx.fillStyle = forgeRef;
+    ctx.fillRect(20, 115, 120, 40);
+    // Anvil area: hot metal reflection on floor
+    const anvilPulse = 0.05 + Math.sin(frame * 0.12) * 0.03;
+    const anvilRef = ctx.createRadialGradient(173, 128, 3, 173, 128, 30);
+    anvilRef.addColorStop(0, `rgba(255,140,0,${anvilPulse})`);
+    anvilRef.addColorStop(1, 'rgba(255,140,0,0)');
+    ctx.fillStyle = anvilRef;
+    ctx.fillRect(140, 122, 66, 30);
+  }
 
   // Character
   const charX = 155 - (SPRITE_W*PX)/2;
@@ -1515,6 +1584,27 @@ function drawLakeScene(ctx, state) {
     ctx.fillRect(0,0,300,200);
   }
 
+  // Floor reflections — window/lamp light pools on carpet
+  if (state !== 'offline') {
+    // Bookshelf lamp warm reflection on carpet
+    const lampPulse = 0.07 + Math.sin(frame * 0.05) * 0.02;
+    const lampRef = ctx.createRadialGradient(200, 130, 4, 200, 130, 45);
+    lampRef.addColorStop(0, `rgba(255,200,80,${lampPulse})`);
+    lampRef.addColorStop(1, 'rgba(255,200,80,0)');
+    ctx.fillStyle = lampRef;
+    ctx.fillRect(160, 122, 80, 40);
+    // Window moonlight/sunlight blue reflection on floor
+    const lakeHr = new Date().getHours();
+    const isDay = lakeHr >= 7 && lakeHr < 19;
+    const winColor = isDay ? `rgba(100,180,255,0.04)` : `rgba(80,80,200,0.05)`;
+    const winRef = ctx.createLinearGradient(220, 120, 280, 120);
+    winRef.addColorStop(0, 'rgba(0,0,200,0)');
+    winRef.addColorStop(0.5, winColor);
+    winRef.addColorStop(1, 'rgba(0,0,200,0)');
+    ctx.fillStyle = winRef;
+    ctx.fillRect(210, 120, 80, 50);
+  }
+
   // Character
   const charX = 140 - (SPRITE_W*PX)/2;
   const charY = state !== 'offline' ? 60 : 64;
@@ -1654,6 +1744,28 @@ function drawFishScene(ctx, state) {
   }
   updateParticles('fish');
   drawParticles(ctx, 'fish');
+
+  // Floor reflections — cyan terminal glow on floor tiles
+  if (state !== 'offline') {
+    // Chat terminals cast cyan light on floor
+    for (let ti = 0; ti < 2; ti++) {
+      const tx = 130 + ti * 70;
+      const termPulse = 0.06 + Math.sin(frame * 0.07 + ti * 1.5) * 0.025;
+      const termRef = ctx.createLinearGradient(tx, 116, tx + 50, 116);
+      termRef.addColorStop(0, 'rgba(6,182,212,0)');
+      termRef.addColorStop(0.5, `rgba(6,182,212,${termPulse})`);
+      termRef.addColorStop(1, 'rgba(6,182,212,0)');
+      ctx.fillStyle = termRef;
+      ctx.fillRect(tx - 5, 116, 60, 28);
+    }
+    // Left monitor station glow
+    const monPulse = 0.04 + Math.sin(frame * 0.05) * 0.015;
+    const monRef = ctx.createRadialGradient(70, 120, 3, 70, 120, 38);
+    monRef.addColorStop(0, `rgba(6,182,212,${monPulse})`);
+    monRef.addColorStop(1, 'rgba(6,182,212,0)');
+    ctx.fillStyle = monRef;
+    ctx.fillRect(40, 115, 60, 30);
+  }
 
   // Character
   const charX = 145 - (SPRITE_W*PX)/2;
