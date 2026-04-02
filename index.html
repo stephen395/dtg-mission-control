@@ -448,9 +448,30 @@ function submitQuest(){
 }
 
 // ===== AGENT PROFILE =====
+let profileEditing=false;
+
+function ef(val,field,id,type='input'){
+  // editable field helper: returns view or input based on profileEditing
+  const esc=String(val||'').replace(/"/g,'&quot;');
+  if(!profileEditing) return type==='textarea'
+    ? `<div style="font-size:12px;color:var(--text2);line-height:1.6">${val}</div>`
+    : `<span>${val}</span>`;
+  return type==='textarea'
+    ? `<textarea data-field="${field}" data-agent="${id}" style="width:100%;padding:6px 8px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;font-family:inherit;resize:vertical;min-height:60px">${val}</textarea>`
+    : `<input data-field="${field}" data-agent="${id}" value="${esc}" style="width:100%;padding:4px 8px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;font-family:inherit"/>`;
+}
+
+function listEf(arr,field,id){
+  if(!profileEditing) return '';
+  return `<input data-field="${field}" data-agent="${id}" data-type="list" value="${(arr||[]).join(', ')}" style="width:100%;padding:4px 8px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:10px;font-family:inherit;margin-top:6px" placeholder="Comma separated"/>`;
+}
+
 function openProfile(id){
   const a=AGENTS.find(x=>x.id===id);if(!a||!a.profile)return;
   const p=a.profile;
+  const edits=loadProfileEdits(id);
+  const P={...p,...edits}; // merge saved edits over defaults
+
   document.getElementById('modal-root').innerHTML=`
   <div class="profile-overlay" onclick="closeProfile()">
     <div class="profile-panel" onclick="event.stopPropagation()">
@@ -464,61 +485,105 @@ function openProfile(id){
           <div style="font-size:12px;color:var(--text3);margin-top:2px">${a.role}</div>
           <div style="display:flex;align-items:center;gap:4px;margin-top:4px"><div class="dot ${a.s!=='offline'?'pulse':''}" style="width:6px;height:6px;background:${SC[a.s]}"></div><span style="font-size:11px;color:${SC[a.s]}">${SL[a.s]}</span></div>
         </div>
-        <span class="material-symbols-outlined" style="cursor:pointer;color:var(--text3);font-size:20px" onclick="closeProfile()">close</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          ${profileEditing
+            ?`<button class="btn btn-sm btn-primary" onclick="saveProfile('${id}')">Save</button><button class="btn btn-sm btn-ghost" onclick="profileEditing=false;openProfile('${id}')">Cancel</button>`
+            :`<button class="btn btn-sm btn-ghost" onclick="profileEditing=true;openProfile('${id}')" style="display:flex;align-items:center;gap:3px"><span class="material-symbols-outlined" style="font-size:14px">edit</span>Edit</button>`}
+          <span class="material-symbols-outlined" style="cursor:pointer;color:var(--text3);font-size:20px" onclick="closeProfile()">close</span>
+        </div>
       </div>
 
       <!-- Model & Platform -->
       <div class="profile-section">
         <div class="profile-section-title">Model & Platform</div>
-        <div style="display:flex;flex-direction:column;gap:4px">
-          <div style="font-size:13px;color:#fff;font-weight:600">${p.model}</div>
-          <div style="font-size:11px;color:var(--text3)">${p.framework}</div>
-          <div style="font-size:11px;color:var(--text3)">${p.platform}</div>
-        </div>
+        ${profileEditing?`
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div><label style="font-size:9px;color:var(--text3)">Model</label>${ef(P.model,'model',id)}</div>
+            <div><label style="font-size:9px;color:var(--text3)">Framework</label>${ef(P.framework,'framework',id)}</div>
+            <div><label style="font-size:9px;color:var(--text3)">Platform</label>${ef(P.platform,'platform',id)}</div>
+          </div>
+        `:`<div style="display:flex;flex-direction:column;gap:4px">
+          <div style="font-size:13px;color:#fff;font-weight:600">${P.model}</div>
+          <div style="font-size:11px;color:var(--text3)">${P.framework}</div>
+          <div style="font-size:11px;color:var(--text3)">${P.platform}</div>
+        </div>`}
       </div>
 
       <!-- Soul -->
       <div class="profile-section">
         <div class="profile-section-title">Soul</div>
-        <div style="font-size:12px;color:var(--text2);line-height:1.6;font-style:italic">"${p.soul}"</div>
+        ${profileEditing
+          ?ef(P.soul,'soul',id,'textarea')
+          :`<div style="font-size:12px;color:var(--text2);line-height:1.6;font-style:italic">"${P.soul}"</div>`}
       </div>
 
       <!-- Personality -->
       <div class="profile-section">
         <div class="profile-section-title">Personality</div>
-        <div style="display:flex;flex-wrap:wrap;gap:2px">${p.personality.map(t=>`<span class="profile-pill">${t}</span>`).join('')}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:2px">${(P.personality||[]).map(t=>`<span class="profile-pill">${t}</span>`).join('')}</div>
+        ${listEf(P.personality,'personality',id)}
       </div>
 
       <!-- Skills -->
       <div class="profile-section">
-        <div class="profile-section-title">Skills (${p.skills.length})</div>
-        ${p.skills.map(s=>`<div class="profile-skill"><span style="background:${a.c};width:4px;height:4px;border-radius:50%"></span>${s}</div>`).join('')}
+        <div class="profile-section-title">Skills (${(P.skills||[]).length})</div>
+        ${(P.skills||[]).map(s=>`<div class="profile-skill"><span style="background:${a.c};width:4px;height:4px;border-radius:50%"></span>${s}</div>`).join('')}
+        ${listEf(P.skills,'skills',id)}
       </div>
 
       <!-- Traits -->
       <div class="profile-section">
         <div class="profile-section-title">Behavioral Traits</div>
-        ${p.traits.map(t=>`<div class="profile-skill"><span style="background:var(--cyan);width:4px;height:4px;border-radius:50%"></span>${t}</div>`).join('')}
+        ${(P.traits||[]).map(t=>`<div class="profile-skill"><span style="background:var(--cyan);width:4px;height:4px;border-radius:50%"></span>${t}</div>`).join('')}
+        ${listEf(P.traits,'traits',id)}
       </div>
 
       <!-- Hard Rules -->
       <div class="profile-section">
         <div class="profile-section-title">Hard Rules</div>
-        ${p.rules.map(r=>`<div class="profile-rule"><span style="color:var(--yellow);font-size:12px;flex-shrink:0">!!</span><span>${r}</span></div>`).join('')}
+        ${(P.rules||[]).map(r=>`<div class="profile-rule"><span style="color:var(--yellow);font-size:12px;flex-shrink:0">!!</span><span>${r}</span></div>`).join('')}
+        ${listEf(P.rules,'rules',id)}
       </div>
 
       <!-- Comms & Memory -->
       <div class="profile-section" style="border-bottom:none">
         <div class="profile-section-title">Communication & Memory</div>
-        <div style="display:flex;flex-direction:column;gap:4px;font-size:11px">
-          <div style="color:var(--text2)"><span style="color:var(--text3)">Channel:</span> ${p.comms}</div>
-          <div style="color:var(--text2)"><span style="color:var(--text3)">Memory:</span> ${p.memory}</div>
-        </div>
+        ${profileEditing?`
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div><label style="font-size:9px;color:var(--text3)">Channel</label>${ef(P.comms,'comms',id)}</div>
+            <div><label style="font-size:9px;color:var(--text3)">Memory</label>${ef(P.memory,'memory',id)}</div>
+          </div>
+        `:`<div style="display:flex;flex-direction:column;gap:4px;font-size:11px">
+          <div style="color:var(--text2)"><span style="color:var(--text3)">Channel:</span> ${P.comms}</div>
+          <div style="color:var(--text2)"><span style="color:var(--text3)">Memory:</span> ${P.memory}</div>
+        </div>`}
       </div>
     </div>
   </div>`;
 }
-function closeProfile(){document.getElementById('modal-root').innerHTML=''}
+function closeProfile(){profileEditing=false;document.getElementById('modal-root').innerHTML=''}
+
+function loadProfileEdits(id){
+  try{return JSON.parse(localStorage.getItem('bastion_profile_'+id))||{}}catch{return{}}
+}
+
+function saveProfile(id){
+  const edits={};
+  document.querySelectorAll('[data-agent="'+id+'"]').forEach(el=>{
+    const f=el.dataset.field;
+    if(el.dataset.type==='list'){
+      edits[f]=el.value.split(',').map(s=>s.trim()).filter(Boolean);
+    }else{
+      edits[f]=el.value;
+    }
+  });
+  localStorage.setItem('bastion_profile_'+id,JSON.stringify(edits));
+  // Also merge into live AGENTS array
+  const a=AGENTS.find(x=>x.id===id);
+  if(a&&a.profile) Object.assign(a.profile,edits);
+  profileEditing=false;
+  openProfile(id);
+}
 
 // ===== SIDEBAR =====
 function renderSidebar(){
