@@ -144,19 +144,16 @@ const ASSIGN_MAP={feature:['goku'],bugfix:['goku'],research:['lake'],infra:['fal
 
 function loadQuests(){try{return JSON.parse(localStorage.getItem('bastion_quests'))||[]}catch(e){return[]}}
 function saveQuests(q){localStorage.setItem('bastion_quests',JSON.stringify(q));syncToAPI(q)}
-async function syncToAPI(q){
-  try{const r=await fetch(API+'/api/quests/sync',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(q)});
-  if(r.ok){syncStatus='synced'}else{syncStatus='error'}}catch{syncStatus='local'}
+function syncToAPI(q){
+  fetch(API+'/api/quests/sync',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(q)})
+  .then(r=>{syncStatus=r.ok?'synced':'error'}).catch(()=>{syncStatus='local'});
 }
-async function fetchFromAPI(){
-  try{const r=await fetch(API+'/api/quests',{signal:AbortSignal.timeout(5000)});
-  if(r.ok){const data=await r.json();if(data.length>0){syncStatus='synced';return data}};syncStatus='synced';return null}
-  catch{syncStatus='local';return null}
-}
-async function initQuests(){
-  const remote=await fetchFromAPI();
-  if(remote&&remote.length>0){quests=remote;localStorage.setItem('bastion_quests',JSON.stringify(quests))}
-  renderContent();
+function initQuests(){
+  fetch(API+'/api/quests',{signal:AbortSignal.timeout(4000)})
+  .then(r=>r.ok?r.json():null)
+  .then(data=>{if(data&&data.length>0){quests=data;localStorage.setItem('bastion_quests',JSON.stringify(quests));syncStatus='synced'}else{syncStatus='synced'}})
+  .catch(()=>{syncStatus='local'})
+  .finally(()=>renderContent());
 }
 
 let quests=loadQuests();
@@ -397,8 +394,9 @@ function renderSidebar(){
 }
 
 setInterval(()=>{const d=new Date();document.getElementById('clock').textContent=d.toLocaleTimeString('en-US',{hour12:false})},1000);
-// Init: try API first, fallback to localStorage
-initQuests().catch(()=>renderContent());
+// Init: render immediately, then try API sync in background
+renderContent();
+initQuests();
 </script>
 </body>
 </html>
