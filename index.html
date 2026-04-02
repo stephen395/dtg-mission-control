@@ -65,6 +65,15 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
 .btn-primary{background:var(--cyan);color:#000}.btn-primary:hover{opacity:0.9}
 .btn-ghost{background:transparent;color:var(--text3);border:1px solid var(--border)}.btn-ghost:hover{color:var(--text);border-color:var(--border-light)}
 .btn-sm{padding:4px 10px;font-size:10px}
+.profile-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:60;display:flex;justify-content:flex-end}
+.profile-panel{width:380px;height:100%;background:#12121e;border-left:1px solid var(--border-light);overflow-y:auto;padding:0;animation:slideIn 0.2s ease}
+@keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+.profile-section{padding:12px 16px;border-bottom:1px solid var(--border)}
+.profile-section-title{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;font-weight:600}
+.profile-pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;margin:2px;background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--text2)}
+.profile-skill{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);padding:3px 0}
+.profile-skill::before{content:'';width:4px;height:4px;border-radius:50%;flex-shrink:0}
+.profile-rule{display:flex;align-items:flex-start;gap:6px;font-size:11px;color:var(--text2);padding:3px 0}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px}
 </style>
 </head>
@@ -115,12 +124,66 @@ let syncStatus='unknown'; // synced | local | error | unknown
 
 // ===== AGENTS =====
 const AGENTS=[
-  {id:'cody',name:'Cody',role:'Mission Control',s:'working',task:'Fleet monitoring',p:100,c:'var(--green)',hp:'98%',specs:'Hermes v0.6 \u00b7 minimax-m2.7',acts:['Fleet health check \u2014 nominal','Pinged Lake for research ETA','Routed pixel task to Goku','Bastion Protocol deployed','Cleared stale queue'],mods:['Fleet Monitor','Cron Jobs','Triggers','Timers','Heartbeat']},
-  {id:'lake',name:'Lake',role:'Research & Intel',s:'working',task:'Scanning news feeds',p:72,c:'var(--blue)',hp:'95%',specs:'Hermes v0.6 \u00b7 glm-5',acts:['AI dashboard tech research','Pixel art animation study','Collab workflow paper','Carrier news scan done'],mods:['Research Q','Web Scrape','Transcripts','Intel','Archive']},
-  {id:'goku',name:'Goku',role:'Coder & Builder',s:'idle',task:'Awaiting tasks',p:0,c:'var(--orange)',hp:'100%',specs:'Hermes v0.6 \u00b7 qwen3-coder',acts:['Bastion scaffold created','PixiJS v8 migration','Waiting for review','Pkg cleanup'],mods:['Build Queue','Git Ops','Tests','Deploy','Review']},
-  {id:'fallingcave',name:'FallingCave',role:'AWS & Deploy',s:'online',task:'Monitoring infra',p:45,c:'var(--orange)',hp:'87%',specs:'AWS \u00b7 3.25.96.134',acts:['AWS health: all green','SSL cert renewed','Disk alert cleared','CloudWatch pulled'],mods:['AWS Health','Deploys','SSL Certs','Scaling','Costs']},
-  {id:'blockhead',name:'Blockhead',role:'Tencent VPS',s:'offline',task:'Standby',p:0,c:'var(--purple)',hp:'\u2014',specs:'Tencent \u00b7 43.134.78.224',acts:['Last seen 6h ago','Standby mode','Memory cleanup'],mods:['Tencent','WeChat','Discord','Health','Logs']},
-  {id:'fish',name:'Fish',role:'NemoClaw / GPU',s:'online',task:'Local inference',p:30,c:'var(--pink)',hp:'91%',specs:'NemoClaw \u00b7 Local GPU',acts:['Batch 47 done (312 t/s)','Model swap glm-5','HubSpot scan','Discord relay'],mods:['Inference','GPU Stats','Models','Chat','HubSpot']},
+  {id:'cody',name:'Cody',role:'Mission Control',s:'working',task:'Fleet monitoring',p:100,c:'var(--green)',hp:'98%',specs:'Hermes v0.6 \u00b7 minimax-m2.7',
+   acts:['Fleet health check \u2014 nominal','Pinged Lake for research ETA','Routed pixel task to Goku','Bastion Protocol deployed','Cleared stale queue'],
+   mods:['Fleet Monitor','Cron Jobs','Triggers','Timers','Heartbeat'],
+   profile:{model:'minimax-m2.7',framework:'Hermes Agent v0.6',platform:'AgentPC1 (10.33.1.144)',
+     personality:['Direct','Practical','Efficient','Decisive'],
+     soul:'Central coordinator of the DTG AI agent fleet. Monitors, manages, and delegates tasks across all agents. Mission Control is his domain \u2014 keeps it running 24/7.',
+     skills:['Fleet Monitoring','Task Delegation & Routing','Health Checks & Heartbeat','Agent Status Tracking','Cron Job Management','Inter-Agent Communication','Task Queue Management','Model Switching (minimax/GLM-5/Qwen3)'],
+     traits:['Leads with the answer','No fluff, no trailing summaries','Flags problems immediately + proposes solutions','Short messages (Stephen reads on mobile)','Uses model switching per task type'],
+     rules:['Never expose credentials without per-action approval','Confirm before destructive operations','Update heartbeat every task cycle'],
+     comms:'Discord #cody-control',memory:'Hermes 5-layer (SOUL.md + MEMORY.md + FTS5 + skills + sessions)'}},
+  {id:'lake',name:'Lake',role:'Research & Intel',s:'working',task:'Scanning news feeds',p:72,c:'var(--blue)',hp:'95%',specs:'Hermes v0.6 \u00b7 glm-5',
+   acts:['AI dashboard tech research','Pixel art animation study','Collab workflow paper','Carrier news scan done'],
+   mods:['Research Q','Web Scrape','Transcripts','Intel','Archive'],
+   profile:{model:'glm-5',framework:'Hermes Agent v0.6',platform:'AgentPC1 (10.33.1.144)',
+     personality:['Analytical','Thorough','Concise','Proactive'],
+     soul:'DTG intelligence gatherer. Researches AI developments, coding improvements, telecom industry changes, and management strategies. Makes sure nothing important slips through the cracks.',
+     skills:['AI News & Model Tracking','YouTube Transcript Research','Web Scraping & Synthesis','Telecom Carrier Monitoring','Framework & Library Evaluation','Competitive Intelligence','Agent Fleet Optimization Research','Research Report Generation'],
+     traits:['Leads with the headline, follows with takeaway','Bullet points for multi-item updates','Flags urgency: critical / important / FYI','Surfaces only what matters \u2014 no noise','Verifies sources before reporting'],
+     rules:['Never expose credentials without per-action approval','Confirm before destructive operations','No rumors or speculation presented as fact'],
+     comms:'Discord #lake-intel',memory:'Hermes 5-layer (SOUL.md + MEMORY.md + FTS5 + skills + sessions)'}},
+  {id:'goku',name:'Goku',role:'Coder & Builder',s:'idle',task:'Awaiting tasks',p:0,c:'var(--orange)',hp:'100%',specs:'Hermes v0.6 \u00b7 qwen3-coder',
+   acts:['Bastion scaffold created','PixiJS v8 migration','Waiting for review','Pkg cleanup'],
+   mods:['Build Queue','Git Ops','Tests','Deploy','Review'],
+   profile:{model:'qwen3-coder-next',framework:'Hermes Agent v0.6',platform:'AgentPC1 (10.33.1.144)',
+     personality:['Builder','Pragmatic','Production-focused','Methodical'],
+     soul:'DTG tool builder. Creates custom tools, dashboards, and utilities that other agents use. Builds things like the DTG Audit Tool, Mission Control Board, and specialized agent tooling.',
+     skills:['Web Dashboards (HTML/JS/CSS)','Python Scripts & Automation','API Integrations','Data Processing Pipelines','GitHub Pages Deployment','PixiJS / Canvas Rendering','Agent-Specific Tooling','Code Review & Refactoring'],
+     traits:['Keeps code snippets short and relevant','Flags blockers immediately + proposes solutions','Tests before shipping','Saves all builds to shared_workspace/tools/','Learns from changelogs (Pattern to learn sections)'],
+     rules:['Never expose credentials without per-action approval','Confirm before destructive operations','Test before you ship'],
+     comms:'Discord #goku-forge',memory:'Hermes 5-layer (SOUL.md + MEMORY.md + FTS5 + skills + sessions)'}},
+  {id:'fallingcave',name:'FallingCave',role:'AWS & Deploy',s:'online',task:'Monitoring infra',p:45,c:'var(--orange)',hp:'87%',specs:'AWS \u00b7 3.25.96.134',
+   acts:['AWS health: all green','SSL cert renewed','Disk alert cleared','CloudWatch pulled'],
+   mods:['AWS Health','Deploys','SSL Certs','Scaling','Costs'],
+   profile:{model:'Gemini 2.5 Flash',framework:'OpenClaw Gateway',platform:'AWS VPS (3.25.96.134)',
+     personality:['Reliable','Vigilant','Infrastructure-minded','Autonomous'],
+     soul:'Cloud infrastructure agent. Handles AWS monitoring, deployments, scaling, and security. Discord bot on "Stephen & the Clawguys" server. AI building, research, and agent creation.',
+     skills:['AWS EC2/CloudWatch Monitoring','SSL Certificate Management','Deployment Automation','Disk & Resource Alerting','Discord Bot Operations','Infrastructure Scaling','Security Audit','CloudFormation'],
+     traits:['Runs 24/7 on AWS VPS','Discord bot interface','Monitors infrastructure proactively','Handles deployments autonomously'],
+     rules:['Never expose credentials without per-action approval','Confirm before destructive operations'],
+     comms:'Discord (DTG Agent bot)',memory:'OpenClaw memory-lancedb'}},
+  {id:'blockhead',name:'Blockhead',role:'Tencent VPS',s:'offline',task:'Standby',p:0,c:'var(--purple)',hp:'\u2014',specs:'Tencent \u00b7 43.134.78.224',
+   acts:['Last seen 6h ago','Standby mode','Memory cleanup'],
+   mods:['Tencent','WeChat','Discord','Health','Logs'],
+   profile:{model:'Gemini 2.5 Flash',framework:'OpenClaw Gateway',platform:'Tencent VPS (43.134.78.224)',
+     personality:['Practical','Sturdy','Resourceful','Low-profile'],
+     soul:'Tencent cloud agent. Handles Chinese platform integrations, WeChat bots, and Tencent infrastructure. Runs on a lean 2GB RAM VPS.',
+     skills:['Tencent Cloud Management','WeChat Bot Operations','Chinese Platform Integration','Discord Bot (own instance)','Resource-Constrained Operations','Memory Optimization'],
+     traits:['Operates on 2GB RAM \u2014 lean and efficient','Own Discord bot instance','Handles Chinese platform specifics','Low-profile, high-reliability'],
+     rules:['Never expose credentials without per-action approval','Confirm before destructive operations'],
+     comms:'Discord (Blockhead bot)',memory:'OpenClaw memory-lancedb'}},
+  {id:'fish',name:'Fish',role:'Telecom Operations',s:'online',task:'Local inference',p:30,c:'var(--pink)',hp:'91%',specs:'NemoClaw \u00b7 Local GPU',
+   acts:['Batch 47 done (312 t/s)','Model swap glm-5','HubSpot scan','Discord relay'],
+   mods:['Inference','GPU Stats','Models','Chat','HubSpot'],
+   profile:{model:'Minimax M2.7 + GLM-5 (fallback)',framework:'Hermes v0.6 + OpenClaw NemoClaw',platform:'Local PC (NemoClaw) + GPU',
+     personality:['Direct','Anticipatory','Opinionated','Resourceful'],
+     soul:'Stephen\'s primary work assistant. Handles telecom billing audits, carrier management, rate plan optimization, and client accounts. Butler, not bot \u2014 thinks ahead and offers solutions before being asked.',
+     skills:['AT&T Wireless Billing Audit','Verizon Bill Analysis','T-Mobile Audit','Rate Plan Optimization','HubSpot CRM (5 inboxes)','Carrier Promo Tracking','Client Communication Drafting','Local GPU Inference (312 tok/s)','Discord + Google Chat'],
+     traits:['Answer first, explain second','Butler not bot \u2014 anticipates needs','Hates being asked what he could figure out himself','Tries first, asks only if truly stuck','Plain language \u2014 12-year-old should follow'],
+     rules:['Privacy is absolute \u2014 never echo credentials','Never send half-baked replies','Not Stephen\'s voice in group chats \u2014 be careful','Quality over speed'],
+     comms:'Discord + Google Chat',memory:'Hermes 5-layer + OpenClaw QMD (text-embedding-3-small)'}},
 ];
 const SL={online:'Online',working:'Working',idle:'Idle',offline:'Offline'};
 const SC={online:'var(--green)',working:'var(--yellow)',idle:'var(--blue)',offline:'var(--text3)'};
@@ -194,7 +257,7 @@ function renderContent(){
 function renderAgents(){
   document.getElementById('content').innerHTML=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-content:start">${AGENTS.map(a=>{
     const off=a.s==='offline';
-    return `<div class="glass" style="display:flex;flex-direction:column;${off?'opacity:0.35':''}">
+    return `<div class="glass" style="display:flex;flex-direction:column;cursor:pointer;${off?'opacity:0.35':''}" onclick="openProfile('${a.id}')">
       <div style="padding:12px 14px 8px;display:flex;gap:12px;align-items:flex-start">
         <div style="width:56px;height:56px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
           <img src="${B}sprites/${a.id}.png" class="sprite" style="height:50px" alt="${a.name}"/></div>
@@ -383,6 +446,79 @@ function submitQuest(){
   expandedQuest=q.id;
   renderContent();
 }
+
+// ===== AGENT PROFILE =====
+function openProfile(id){
+  const a=AGENTS.find(x=>x.id===id);if(!a||!a.profile)return;
+  const p=a.profile;
+  document.getElementById('modal-root').innerHTML=`
+  <div class="profile-overlay" onclick="closeProfile()">
+    <div class="profile-panel" onclick="event.stopPropagation()">
+      <!-- Header -->
+      <div class="profile-section" style="display:flex;align-items:center;gap:14px;padding:16px">
+        <div style="width:70px;height:70px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+          <img src="${B}sprites/${a.id}.png" class="sprite" style="height:62px" alt="${a.name}"/>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:18px;font-weight:700;color:#fff">${a.name}</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px">${a.role}</div>
+          <div style="display:flex;align-items:center;gap:4px;margin-top:4px"><div class="dot ${a.s!=='offline'?'pulse':''}" style="width:6px;height:6px;background:${SC[a.s]}"></div><span style="font-size:11px;color:${SC[a.s]}">${SL[a.s]}</span></div>
+        </div>
+        <span class="material-symbols-outlined" style="cursor:pointer;color:var(--text3);font-size:20px" onclick="closeProfile()">close</span>
+      </div>
+
+      <!-- Model & Platform -->
+      <div class="profile-section">
+        <div class="profile-section-title">Model & Platform</div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div style="font-size:13px;color:#fff;font-weight:600">${p.model}</div>
+          <div style="font-size:11px;color:var(--text3)">${p.framework}</div>
+          <div style="font-size:11px;color:var(--text3)">${p.platform}</div>
+        </div>
+      </div>
+
+      <!-- Soul -->
+      <div class="profile-section">
+        <div class="profile-section-title">Soul</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.6;font-style:italic">"${p.soul}"</div>
+      </div>
+
+      <!-- Personality -->
+      <div class="profile-section">
+        <div class="profile-section-title">Personality</div>
+        <div style="display:flex;flex-wrap:wrap;gap:2px">${p.personality.map(t=>`<span class="profile-pill">${t}</span>`).join('')}</div>
+      </div>
+
+      <!-- Skills -->
+      <div class="profile-section">
+        <div class="profile-section-title">Skills (${p.skills.length})</div>
+        ${p.skills.map(s=>`<div class="profile-skill"><span style="background:${a.c};width:4px;height:4px;border-radius:50%"></span>${s}</div>`).join('')}
+      </div>
+
+      <!-- Traits -->
+      <div class="profile-section">
+        <div class="profile-section-title">Behavioral Traits</div>
+        ${p.traits.map(t=>`<div class="profile-skill"><span style="background:var(--cyan);width:4px;height:4px;border-radius:50%"></span>${t}</div>`).join('')}
+      </div>
+
+      <!-- Hard Rules -->
+      <div class="profile-section">
+        <div class="profile-section-title">Hard Rules</div>
+        ${p.rules.map(r=>`<div class="profile-rule"><span style="color:var(--yellow);font-size:12px;flex-shrink:0">!!</span><span>${r}</span></div>`).join('')}
+      </div>
+
+      <!-- Comms & Memory -->
+      <div class="profile-section" style="border-bottom:none">
+        <div class="profile-section-title">Communication & Memory</div>
+        <div style="display:flex;flex-direction:column;gap:4px;font-size:11px">
+          <div style="color:var(--text2)"><span style="color:var(--text3)">Channel:</span> ${p.comms}</div>
+          <div style="color:var(--text2)"><span style="color:var(--text3)">Memory:</span> ${p.memory}</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+function closeProfile(){document.getElementById('modal-root').innerHTML=''}
 
 // ===== SIDEBAR =====
 function renderSidebar(){
