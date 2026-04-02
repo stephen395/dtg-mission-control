@@ -75,9 +75,9 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
   <div style="display:flex;align-items:center;gap:16px">
     <span style="font-size:15px;font-weight:700;letter-spacing:0.15em;color:#fff">BASTION</span>
     <div style="display:flex;gap:4px" id="tabs">
-      <div class="tab active" data-tab="agents" onclick="switchTab('agents')"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:-3px">group</span> Agents</div>
-      <div class="tab" data-tab="projects" onclick="switchTab('projects')"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:-3px">folder_open</span> Projects</div>
-      <div class="tab" data-tab="quests" onclick="switchTab('quests')"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:-3px">assignment</span> Quest Board</div>
+      <button type="button" class="tab active" data-tab="agents"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:-3px">group</span> Agents</button>
+      <button type="button" class="tab" data-tab="projects"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:-3px">folder_open</span> Projects</button>
+      <button type="button" class="tab" data-tab="quests"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:-3px">assignment</span> Quest Board</button>
     </div>
   </div>
   <div style="display:flex;align-items:center;gap:16px">
@@ -176,7 +176,11 @@ let expandedQuest=null;
 
 // ===== TAB STATE =====
 let currentTab='agents';
-function switchTab(tab){currentTab=tab;document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));renderContent()}
+function switchTab(tab){
+  currentTab=tab;
+  document.querySelectorAll('#tabs .tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
+  renderContent();
+}
 
 // ===== RENDER ROUTER =====
 function renderContent(){
@@ -394,6 +398,12 @@ function renderSidebar(){
 }
 
 setInterval(()=>{const d=new Date();document.getElementById('clock').textContent=d.toLocaleTimeString('en-US',{hour12:false})},1000);
+// Tab click listeners (using event delegation for reliability)
+document.getElementById('tabs').addEventListener('click',function(e){
+  const btn=e.target.closest('.tab');
+  if(btn&&btn.dataset.tab){switchTab(btn.dataset.tab)}
+});
+
 // Init: render immediately, then try API sync in background
 renderContent();
 initQuests();
