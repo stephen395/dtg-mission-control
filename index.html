@@ -259,7 +259,7 @@ function renderQuests(){
       ${filtered.length===0?'<div style="padding:40px;text-align:center;color:var(--text3)">No quests found. Post a new one!</div>':''}
       ${filtered.map(q=>{
         const isExp=expandedQuest===q.id;
-        const agents=q.assignedTo.map(id=>AGENTS.find(a=>a.id===id)).filter(Boolean);
+        const agents=(q.assignedTo||[]).map(id=>AGENTS.find(a=>a.id===id)).filter(Boolean);
         const age=timeAgo(q.createdAt);
         return `<div class="quest-card ${isExp?'expanded':''}" data-priority="${q.priority}" style="break-inside:avoid;margin-bottom:10px" onclick="toggleQuest('${q.id}')">
           <!-- Header -->
@@ -270,7 +270,7 @@ function renderQuests(){
                 <span style="font-size:13px;font-weight:700;color:#fff">${q.title}</span>
               </div>
               <div style="display:flex;align-items:center;gap:8px;margin-top:4px;font-size:10px">
-                <span style="color:${CAT_COLOR[q.category]}"><span class="material-symbols-outlined" style="font-size:11px;vertical-align:-2px">${CAT_ICON[q.category]}</span> ${CATS[q.category]}</span>
+                <span style="color:${CAT_COLOR[q.category]||'var(--text3)'}"><span class="material-symbols-outlined" style="font-size:11px;vertical-align:-2px">${CAT_ICON[q.category]||'help'}</span> ${CATS[q.category]||q.category||'Other'}</span>
                 <span class="badge badge-${q.status}" style="font-size:8px">${q.status}</span>
                 <span style="color:var(--text3)">${age}</span>
               </div>
@@ -293,12 +293,12 @@ function renderQuests(){
             </div>
 
             <!-- Tags -->
-            <div style="display:flex;gap:4px;margin-bottom:10px">${q.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+            <div style="display:flex;gap:4px;margin-bottom:10px">${(q.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
 
             <!-- Notes timeline -->
-            ${q.notes.length?`<div style="margin-bottom:10px">
+            ${(q.notes||[]).length?`<div style="margin-bottom:10px">
               <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Updates</div>
-              ${q.notes.map(n=>{
+              ${(q.notes||[]).map(n=>{
                 const na=AGENTS.find(a=>a.id===n.agent);
                 return `<div style="display:flex;gap:8px;font-size:11px;line-height:1.5;margin-bottom:4px;padding-left:8px;border-left:2px solid var(--border)">
                   <span class="mono" style="color:var(--text3);flex-shrink:0;font-size:10px">${n.time.slice(5,10)}</span>
