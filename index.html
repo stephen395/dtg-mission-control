@@ -110,6 +110,8 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
 
 <script>
 const B=location.pathname.endsWith('/')?location.pathname:location.pathname+'/';
+const API='https://agentpc1.tail93ed18.ts.net';
+let syncStatus='unknown'; // synced | local | error | unknown
 
 // ===== AGENTS =====
 const AGENTS=[
@@ -141,7 +143,21 @@ const CAT_COLOR={feature:'var(--cyan)',bugfix:'var(--red)',research:'var(--blue)
 const ASSIGN_MAP={feature:['goku'],bugfix:['goku'],research:['lake'],infra:['fallingcave','cody'],automation:['fish','cody']};
 
 function loadQuests(){try{return JSON.parse(localStorage.getItem('bastion_quests'))||[]}catch(e){return[]}}
-function saveQuests(q){localStorage.setItem('bastion_quests',JSON.stringify(q))}
+function saveQuests(q){localStorage.setItem('bastion_quests',JSON.stringify(q));syncToAPI(q)}
+async function syncToAPI(q){
+  try{const r=await fetch(API+'/api/quests/sync',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(q)});
+  if(r.ok){syncStatus='synced'}else{syncStatus='error'}}catch{syncStatus='local'}
+}
+async function fetchFromAPI(){
+  try{const r=await fetch(API+'/api/quests',{signal:AbortSignal.timeout(5000)});
+  if(r.ok){const data=await r.json();if(data.length>0){syncStatus='synced';return data}};syncStatus='synced';return null}
+  catch{syncStatus='local';return null}
+}
+async function initQuests(){
+  const remote=await fetchFromAPI();
+  if(remote&&remote.length>0){quests=remote;localStorage.setItem('bastion_quests',JSON.stringify(quests))}
+  renderContent();
+}
 
 let quests=loadQuests();
 if(!quests.length){
@@ -227,6 +243,7 @@ function renderQuests(){
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:10px;flex-wrap:wrap">
       <div style="display:flex;align-items:center;gap:8px">
         <button class="btn btn-primary" onclick="openNewQuest()" style="display:flex;align-items:center;gap:4px"><span class="material-symbols-outlined" style="font-size:16px">add</span> New Quest</button>
+        <div style="display:flex;align-items:center;gap:4px;font-size:10px" title="Sync status with AgentPC1"><div class="dot" style="width:6px;height:6px;background:${syncStatus==='synced'?'var(--green)':syncStatus==='local'?'var(--yellow)':'var(--text3)'}"></div><span style="color:var(--text3)">${syncStatus==='synced'?'Synced':syncStatus==='local'?'Local only':'...'}</span></div>
         <div style="display:flex;gap:4px">
           <span class="pill ${questFilter==='active'?'on':''}" onclick="questFilter='active';questCatFilter=null;renderContent()">Active (${active.length})</span>
           <span class="pill ${questFilter==='completed'?'on':''}" onclick="questFilter='completed';questCatFilter=null;renderContent()">Archive (${completed.length})</span>
@@ -289,6 +306,13 @@ function renderQuests(){
                 </div>`}).join('')}
             </div>`:''}
 
+            <!-- Use Cases (shown on completed quests) -->
+            ${(q.status==='completed'||q.status==='archived')?`<div style="margin-bottom:10px;padding:10px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);border-radius:8px">
+              <div style="font-size:10px;color:var(--green);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;display:flex;align-items:center;gap:4px"><span class="material-symbols-outlined" style="font-size:13px">lightbulb</span>What You Can Do With This</div>
+              <div style="font-size:11px;color:var(--text2);line-height:1.6">${getUseCases(q)}</div>
+              ${q.useCases?`<div style="margin-top:6px;font-size:11px;color:var(--text);font-weight:500">${q.useCases}</div>`:''}
+            </div>`:''}
+
             <!-- Actions -->
             <div style="display:flex;gap:6px">
               ${q.status!=='completed'&&q.status!=='archived'?`<button class="btn btn-sm btn-primary" onclick="event.stopPropagation();completeQuest('${q.id}')">Mark Complete</button>`:''}
@@ -299,6 +323,17 @@ function renderQuests(){
     </div>`;
 }
 
+function getUseCases(q){
+  const cases={
+    feature:['Integrate this feature with other tools in the DTG stack','Extend it to cover additional edge cases or carriers','Use it as a template for similar features in other projects','Demo it to clients as a value-add service'],
+    bugfix:['This fix prevents the same issue from affecting other clients','Run a regression test across similar data formats','Document the root cause so agents can detect similar issues early','Check if the same pattern exists in other parsers/tools'],
+    research:['Apply key findings to active projects immediately','Share insights with the agent fleet via shared_workspace','Use as training data for agent skill improvement','Create a follow-up quest to implement recommendations'],
+    infra:['Monitor the deployed changes for 48h for stability','Document the setup for disaster recovery procedures','Apply same patterns to other infrastructure components','Set up automated health checks for this component'],
+    automation:['Connect this workflow to other DTG systems via webhooks','Set up monitoring/alerts for when the automation fails','Extend to handle additional trigger conditions','Document the workflow for the team to maintain'],
+  };
+  const list=cases[q.category]||cases.feature;
+  return list.map(c=>'<div style="margin-bottom:3px">\u2022 '+c+'</div>').join('');
+}
 function toggleQuest(id){expandedQuest=expandedQuest===id?null:id;renderContent()}
 function completeQuest(id){const q=quests.find(x=>x.id===id);if(q){q.status='completed';q.progress=100;q.completedAt=new Date().toISOString();q.notes.push({time:new Date().toISOString(),agent:'cody',text:'Quest completed. Moving to archive.'});saveQuests(quests);renderContent()}}
 function archiveQuest(id){const q=quests.find(x=>x.id===id);if(q){q.status='archived';saveQuests(quests);renderContent()}}
@@ -362,7 +397,8 @@ function renderSidebar(){
 }
 
 setInterval(()=>{const d=new Date();document.getElementById('clock').textContent=d.toLocaleTimeString('en-US',{hour12:false})},1000);
-renderContent();
+// Init: try API first, fallback to localStorage
+initQuests().catch(()=>renderContent());
 </script>
 </body>
 </html>
