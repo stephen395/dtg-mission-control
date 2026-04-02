@@ -758,6 +758,46 @@ function saveProfile(id){
   openProfile(id);
 }
 
+// ===== ACTIVITY FEED (real data) =====
+function buildActivityFeed(){
+  const items=[];
+  const agentColor=id=>{const a=AGENTS.find(x=>x.id===id);return a?a.c:'var(--text3)'};
+  const agentName=id=>{const a=AGENTS.find(x=>x.id===id);return a?a.name:id==='stephen'?'Stephen':id||'System'};
+  const fmtTime=iso=>{if(!iso)return'--:--';const d=new Date(iso);return d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false})};
+
+  // 1. Chat messages (non-system, last 20)
+  const msgs=(typeof chatMessages!=='undefined'?chatMessages:[]).filter(m=>m.senderType!=='system');
+  msgs.slice(-20).forEach(m=>{
+    const txt=m.text.length>60?m.text.slice(0,57)+'...':m.text;
+    items.push({ts:m.timestamp,t:fmtTime(m.timestamp),a:agentName(m.sender),c:m.sender==='stephen'?'var(--cyan)':agentColor(m.sender),m:txt});
+  });
+
+  // 2. Quest notes (last note per quest, up to 10 quests)
+  quests.slice(0,15).forEach(q=>{
+    const notes=(q.notes||[]);
+    notes.slice(-1).forEach(n=>{
+      const label=q.status==='completed'?'Completed: '+q.title
+        :q.status==='archived'?'Archived: '+q.title
+        :(n.text.length>50?n.text.slice(0,47)+'...':n.text);
+      items.push({ts:n.time,t:fmtTime(n.time),a:agentName(n.agent),c:agentColor(n.agent),m:label});
+    });
+  });
+
+  // 3. Quest creation events
+  quests.slice(0,10).forEach(q=>{
+    items.push({ts:q.createdAt,t:fmtTime(q.createdAt),a:agentName(q.assignedBy||'cody'),c:agentColor(q.assignedBy||'cody'),m:'Quest: '+q.title});
+  });
+
+  // 4. Quest completions
+  quests.filter(q=>q.completedAt).slice(0,5).forEach(q=>{
+    items.push({ts:q.completedAt,t:fmtTime(q.completedAt),a:agentName((q.assignedTo||[])[0]||'cody'),c:agentColor((q.assignedTo||[])[0]||'cody'),m:'\u2705 '+q.title});
+  });
+
+  // Sort by timestamp descending, take top 15
+  items.sort((a,b)=>(b.ts||'').localeCompare(a.ts||''));
+  return items.slice(0,15);
+}
+
 // ===== SIDEBAR =====
 function renderSidebar(){
   document.getElementById('status').innerHTML=AGENTS.map(a=>`
@@ -767,8 +807,10 @@ function renderSidebar(){
         <div style="font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.task}</div>
         <div class="bar" style="margin-top:6px;height:3px"><div class="bar-fill" style="width:${a.p}%;background:${a.c}"></div></div></div>
     </div>`).join('');
-  const L=[{t:'14:32',a:'Lake',c:'var(--blue)',m:'Research: AI dashboard innovations'},{t:'14:28',a:'Cody',c:'var(--green)',m:'Fleet health check \u2014 nominal'},{t:'14:15',a:'Claude',c:'var(--cyan)',m:'Quest Board deployed'},{t:'14:02',a:'Lake',c:'var(--blue)',m:'Agent collab workflow done'},{t:'13:55',a:'Goku',c:'var(--orange)',m:'Awaiting code review'},{t:'13:40',a:'Fish',c:'var(--pink)',m:'Batch 47 done (312 tok/s)'},{t:'13:22',a:'Cody',c:'var(--green)',m:'Protocol deployed'},{t:'13:10',a:'FallingCave',c:'var(--orange)',m:'AWS: all green'},{t:'12:58',a:'Lake',c:'var(--blue)',m:'Pixel art research complete'},{t:'12:44',a:'Cody',c:'var(--green)',m:'Heartbeat sweep 5/6'}];
-  document.getElementById('log').innerHTML=L.map(l=>`<div style="display:flex;gap:8px;font-size:11px;line-height:1.7"><span class="mono" style="color:var(--text3);flex-shrink:0;font-size:10px">${l.t}</span><span style="color:${l.c};font-weight:600;flex-shrink:0">${l.a}</span><span style="color:var(--text2)">${l.m}</span></div>`).join('');
+  // Build real activity feed from chat, quests, and project changes
+  const feed=buildActivityFeed();
+  document.getElementById('log').innerHTML=feed.length?feed.map(l=>`<div style="display:flex;gap:8px;font-size:11px;line-height:1.7"><span class="mono" style="color:var(--text3);flex-shrink:0;font-size:10px">${l.t}</span><span style="color:${l.c};font-weight:600;flex-shrink:0">${l.a}</span><span style="color:var(--text2)">${l.m}</span></div>`).join('')
+    :'<div style="padding:12px;text-align:center;font-size:11px;color:var(--text3)">No activity yet</div>';
 }
 
 setInterval(()=>{const d=new Date();document.getElementById('clock').textContent=d.toLocaleTimeString('en-US',{hour12:false})},1000);
@@ -997,4 +1039,4 @@ initQuests();
 </script>
 </body>
 </html>
-<!-- cache-bust: 1775139200 -->
+<!-- cache-bust: 1775139800 -->
