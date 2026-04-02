@@ -11,7 +11,7 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0d0d1a;--surface:rgba(255,255,255,0.04);--surface-hover:rgba(255,255,255,0.07);--elevated:rgba(255,255,255,0.09);
+  --bg:#0d0d1a;--surface:rgba(255,255,255,0.04);--surface-hover:rgba(255,255,255,0.07);
   --border:rgba(255,255,255,0.07);--border-light:rgba(255,255,255,0.12);
   --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
   --green:#22c55e;--yellow:#eab308;--red:#ef4444;--blue:#3b82f6;--purple:#a855f7;--orange:#f97316;--pink:#ec4899;--cyan:#06b6d4;
@@ -19,7 +19,7 @@
 }
 body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;height:100vh;display:flex;flex-direction:column;overflow:hidden}
 .mono{font-family:'JetBrains Mono',monospace}
-.glass{background:var(--surface);backdrop-filter:blur(var(--glass));-webkit-backdrop-filter:blur(var(--glass));border:1px solid var(--border);border-radius:var(--radius)}
+.glass{background:var(--surface);backdrop-filter:blur(var(--glass));border:1px solid var(--border);border-radius:var(--radius)}
 .glass:hover{background:var(--surface-hover);border-color:var(--border-light)}
 .sprite{image-rendering:pixelated;image-rendering:crisp-edges}
 .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
@@ -28,16 +28,32 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
 .pulse{animation:p 2.5s ease-in-out infinite}@keyframes p{0%,100%{opacity:1}50%{opacity:0.35}}
 .module{padding:6px 4px;text-align:center;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:all 0.15s}
 .module:hover{background:rgba(255,255,255,0.07);border-color:var(--border-light)}
+.tab{padding:6px 16px;font-size:12px;font-weight:500;border-radius:6px;cursor:pointer;transition:all 0.15s;border:1px solid transparent;color:var(--text3)}
+.tab:hover{color:var(--text2);background:rgba(255,255,255,0.04)}
+.tab.active{color:#fff;background:rgba(255,255,255,0.08);border-color:var(--border-light)}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em}
+.badge-active{background:rgba(34,197,94,0.15);color:var(--green)}
+.badge-paused{background:rgba(234,179,8,0.15);color:var(--yellow)}
+.badge-completed{background:rgba(59,130,246,0.15);color:var(--blue)}
+.badge-maintenance{background:rgba(168,85,247,0.15);color:var(--purple)}
+.tag{display:inline-block;padding:1px 6px;border-radius:3px;font-size:9px;color:var(--text3);background:rgba(255,255,255,0.04);border:1px solid var(--border)}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px}
 </style>
 </head>
 <body>
 
 <!-- HEADER -->
-<header style="padding:10px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-shrink:0;background:rgba(13,13,26,0.9);backdrop-filter:blur(8px)">
+<header style="padding:8px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-shrink:0;background:rgba(13,13,26,0.9);backdrop-filter:blur(8px)">
   <div style="display:flex;align-items:center;gap:16px">
     <span style="font-size:15px;font-weight:700;letter-spacing:0.15em;color:#fff">BASTION</span>
-    <span style="font-size:11px;color:var(--text3)">DTG Mission Control</span>
+    <div style="display:flex;gap:4px" id="tabs">
+      <div class="tab active" data-tab="agents" onclick="switchTab('agents')">
+        <span class="material-symbols-outlined" style="font-size:14px;vertical-align:-3px">group</span> Agents
+      </div>
+      <div class="tab" data-tab="projects" onclick="switchTab('projects')">
+        <span class="material-symbols-outlined" style="font-size:14px;vertical-align:-3px">folder_open</span> Projects
+      </div>
+    </div>
   </div>
   <div style="display:flex;align-items:center;gap:16px">
     <div style="display:flex;align-items:center;gap:6px">
@@ -50,20 +66,17 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
 
 <!-- MAIN -->
 <main style="flex:1;display:flex;overflow:hidden;padding:10px;gap:10px">
-
-  <!-- GRID -->
-  <section style="flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-content:start" id="grid"></section>
+  <!-- Content area (switches between agents and projects) -->
+  <section style="flex:1;overflow-y:auto" id="content"></section>
 
   <!-- SIDEBAR -->
   <aside style="width:290px;flex-shrink:0;display:flex;flex-direction:column;gap:10px;overflow:hidden">
-    <!-- Status -->
     <div class="glass" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
       <div style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:600;color:var(--text2);display:flex;align-items:center;gap:6px;flex-shrink:0">
         <span class="material-symbols-outlined" style="font-size:16px;color:var(--cyan)">monitoring</span>Agent Status
       </div>
       <div style="flex:1;overflow-y:auto" id="status"></div>
     </div>
-    <!-- Log -->
     <div class="glass" style="height:230px;display:flex;flex-direction:column;overflow:hidden">
       <div style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:600;color:var(--text2);display:flex;align-items:center;gap:6px;flex-shrink:0">
         <span class="material-symbols-outlined" style="font-size:16px;color:var(--cyan)">terminal</span>Activity Log
@@ -75,7 +88,9 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
 
 <script>
 const B=location.pathname.endsWith('/')?location.pathname:location.pathname+'/';
-const A=[
+
+// ===== AGENTS DATA =====
+const AGENTS=[
   {id:'cody',name:'Cody',role:'Mission Control',s:'working',task:'Fleet monitoring',p:100,c:'var(--green)',
    hp:'98%',specs:'Hermes v0.6 · minimax-m2.7',
    acts:['Fleet health check — nominal','Pinged Lake for research ETA','Routed pixel task to Goku','Bastion Protocol deployed','Cleared stale queue'],
@@ -93,7 +108,7 @@ const A=[
    acts:['AWS health: all green','SSL cert renewed','Disk alert cleared','CloudWatch pulled'],
    mods:['AWS Health','Deploys','SSL Certs','Scaling','Costs']},
   {id:'blockhead',name:'Blockhead',role:'Tencent VPS',s:'offline',task:'Standby',p:0,c:'var(--purple)',
-   hp:'—',specs:'Tencent · 43.134.78.224',
+   hp:'\u2014',specs:'Tencent · 43.134.78.224',
    acts:['Last seen 6h ago','Standby mode','Memory cleanup'],
    mods:['Tencent','WeChat','Discord','Health','Logs']},
   {id:'fish',name:'Fish',role:'NemoClaw / GPU',s:'online',task:'Local inference',p:30,c:'var(--pink)',
@@ -104,12 +119,68 @@ const A=[
 const SL={online:'Online',working:'Working',idle:'Idle',offline:'Offline'};
 const SC={online:'var(--green)',working:'var(--yellow)',idle:'var(--blue)',offline:'var(--text3)'};
 
-function render(){
-  // Cards
-  document.getElementById('grid').innerHTML=A.map(a=>{
+// ===== PROJECTS DATA =====
+const PROJECTS=[
+  { id:'bastion', name:'Bastion Dashboard', status:'active', progress:70, color:'var(--cyan)',
+    lead:'cody', agents:['cody','lake','goku'],
+    started:'2026-04-01', description:'Pixel art mission control dashboard for monitoring all DTG agents in real-time. Includes agent cards, status panels, activity logs, and project tracking.',
+    tasks:{total:14,done:9,inProgress:3,blocked:0},
+    repo:'stephen395/dtg-mission-control',
+    tags:['frontend','html','dashboard','sprites'] },
+  { id:'audit-tool', name:'DTG Audit Tool', status:'maintenance', progress:92, color:'var(--green)',
+    lead:'fish', agents:['fish','lake'],
+    started:'2025-11-15', description:'Telecom wireless billing audit tool. Parses AT&T, Verizon, T-Mobile bills. Identifies zero-usage lines, optimizes rate plans, generates PDF/Excel reports.',
+    tasks:{total:28,done:26,inProgress:1,blocked:0},
+    repo:'stephen395/dtg-audit-tool',
+    tags:['telecom','billing','parsers','reports'] },
+  { id:'fish-promo', name:'Fish Promo Automation', status:'active', progress:35, color:'var(--orange)',
+    lead:'fish', agents:['fish','lake','cody'],
+    started:'2026-03-28', description:'Connect AT&T promotional rate data to the DTG Audit Tool for automated rate plan optimization recommendations.',
+    tasks:{total:8,done:3,inProgress:2,blocked:1},
+    repo:null,
+    tags:['automation','att','promos','n8n'] },
+  { id:'n8n-auto', name:'n8n Automation Hub', status:'active', progress:55, color:'var(--blue)',
+    lead:'cody', agents:['cody','lake'],
+    started:'2026-03-20', description:'Workflow automation via n8n at automation.dedicatedtelecom.com. Rate plan data pipeline, promo scraping, webhook integrations.',
+    tasks:{total:10,done:5,inProgress:3,blocked:0},
+    repo:null,
+    tags:['n8n','webhooks','api','automation'] },
+  { id:'hermes-fleet', name:'Hermes Agent Fleet', status:'maintenance', progress:88, color:'var(--purple)',
+    lead:'cody', agents:['cody','goku','fallingcave'],
+    started:'2026-03-15', description:'Hermes v0.6 agent infrastructure on AgentPC1. Manages Cody, Lake, Goku agent processes, Discord bots, and shared workspace.',
+    tasks:{total:18,done:16,inProgress:1,blocked:0},
+    repo:null,
+    tags:['hermes','agents','discord','infra'] },
+  { id:'openclaw', name:'OpenClaw / NemoClaw', status:'active', progress:60, color:'var(--pink)',
+    lead:'fish', agents:['fish','fallingcave','blockhead'],
+    started:'2026-02-10', description:'Discord bot gateway (FallingCave), NemoClaw local inference, Google Chat integration, HubSpot skill, and multi-provider AI routing.',
+    tasks:{total:22,done:13,inProgress:4,blocked:1},
+    repo:null,
+    tags:['discord','bots','inference','hubspot'] },
+];
+
+const STATUS_BADGE={active:'badge-active',paused:'badge-paused',completed:'badge-completed',maintenance:'badge-maintenance'};
+
+// ===== TAB STATE =====
+let currentTab='agents';
+
+function switchTab(tab){
+  currentTab=tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
+  renderContent();
+}
+
+// ===== RENDER =====
+function renderContent(){
+  if(currentTab==='agents') renderAgents();
+  else renderProjects();
+  renderSidebar();
+}
+
+function renderAgents(){
+  document.getElementById('content').innerHTML=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-content:start">${AGENTS.map(a=>{
     const off=a.s==='offline';
     return `<div class="glass" style="display:flex;flex-direction:column;${off?'opacity:0.35':''}">
-      <!-- Header -->
       <div style="padding:12px 14px 8px;display:flex;gap:12px;align-items:flex-start">
         <div style="width:56px;height:56px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
           <img src="${B}sprites/${a.id}.png" class="sprite" style="height:50px" alt="${a.name}"/>
@@ -126,14 +197,10 @@ function render(){
           </div>
         </div>
       </div>
-
-      <!-- Activity -->
       <div style="margin:0 12px 8px;padding:8px 10px;background:rgba(0,0,0,0.25);border-radius:8px;border:1px solid rgba(255,255,255,0.04);max-height:80px;overflow-y:auto">
         <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Recent Activity</div>
         ${a.acts.map((act,i)=>`<div style="font-size:11px;color:var(--text2);line-height:1.6;display:flex;gap:6px"><span class="mono" style="color:var(--text3);flex-shrink:0;font-size:10px">${String(14-i).padStart(2,'0')}:${String(30-i*7).padStart(2,'0')}</span>${act}</div>`).join('')}
       </div>
-
-      <!-- Task + Progress -->
       <div style="padding:0 14px 8px">
         <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
           <span style="color:var(--text2)">${a.task}</span>
@@ -141,16 +208,107 @@ function render(){
         </div>
         <div class="bar"><div class="bar-fill" style="width:${a.p}%;background:${a.c}"></div></div>
       </div>
-
-      <!-- Modules -->
       <div style="display:flex;gap:4px;padding:0 12px 10px;margin-top:auto">
         ${a.mods.map(m=>`<div class="module" style="flex:1"><span style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:0.04em">${m}</span></div>`).join('')}
       </div>
     </div>`;
-  }).join('');
+  }).join('')}</div>`;
+}
 
+function renderProjects(){
+  // Summary stats
+  const activeCount=PROJECTS.filter(p=>p.status==='active').length;
+  const totalTasks=PROJECTS.reduce((s,p)=>s+p.tasks.total,0);
+  const doneTasks=PROJECTS.reduce((s,p)=>s+p.tasks.done,0);
+  const blockedTasks=PROJECTS.reduce((s,p)=>s+p.tasks.blocked,0);
+
+  document.getElementById('content').innerHTML=`
+    <!-- Summary cards -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px">
+      <div class="glass" style="padding:14px 16px">
+        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Projects</div>
+        <div style="font-size:28px;font-weight:700;color:#fff">${PROJECTS.length}</div>
+        <div style="font-size:11px;color:var(--green);margin-top:2px">${activeCount} active</div>
+      </div>
+      <div class="glass" style="padding:14px 16px">
+        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Total Tasks</div>
+        <div style="font-size:28px;font-weight:700;color:#fff">${totalTasks}</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px">${doneTasks} completed</div>
+      </div>
+      <div class="glass" style="padding:14px 16px">
+        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Completion</div>
+        <div style="font-size:28px;font-weight:700;color:#fff">${Math.round(doneTasks/totalTasks*100)}%</div>
+        <div class="bar" style="margin-top:8px;height:6px"><div class="bar-fill" style="width:${Math.round(doneTasks/totalTasks*100)}%;background:var(--green)"></div></div>
+      </div>
+      <div class="glass" style="padding:14px 16px">
+        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Blocked</div>
+        <div style="font-size:28px;font-weight:700;color:${blockedTasks>0?'var(--red)':'#fff'}">${blockedTasks}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">${blockedTasks>0?'needs attention':'all clear'}</div>
+      </div>
+    </div>
+
+    <!-- Project cards -->
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">
+      ${PROJECTS.map(p=>{
+        const agents=p.agents.map(id=>AGENTS.find(a=>a.id===id)).filter(Boolean);
+        return `<div class="glass" style="display:flex;flex-direction:column;padding:16px">
+          <!-- Header -->
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+            <div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:15px;font-weight:700;color:#fff">${p.name}</span>
+                <span class="badge ${STATUS_BADGE[p.status]}">${p.status}</span>
+              </div>
+              <div style="font-size:11px;color:var(--text3);margin-top:3px">${p.description.length>90?p.description.slice(0,90)+'...':p.description}</div>
+            </div>
+          </div>
+
+          <!-- Progress -->
+          <div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
+              <span style="color:var(--text2)">Progress</span>
+              <span class="mono" style="color:var(--text3)">${p.progress}%</span>
+            </div>
+            <div class="bar" style="height:6px"><div class="bar-fill" style="width:${p.progress}%;background:${p.color}"></div></div>
+          </div>
+
+          <!-- Task breakdown -->
+          <div style="display:flex;gap:12px;margin-bottom:12px;font-size:11px">
+            <span style="color:var(--text2)">Tasks: <span style="color:#fff;font-weight:600">${p.tasks.done}</span><span style="color:var(--text3)">/${p.tasks.total}</span></span>
+            <span style="color:var(--yellow)">${p.tasks.inProgress} in progress</span>
+            ${p.tasks.blocked>0?`<span style="color:var(--red)">${p.tasks.blocked} blocked</span>`:''}
+          </div>
+
+          <!-- Assigned agents -->
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em">Team:</span>
+            <div style="display:flex;gap:4px;align-items:center">
+              ${agents.map(a=>`<div style="display:flex;align-items:center;gap:3px;padding:2px 6px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:4px" title="${a.name} — ${a.role}">
+                <img src="${B}sprites/${a.id}.png" class="sprite" style="height:18px" alt="${a.name}"/>
+                <span style="font-size:10px;color:var(--text2)">${a.name}</span>
+                ${a.id===p.lead?'<span style="font-size:8px;color:var(--cyan)">LEAD</span>':''}
+              </div>`).join('')}
+            </div>
+          </div>
+
+          <!-- Meta row -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:8px;border-top:1px solid var(--border)">
+            <div style="display:flex;gap:4px;flex-wrap:wrap">
+              ${p.tags.map(t=>`<span class="tag">${t}</span>`).join('')}
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:10px;color:var(--text3)">
+              ${p.repo?`<span class="mono">${p.repo}</span>`:''}
+              <span>${p.started}</span>
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function renderSidebar(){
   // Status panel
-  document.getElementById('status').innerHTML=A.map(a=>`
+  document.getElementById('status').innerHTML=AGENTS.map(a=>`
     <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer" onmouseenter="this.style.background='var(--surface-hover)'" onmouseleave="this.style.background='transparent'">
       <div class="dot${a.s!=='offline'?' pulse':''}" style="background:${SC[a.s]}"></div>
       <div style="flex:1;min-width:0">
@@ -168,7 +326,7 @@ function render(){
   const L=[
     {t:'14:32',a:'Lake',c:'var(--blue)',m:'Research: AI dashboard innovations'},
     {t:'14:28',a:'Cody',c:'var(--green)',m:'Fleet health check — nominal'},
-    {t:'14:15',a:'Claude',c:'var(--cyan)',m:'Bastion v0.7 deployed'},
+    {t:'14:15',a:'Claude',c:'var(--cyan)',m:'Bastion v0.8 — Projects view'},
     {t:'14:02',a:'Lake',c:'var(--blue)',m:'Agent collab workflow done'},
     {t:'13:55',a:'Goku',c:'var(--orange)',m:'Awaiting code review'},
     {t:'13:40',a:'Fish',c:'var(--pink)',m:'Batch 47 done (312 tok/s)'},
@@ -187,7 +345,7 @@ function render(){
 }
 
 setInterval(()=>{const d=new Date();document.getElementById('clock').textContent=d.toLocaleTimeString('en-US',{hour12:false})},1000);
-render();
+renderContent();
 </script>
 </body>
 </html>
