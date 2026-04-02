@@ -78,6 +78,36 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
 .profile-skill::before{content:'';width:4px;height:4px;border-radius:50%;flex-shrink:0}
 .profile-rule{display:flex;align-items:flex-start;gap:6px;font-size:11px;color:var(--text2);padding:3px 0}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px}
+/* Chat panel */
+.chat-toggle{position:relative;display:flex;align-items:center;gap:4px;padding:4px 12px;border-radius:6px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text3);font-size:11px;font-family:inherit;transition:all 0.15s}
+.chat-toggle:hover{color:var(--cyan);border-color:var(--cyan);background:rgba(6,182,212,0.06)}
+.chat-toggle.open{color:var(--cyan);border-color:rgba(6,182,212,0.3);background:rgba(6,182,212,0.08)}
+.chat-badge{position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;border-radius:8px;background:var(--red);color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px;display:none}
+.chat-badge.show{display:flex}
+.chat-panel{position:fixed;right:0;top:0;bottom:0;width:380px;background:rgba(18,18,30,0.97);backdrop-filter:blur(16px);border-left:1px solid var(--border-light);display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.25s ease;z-index:55}
+.chat-panel.open{transform:translateX(0)}
+body.chat-open main{margin-right:380px;transition:margin-right 0.25s ease}
+body:not(.chat-open) main{transition:margin-right 0.25s ease}
+.chat-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.chat-messages{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.chat-msg{display:flex;gap:10px;padding:6px 8px;border-radius:8px;transition:background 0.1s}
+.chat-msg:hover{background:rgba(255,255,255,0.02)}
+.chat-msg-grouped{padding:1px 8px 1px 46px}
+.chat-msg-system{justify-content:center;padding:4px;opacity:0.5}
+.chat-msg-system span{font-size:10px;color:var(--text3);font-style:italic}
+.mention-hl{color:var(--cyan);font-weight:600;background:rgba(6,182,212,0.1);padding:0 3px;border-radius:3px}
+.chat-input-wrap{padding:10px 12px;border-top:1px solid var(--border);position:relative;flex-shrink:0}
+.chat-input{width:100%;padding:8px 40px 8px 12px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:12px;outline:none;resize:none;min-height:36px;max-height:100px;line-height:1.5;transition:border 0.15s}
+.chat-input:focus{border-color:var(--cyan)}
+.chat-send{position:absolute;right:18px;bottom:16px;background:none;border:none;cursor:pointer;color:var(--text3);transition:color 0.15s;display:flex;align-items:center}
+.chat-send:hover{color:var(--cyan)}
+.mention-popup{position:absolute;bottom:100%;left:12px;right:12px;background:#161620;border:1px solid var(--border-light);border-radius:8px;padding:4px;display:none;max-height:200px;overflow-y:auto;box-shadow:0 -4px 20px rgba(0,0,0,0.5)}
+.mention-popup.show{display:block}
+.mention-opt{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;cursor:pointer;transition:background 0.1s}
+.mention-opt:hover,.mention-opt.active{background:rgba(6,182,212,0.1)}
+.mention-opt img{height:22px}
+.mention-opt .name{font-size:12px;color:#fff;font-weight:600}
+.mention-opt .role{font-size:10px;color:var(--text3)}
 </style>
 </head>
 <body>
@@ -94,9 +124,24 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
   </div>
   <div style="display:flex;align-items:center;gap:16px">
     <div style="display:flex;align-items:center;gap:6px"><div class="dot pulse" style="width:7px;height:7px;background:var(--green)"></div><span class="mono" style="font-size:11px;color:var(--green)">5/6 Online</span></div>
+    <button class="chat-toggle" id="chatToggle" onclick="toggleChat()"><span class="material-symbols-outlined" style="font-size:15px;vertical-align:-3px">chat</span> Comms<span class="chat-badge" id="chatBadge">0</span></button>
     <span class="mono" style="font-size:11px;color:var(--text3)" id="clock"></span>
   </div>
 </header>
+
+<!-- CHAT PANEL -->
+<div class="chat-panel" id="chatPanel">
+  <div class="chat-header">
+    <div style="display:flex;align-items:center;gap:8px"><span class="material-symbols-outlined" style="font-size:18px;color:var(--cyan)">forum</span><span style="font-size:13px;font-weight:700;color:#fff">Mission Comms</span><span class="mono" style="font-size:10px;color:var(--text3)" id="chatCount">0 messages</span></div>
+    <span class="material-symbols-outlined" style="cursor:pointer;color:var(--text3);font-size:18px" onclick="toggleChat()">close</span>
+  </div>
+  <div class="chat-messages" id="chatMessages"></div>
+  <div class="chat-input-wrap">
+    <div class="mention-popup" id="mentionPopup"></div>
+    <textarea class="chat-input" id="chatInput" placeholder="Message... (type @ to mention)" rows="1" onkeydown="chatKeydown(event)" oninput="chatInputHandler()"></textarea>
+    <button class="chat-send" onclick="sendChat()"><span class="material-symbols-outlined" style="font-size:20px">send</span></button>
+  </div>
+</div>
 
 <!-- MODAL (hidden by default) -->
 <div id="modal-root"></div>
@@ -733,10 +778,223 @@ document.getElementById('tabs').addEventListener('click',function(e){
   if(btn&&btn.dataset.tab){switchTab(btn.dataset.tab)}
 });
 
+// ===== CHAT / COMMS =====
+let chatOpen=false;
+let chatMessages=loadChat();
+let mentionIdx=-1, mentionStart=-1;
+
+function loadChat(){try{return JSON.parse(localStorage.getItem('bastion_chat'))||[]}catch{return[]}}
+function saveChatLocal(){localStorage.setItem('bastion_chat',JSON.stringify(chatMessages))}
+function syncChatToAPI(){
+  fetch(API+'/api/chat/sync',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(chatMessages)}).catch(()=>{});
+}
+
+function toggleChat(){
+  chatOpen=!chatOpen;
+  document.getElementById('chatPanel').classList.toggle('open',chatOpen);
+  document.getElementById('chatToggle').classList.toggle('open',chatOpen);
+  document.body.classList.toggle('chat-open',chatOpen);
+  if(chatOpen){
+    renderChatMessages();
+    scrollChatBottom();
+    document.getElementById('chatBadge').classList.remove('show');
+    document.getElementById('chatBadge').textContent='0';
+    setTimeout(()=>document.getElementById('chatInput').focus(),200);
+  }
+}
+
+function renderChatMessages(){
+  const el=document.getElementById('chatMessages');
+  if(!chatMessages.length){
+    el.innerHTML='<div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;opacity:0.4"><span class="material-symbols-outlined" style="font-size:40px;color:var(--text3)">forum</span><span style="font-size:12px;color:var(--text3)">No messages yet. Type @ to mention an agent.</span></div>';
+    document.getElementById('chatCount').textContent='0 messages';
+    return;
+  }
+  let html='';let prevSender=null;
+  chatMessages.forEach((m,i)=>{
+    if(m.senderType==='system'){
+      html+=`<div class="chat-msg chat-msg-system"><span>${m.text}</span></div>`;
+      prevSender=null;return;
+    }
+    const grouped=prevSender===m.sender;
+    const agent=AGENTS.find(a=>a.id===m.sender);
+    const senderName=m.sender==='stephen'?'Stephen':agent?agent.name:m.sender;
+    const senderColor=m.sender==='stephen'?'var(--cyan)':agent?agent.c:'var(--text2)';
+    const timeStr=m.timestamp?new Date(m.timestamp).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false}):'';
+
+    if(grouped){
+      html+=`<div class="chat-msg chat-msg-grouped"><div style="font-size:12px;color:var(--text2);line-height:1.5">${highlightMentions(m.text)}</div></div>`;
+    }else{
+      html+=`<div class="chat-msg">
+        <div style="width:32px;height:32px;border-radius:6px;background:rgba(255,255,255,0.04);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+          ${m.sender==='stephen'?'<span class="material-symbols-outlined" style="font-size:18px;color:var(--cyan)">person</span>'
+          :agent?`<img src="${B}sprites/${agent.id}.png" class="sprite" style="height:28px"/>`
+          :'<span class="material-symbols-outlined" style="font-size:18px;color:var(--text3)">smart_toy</span>'}
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:12px;font-weight:700;color:${senderColor}">${senderName}</span><span class="mono" style="font-size:9px;color:var(--text3)">${timeStr}</span></div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-top:2px">${highlightMentions(m.text)}</div>
+        </div>
+      </div>`;
+    }
+    prevSender=m.sender;
+  });
+  el.innerHTML=html;
+  document.getElementById('chatCount').textContent=chatMessages.length+' message'+(chatMessages.length!==1?'s':'');
+}
+
+function highlightMentions(text){
+  return text.replace(/@(\w+)/g,(match,name)=>{
+    const agent=AGENTS.find(a=>a.name.toLowerCase()===name.toLowerCase()||a.id===name.toLowerCase());
+    return agent?`<span class="mention-hl">@${agent.name}</span>`:match;
+  });
+}
+
+function scrollChatBottom(){
+  const el=document.getElementById('chatMessages');
+  setTimeout(()=>{el.scrollTop=el.scrollHeight},50);
+}
+
+function sendChat(){
+  const input=document.getElementById('chatInput');
+  const text=input.value.trim();
+  if(!text)return;
+  closeMentionPopup();
+  const mentions=[];
+  text.replace(/@(\w+)/g,(_,name)=>{
+    const agent=AGENTS.find(a=>a.name.toLowerCase()===name.toLowerCase()||a.id===name.toLowerCase());
+    if(agent&&!mentions.includes(agent.id))mentions.push(agent.id);
+  });
+  const msg={
+    id:'m'+Date.now().toString(36)+Math.random().toString(36).substr(2,4),
+    sender:'stephen',senderType:'human',
+    text:text,mentions:mentions,
+    timestamp:new Date().toISOString(),
+    replyTo:null
+  };
+  chatMessages.push(msg);
+  saveChatLocal();
+  syncChatToAPI();
+  input.value='';input.style.height='36px';
+  renderChatMessages();
+  scrollChatBottom();
+  // Simulate agent acknowledgment if mentioned
+  if(mentions.length>0){
+    setTimeout(()=>{
+      mentions.forEach(agentId=>{
+        const a=AGENTS.find(x=>x.id===agentId);
+        if(!a||a.s==='offline')return;
+        const ack={
+          id:'m'+Date.now().toString(36)+Math.random().toString(36).substr(2,4),
+          sender:agentId,senderType:'agent',
+          text:getAgentAck(agentId,text),mentions:['stephen'],
+          timestamp:new Date().toISOString(),replyTo:msg.id
+        };
+        chatMessages.push(ack);
+        saveChatLocal();
+        if(chatOpen){renderChatMessages();scrollChatBottom()}
+        else{
+          const badge=document.getElementById('chatBadge');
+          const n=parseInt(badge.textContent||'0')+1;
+          badge.textContent=n;badge.classList.add('show');
+        }
+      });
+    },1200+Math.random()*2000);
+  }
+}
+
+function getAgentAck(id,userText){
+  const acks={
+    cody:['Copy that. On it.','Acknowledged. Routing now.','Got it — will coordinate.','Understood. Assigning resources.'],
+    lake:['Noted. Pulling research now.','On it — will report back shortly.','Received. Starting analysis.','Got it. Will have findings ready.'],
+    goku:['Roger. Starting build.','Got it — writing code now.','Acknowledged. Let me check the codebase.','On it. Will push when ready.'],
+    fallingcave:['Acknowledged. Checking infra.','Copy. Reviewing AWS status.','Got it — monitoring now.','On it. Will report back.'],
+    blockhead:['Received. Checking systems.','Got it. Running diagnostics.','Acknowledged.','On it.'],
+    fish:['Got it. Checking accounts now.','Copy that — pulling billing data.','Acknowledged. Running audit.','On it boss. Will report back.'],
+  };
+  const list=acks[id]||['Acknowledged.'];
+  return list[Math.floor(Math.random()*list.length)];
+}
+
+// @Mention autocomplete
+function chatInputHandler(){
+  const input=document.getElementById('chatInput');
+  // Auto-resize
+  input.style.height='36px';
+  input.style.height=Math.min(input.scrollHeight,100)+'px';
+  // Mention detection
+  const val=input.value;
+  const cur=input.selectionStart;
+  const before=val.substring(0,cur);
+  const atIdx=before.lastIndexOf('@');
+  if(atIdx===-1||(atIdx>0&&before[atIdx-1]!==' '&&before[atIdx-1]!=='\n')){closeMentionPopup();return}
+  const query=before.substring(atIdx+1).toLowerCase();
+  if(query.includes(' ')){closeMentionPopup();return}
+  mentionStart=atIdx;
+  const matches=query.length===0?AGENTS:AGENTS.filter(a=>a.name.toLowerCase().startsWith(query)||a.id.startsWith(query));
+  if(!matches.length){closeMentionPopup();return}
+  mentionIdx=0;
+  showMentionPopup(matches);
+}
+
+function showMentionPopup(agents){
+  const popup=document.getElementById('mentionPopup');
+  popup.innerHTML=agents.map((a,i)=>`<div class="mention-opt ${i===0?'active':''}" data-id="${a.id}" onclick="selectMention('${a.id}')">
+    <img src="${B}sprites/${a.id}.png" class="sprite" alt="${a.name}"/>
+    <span class="name">${a.name}</span>
+    <span class="role">${a.role}</span>
+    <span style="margin-left:auto"><span class="dot" style="width:6px;height:6px;background:${SC[a.s]}"></span></span>
+  </div>`).join('');
+  popup.classList.add('show');
+}
+
+function closeMentionPopup(){
+  document.getElementById('mentionPopup').classList.remove('show');
+  mentionStart=-1;mentionIdx=-1;
+}
+
+function selectMention(agentId){
+  const agent=AGENTS.find(a=>a.id===agentId);if(!agent)return;
+  const input=document.getElementById('chatInput');
+  const val=input.value;
+  const before=val.substring(0,mentionStart);
+  const after=val.substring(input.selectionStart);
+  input.value=before+'@'+agent.name+' '+after;
+  const newPos=mentionStart+agent.name.length+2;
+  input.focus();
+  input.setSelectionRange(newPos,newPos);
+  closeMentionPopup();
+}
+
+function chatKeydown(e){
+  const popup=document.getElementById('mentionPopup');
+  if(popup.classList.contains('show')){
+    const items=popup.querySelectorAll('.mention-opt');
+    if(e.key==='ArrowDown'){e.preventDefault();mentionIdx=(mentionIdx+1)%items.length;items.forEach(i=>i.classList.remove('active'));items[mentionIdx].classList.add('active');return}
+    if(e.key==='ArrowUp'){e.preventDefault();mentionIdx=(mentionIdx-1+items.length)%items.length;items.forEach(i=>i.classList.remove('active'));items[mentionIdx].classList.add('active');return}
+    if(e.key==='Tab'||e.key==='Enter'){
+      if(items[mentionIdx]){e.preventDefault();selectMention(items[mentionIdx].dataset.id);return}
+    }
+    if(e.key==='Escape'){e.preventDefault();closeMentionPopup();return}
+  }
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat()}
+}
+
+// Seed initial chat if empty
+if(!chatMessages.length){
+  chatMessages=[
+    {id:'m_sys1',sender:'system',senderType:'system',text:'Mission Comms initialized — type @agent to get their attention',timestamp:new Date(Date.now()-3600000).toISOString(),mentions:[]},
+    {id:'m_init1',sender:'cody',senderType:'agent',text:'Fleet online. 5/6 agents reporting. Blockhead is in standby.',timestamp:new Date(Date.now()-3500000).toISOString(),mentions:[]},
+    {id:'m_init2',sender:'lake',senderType:'agent',text:'Research queue clear. Standing by for assignments.',timestamp:new Date(Date.now()-3200000).toISOString(),mentions:[]},
+    {id:'m_init3',sender:'fish',senderType:'agent',text:'Local inference warm. HubSpot scan completed — 0 new tickets.',timestamp:new Date(Date.now()-2800000).toISOString(),mentions:[]},
+  ];
+  saveChatLocal();
+}
+
 // Init: render immediately, then try API sync in background
 renderContent();
 initQuests();
 </script>
 </body>
 </html>
-<!-- cache-bust: 1775138500 -->
+<!-- cache-bust: 1775139200 -->
