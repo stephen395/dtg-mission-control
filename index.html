@@ -73,8 +73,9 @@
   .scene-canvas-wrap::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px); pointer-events: none; z-index: 1; }
 
   /* Speech bubble */
-  .scene-speech { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); background: rgba(26,29,40,0.92); border: 1px solid #2a2d3a; border-radius: 6px; padding: 4px 10px; max-width: 85%; font-size: 9px; color: var(--text-secondary); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0; transition: opacity 0.5s; pointer-events: none; z-index: 2; }
+  .scene-speech { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); background: rgba(8,10,18,0.96); border: 2px solid var(--agent-color); border-radius: 0; padding: 5px 10px; max-width: 88%; font-family: 'Press Start 2P', monospace; font-size: 6px; color: var(--agent-color); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0; transition: opacity 0.4s; pointer-events: none; z-index: 2; box-shadow: 0 0 10px color-mix(in srgb, var(--agent-color) 35%, transparent), inset 0 0 6px rgba(0,0,0,0.6); letter-spacing: 0.5px; }
   .scene-speech.visible { opacity: 1; }
+  .scene-speech::before { content: '> '; opacity: 0.6; }
 
   /* Scene footer */
   .scene-footer { display: flex; align-items: center; justify-content: space-between; padding: 6px 12px; background: rgba(0,0,0,0.25); border-top: 1px solid #1a1d28; }
@@ -316,6 +317,13 @@ const AGENTS = {
   goku: { name: 'Goku', role: 'Coder / Tool Builder', color: '#f97316', channel: '#goku-forge', defaultModel: 'qwen3-coder:480b', defaultSkills: ['coding', 'tool-building', 'debugging'], hermes: true },
   lake: { name: 'Lake', role: 'Research / Intelligence', color: '#3b82f6', channel: '#lake-intel', defaultModel: 'glm-5', defaultSkills: ['research', 'analysis', 'web-search'], hermes: true },
   fish: { name: 'Fish', role: 'Discord + Google Chat', color: '#06b6d4', channel: '#fish', defaultModel: 'claude-sonnet-4', defaultSkills: ['hubspot', 'email', 'discord', 'google-chat'] }
+};
+
+const AGENT_MESSAGES = {
+  cody: ['Delegating tasks...', 'Mission planning', 'Routing to agents', 'Standing by', 'All systems GO', 'Analyzing status', 'Awaiting orders'],
+  goku: ['Forging tools...', 'Code compiling', 'Debugging loop', 'Shipping hot fix', 'Optimizing...', 'Pull request ready', 'Tests passing'],
+  lake: ['Scanning intel...', 'Research mode', 'Cross-referencing', 'Found something!', 'Data analysis', 'Reading papers', 'Indexing feeds'],
+  fish: ['Monitoring DMs...', 'New message!', 'On comms watch', 'Relaying intel', 'Inbox patrol', 'Discord active', 'Google Chat sync']
 };
 
 let agentStates = {};
@@ -1050,13 +1058,29 @@ function drawCodyScene(ctx, state) {
           ctx.fillRect(cx+Math.cos(ba)*br-1, cy+Math.sin(ba)*br-1, 3, 3);
         }
       } else {
-        // Scrolling data
-        for (let row = 0; row < 10; row++) {
-          const yy = 47+((row*6+Math.floor(frame*0.3))%54);
-          const bW = 15+(row*7+frame)%30;
-          ctx.fillStyle = `rgba(168,85,247,${0.15+(row%3)*0.1})`;
-          ctx.fillRect(m.x+3, yy, bW, 2);
+        // Matrix rain chars
+        const matChars = '01アイウエオカキクコサシスセタナニヌネ10ハマヤラワ';
+        ctx.font = '6px monospace';
+        ctx.textBaseline = 'top';
+        for (let col = 0; col < 5; col++) {
+          const dropY = (frame * 0.55 + col * 13) % 68;
+          const colX = m.x + 2 + col * 12;
+          if (dropY < 54) {
+            const ci = Math.floor(Math.abs(frame * 0.35 + col * 9)) % matChars.length;
+            ctx.fillStyle = 'rgba(230,200,255,0.95)';
+            ctx.fillText(matChars[ci], colX, 44 + dropY);
+            for (let t = 1; t <= 3; t++) {
+              const ty = dropY - t * 8;
+              if (ty >= 0) {
+                const alpha = 0.55 - t * 0.15;
+                ctx.fillStyle = `rgba(168,85,247,${alpha})`;
+                const ti = Math.floor(Math.abs(frame * 0.35 + col * 9 - t * 4)) % matChars.length;
+                ctx.fillText(matChars[ti], colX, 44 + ty);
+              }
+            }
+          }
         }
+        ctx.textBaseline = 'alphabetic';
       }
       if (frame%120<3) { ctx.fillStyle='rgba(168,85,247,0.06)'; ctx.fillRect(m.x,44,m.w,58); }
     }
@@ -1193,6 +1217,29 @@ function drawGokuScene(ctx, state) {
   const charX = 155 - (SPRITE_W*PX)/2;
   const charY = state !== 'offline' ? 62 : 66;
   drawSprite(ctx, 'goku', state, charX, charY);
+
+  // Hammer swing overlay when working
+  if (state === 'working' || state === 'online') {
+    const swing = Math.sin(frame * 0.22);
+    ctx.save();
+    ctx.translate(charX + 84, charY + 78);
+    ctx.rotate(swing * 0.9 - 0.2);
+    // Handle
+    ctx.fillStyle = '#7a3a12';
+    ctx.fillRect(-2, -26, 4, 26);
+    // Head
+    ctx.fillStyle = '#888';
+    ctx.fillRect(-7, -34, 16, 9);
+    ctx.fillStyle = '#bbb';
+    ctx.fillRect(-6, -33, 5, 3);
+    ctx.restore();
+    // Clang spark burst at bottom of swing
+    if (swing < -0.88 && frame % 3 === 0) {
+      for (let si = 0; si < 5; si++) {
+        addParticle('goku', charX + 84 + (Math.random()-0.5)*8, charY + 100, (Math.random()-0.5)*6, -2-Math.random()*4, 10, Math.random()>0.4?'#ffaa00':'#ffffff', 2);
+      }
+    }
+  }
 
   if (state === 'offline') { ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.fillRect(0,0,300,200); }
 }
@@ -1698,6 +1745,20 @@ function initApp() {
 
   fetchData();
   setInterval(fetchData, 30000);
+
+  // Auto-cycling speech bubbles: each agent speaks on its own staggered interval
+  const agentIds = Object.keys(AGENTS);
+  agentIds.forEach((id, i) => {
+    function cycleMsg() {
+      const state = agentStates[id]?.status || 'offline';
+      if (state !== 'offline') {
+        const msgs = AGENT_MESSAGES[id];
+        showSpeechBubble(id, msgs[Math.floor(Math.random() * msgs.length)]);
+      }
+      setTimeout(cycleMsg, 7000 + Math.random() * 5000);
+    }
+    setTimeout(cycleMsg, 2500 + i * 1800);
+  });
 }
 </script>
 </body>
