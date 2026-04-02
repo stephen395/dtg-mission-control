@@ -1,272 +1,194 @@
 <!DOCTYPE html>
-<html class="dark" lang="en">
+<html lang="en">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>BASTION - DTG Mission Control</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏰</text></svg>"/>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="https://cdn.tailwindcss.com"></script>
 <script>
-tailwind.config = {
-  darkMode: "class",
-  theme: {
-    extend: {
-      colors: {
-        "void": "#08080e",
-        "surface": "#0e0e16",
-        "s-low": "#14141e",
-        "s-mid": "#1a1a28",
-        "s-high": "#222234",
-        "s-bright": "#2c2c42",
-        "neon-cyan": "#00fbfb",
-        "neon-green": "#44ff88",
-        "neon-blue": "#4488ff",
-        "neon-orange": "#ff6644",
-        "neon-amber": "#ffaa00",
-        "neon-purple": "#aa66ff",
-        "neon-pink": "#ff66aa",
-        "neon-red": "#ff3366",
-        "dim": "#3a3e56",
-        "muted": "#5a5e78",
-      },
-      fontFamily: {
-        "grotesk": ["Space Grotesk", "sans-serif"],
-        "pixel": ["Press Start 2P", "monospace"],
-      },
-    },
+tailwind.config={theme:{extend:{
+  colors:{
+    "bg":"#0f1117","card":"#161920","card-hover":"#1c1f2a","border":"#252a36","border-light":"#2f3545",
+    "text-primary":"#e2e4ea","text-secondary":"#9ca0ad","text-dim":"#5d6272",
+    "green":"#34d399","blue":"#60a5fa","orange":"#fb923c","amber":"#fbbf24","purple":"#a78bfa","pink":"#f472b6","cyan":"#22d3ee","red":"#f87171",
   },
-}
+  fontFamily:{"sans":["Inter"],"mono":["JetBrains Mono"]},
+}}}
 </script>
 <style>
-  * { box-sizing: border-box; }
-  body { background: #08080e; font-family: 'Space Grotesk', sans-serif; }
-  .scanlines { background: repeating-linear-gradient(to bottom, transparent 0px, transparent 2px, rgba(0,251,251,0.015) 2px, rgba(0,251,251,0.015) 4px); pointer-events: none; }
-  .clipped { clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%); }
-  .sprite { image-rendering: pixelated; image-rendering: crisp-edges; }
-  .card-expanded { grid-column: span 2; grid-row: span 2; }
-  .dot-pulse { animation: dp 2s ease-in-out infinite; }
-  @keyframes dp { 0%,100%{opacity:1} 50%{opacity:0.3} }
-  .module-bar > div { flex:1; transition: background 0.1s, border-color 0.1s; cursor:pointer; }
-  .module-bar > div:hover { background: rgba(0,251,251,0.08); }
-  ::-webkit-scrollbar { width:3px; }
-  ::-webkit-scrollbar-track { background:#0e0e16; }
-  ::-webkit-scrollbar-thumb { background:#222234; }
+  body { background:#0f1117; font-family:'Inter',sans-serif; }
+  .sprite { image-rendering:pixelated; image-rendering:crisp-edges; }
+  ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-track{background:#161920} ::-webkit-scrollbar-thumb{background:#252a36;border-radius:2px}
 </style>
 </head>
 
-<body class="text-gray-300 h-screen flex flex-col overflow-hidden">
-<div class="fixed inset-0 scanlines z-50"></div>
+<body class="text-text-primary h-screen flex flex-col overflow-hidden">
 
 <!-- HEADER -->
-<header class="flex items-center justify-between px-5 py-2 bg-void/95 backdrop-blur-xl border-b border-neon-cyan/10 z-40 shrink-0">
-  <div class="flex items-center gap-5">
-    <h1 class="font-pixel text-[11px] tracking-[0.35em] text-white drop-shadow-[0_0_12px_rgba(0,251,251,0.6)]">BASTION</h1>
-    <span class="text-[10px] text-muted tracking-[0.15em] uppercase">DTG Agent Mission Control</span>
+<header class="flex items-center justify-between px-5 py-2.5 bg-bg border-b border-border shrink-0">
+  <div class="flex items-center gap-4">
+    <h1 class="text-base font-bold tracking-widest text-white">BASTION</h1>
+    <span class="text-xs text-text-dim">DTG Mission Control</span>
   </div>
-  <div class="flex items-center gap-5">
+  <div class="flex items-center gap-4">
     <div class="flex items-center gap-2">
-      <div class="w-2 h-2 rounded-full bg-neon-green shadow-[0_0_8px_#44ff88] dot-pulse"></div>
-      <span class="font-pixel text-[7px] text-neon-green">FLEET 5/6</span>
+      <div class="w-2 h-2 rounded-full bg-green"></div>
+      <span class="text-xs font-mono text-green font-medium">5/6 Online</span>
     </div>
-    <span class="text-[10px] text-dim tabular-nums" id="clock"></span>
+    <span class="text-xs text-text-dim font-mono" id="clock"></span>
   </div>
 </header>
 
 <!-- MAIN -->
 <main class="flex-1 flex overflow-hidden">
-  <section class="flex-1 p-3 overflow-y-auto" id="grid-wrap">
-    <div class="grid grid-cols-3 grid-rows-2 gap-2.5 h-full" id="agent-grid"></div>
+
+  <!-- Agent Grid -->
+  <section class="flex-1 p-3 overflow-y-auto">
+    <div class="grid grid-cols-3 gap-3" id="grid"></div>
   </section>
 
-  <aside class="w-[310px] shrink-0 flex flex-col gap-2 p-2 pl-0 overflow-hidden">
-    <div class="flex-1 bg-surface border border-dim/15 clipped flex flex-col overflow-hidden">
-      <div class="px-3 py-2 border-b border-dim/10 flex items-center gap-2 shrink-0">
-        <span class="material-symbols-outlined text-neon-cyan text-sm">monitoring</span>
-        <span class="text-[9px] text-neon-cyan tracking-[0.2em] uppercase font-semibold">Agent Status</span>
+  <!-- Sidebar -->
+  <aside class="w-[300px] shrink-0 flex flex-col gap-2 p-2 pl-0 overflow-hidden">
+    <div class="flex-1 bg-card rounded-lg border border-border flex flex-col overflow-hidden">
+      <div class="px-3 py-2 border-b border-border flex items-center gap-2 shrink-0">
+        <span class="material-symbols-outlined text-cyan text-base">monitoring</span>
+        <span class="text-xs text-text-secondary font-semibold">Agent Status</span>
       </div>
       <div class="flex-1 overflow-y-auto" id="status-panel"></div>
     </div>
-    <div class="h-[250px] bg-surface border border-dim/15 clipped flex flex-col overflow-hidden">
-      <div class="px-3 py-2 border-b border-dim/10 flex items-center gap-2 shrink-0">
-        <span class="material-symbols-outlined text-neon-cyan text-sm">terminal</span>
-        <span class="text-[9px] text-neon-cyan tracking-[0.2em] uppercase font-semibold">Activity Log</span>
+    <div class="h-[240px] bg-card rounded-lg border border-border flex flex-col overflow-hidden">
+      <div class="px-3 py-2 border-b border-border flex items-center gap-2 shrink-0">
+        <span class="material-symbols-outlined text-cyan text-base">terminal</span>
+        <span class="text-xs text-text-secondary font-semibold">Activity Log</span>
       </div>
-      <div class="flex-1 overflow-y-auto p-2.5 space-y-1" id="log-panel"></div>
+      <div class="flex-1 overflow-y-auto p-2 space-y-0.5" id="log-panel"></div>
     </div>
   </aside>
 </main>
 
 <script>
-const BASE = location.pathname.endsWith('/') ? location.pathname : location.pathname + '/';
-
-const AGENTS = [
-  { id:'cody', name:'Cody', role:'Mission Control', status:'working', task:'Fleet monitoring', progress:100, neon:'neon-green', hex:'#44ff88',
-    health:'98%', specs:'Hermes v0.6 \u00b7 minimax-m2.7', desc:'24/7 fleet coordinator. Monitors agents, routes tasks, escalates blockers.',
-    activity:['Fleet health check \u2014 nominal','Pinged Lake for research ETA','Routed pixel task to Goku','Bastion Protocol deployed','Cleared stale task queue'],
+const B = location.pathname.endsWith('/') ? location.pathname : location.pathname + '/';
+const A = [
+  { id:'cody',name:'Cody',role:'Mission Control',status:'working',task:'Fleet monitoring',progress:100,color:'green',hex:'#34d399',
+    health:'98%',specs:'Hermes v0.6 \u00b7 minimax-m2.7',desc:'24/7 fleet coordinator',
+    activity:['Fleet health check \u2014 nominal','Pinged Lake for research ETA','Routed pixel task to Goku','Bastion Protocol deployed','Cleared stale queue'],
     modules:['Fleet Monitor','Cron Jobs','Triggers','Timers','Heartbeat'] },
-  { id:'lake', name:'Lake', role:'Research & Intel', status:'working', task:'Scanning news feeds', progress:72, neon:'neon-blue', hex:'#4488ff',
-    health:'95%', specs:'Hermes v0.6 \u00b7 glm-5', desc:'Deep research agent. YouTube transcripts, web scraping, knowledge synthesis.',
-    activity:['AI dashboard tech research','Pixel art animation study','Agent collab workflow paper','Carrier news scan complete'],
-    modules:['Research Queue','Web Scrape','Transcripts','Intel Feed','Archive'] },
-  { id:'goku', name:'Goku', role:'Coder & Builder', status:'idle', task:'Awaiting tasks', progress:0, neon:'neon-orange', hex:'#ff6644',
-    health:'100%', specs:'Hermes v0.6 \u00b7 qwen3-coder-next', desc:'Code agent. Builds features, reviews PRs, writes tests.',
-    activity:['Bastion scaffold created','PixiJS v8 migration','Waiting for code review','Package.json cleanup'],
+  { id:'lake',name:'Lake',role:'Research & Intel',status:'working',task:'Scanning news feeds',progress:72,color:'blue',hex:'#60a5fa',
+    health:'95%',specs:'Hermes v0.6 \u00b7 glm-5',desc:'Deep research agent',
+    activity:['AI dashboard tech research','Pixel art animation study','Collab workflow paper','Carrier news scan done'],
+    modules:['Research Q','Web Scrape','Transcripts','Intel','Archive'] },
+  { id:'goku',name:'Goku',role:'Coder & Builder',status:'idle',task:'Awaiting tasks',progress:0,color:'orange',hex:'#fb923c',
+    health:'100%',specs:'Hermes v0.6 \u00b7 qwen3-coder',desc:'Builds features & reviews PRs',
+    activity:['Bastion scaffold created','PixiJS v8 migration','Waiting for review','Pkg cleanup'],
     modules:['Build Queue','Git Ops','Tests','Deploy','Review'] },
-  { id:'fallingcave', name:'FallingCave', role:'AWS & Deploy', status:'online', task:'Monitoring infra', progress:45, neon:'neon-amber', hex:'#ffaa00',
-    health:'87%', specs:'AWS VPS \u00b7 3.25.96.134', desc:'Cloud infrastructure agent. AWS monitoring, deployments, scaling.',
-    activity:['AWS health: all green','SSL cert renewed','Disk usage alert cleared','CloudWatch metrics pulled'],
-    modules:['AWS Health','Deploys','SSL Certs','Scaling','Costs'] },
-  { id:'blockhead', name:'Blockhead', role:'Tencent VPS', status:'offline', task:'Standby', progress:0, neon:'neon-purple', hex:'#aa66ff',
-    health:'--', specs:'Tencent VPS \u00b7 43.134.78.224', desc:'Tencent cloud agent. Chinese platform integrations.',
-    activity:['Last seen 6h ago','Standby mode activated','Memory cleanup done'],
+  { id:'fallingcave',name:'FallingCave',role:'AWS & Deploy',status:'online',task:'Monitoring infra',progress:45,color:'amber',hex:'#fbbf24',
+    health:'87%',specs:'AWS \u00b7 3.25.96.134',desc:'Cloud infra & deployments',
+    activity:['AWS health: all green','SSL cert renewed','Disk alert cleared','CloudWatch pulled'],
+    modules:['AWS','Deploys','SSL','Scaling','Costs'] },
+  { id:'blockhead',name:'Blockhead',role:'Tencent VPS',status:'offline',task:'Standby',progress:0,color:'purple',hex:'#a78bfa',
+    health:'\u2014',specs:'Tencent \u00b7 43.134.78.224',desc:'Chinese platform agent',
+    activity:['Last seen 6h ago','Standby mode','Memory cleanup'],
     modules:['Tencent','WeChat','Discord','Health','Logs'] },
-  { id:'fish', name:'Fish', role:'NemoClaw / GPU', status:'online', task:'Local inference', progress:30, neon:'neon-pink', hex:'#ff66aa',
-    health:'91%', specs:'NemoClaw \u00b7 Local GPU', desc:'Local inference agent. ML models, GPU compute, Discord + Google Chat.',
-    activity:['Inference batch 47 done','312 tokens/s throughput','Model swap to glm-5','HubSpot inbox scan'],
-    modules:['Inference','GPU Stats','Models','Chat','HubSpot'] },
+  { id:'fish',name:'Fish',role:'NemoClaw / GPU',status:'online',task:'Local inference',progress:30,color:'pink',hex:'#f472b6',
+    health:'91%',specs:'NemoClaw \u00b7 Local GPU',desc:'ML inference & chat bots',
+    activity:['Batch 47 done (312 t/s)','Model swap glm-5','HubSpot scan','Discord relay'],
+    modules:['Inference','GPU','Models','Chat','HubSpot'] },
 ];
 
-const SL = { online:'ONLINE', working:'WORKING', idle:'IDLE', offline:'OFFLINE', error:'ERROR' };
-const SD = { online:'bg-neon-green shadow-[0_0_6px_#44ff88]', working:'bg-yellow-400 shadow-[0_0_6px_#facc15]', idle:'bg-neon-blue shadow-[0_0_6px_#4488ff]', offline:'bg-gray-600', error:'bg-neon-red shadow-[0_0_6px_#ff3366]' };
+const SL={online:'Online',working:'Working',idle:'Idle',offline:'Offline',error:'Error'};
+const SC={online:'text-green',working:'text-amber',idle:'text-blue',offline:'text-text-dim',error:'text-red'};
+const DC={online:'bg-green',working:'bg-amber',idle:'bg-blue',offline:'bg-text-dim',error:'bg-red'};
 
-let selected = 'cody';
-
-function render() {
-  const grid = document.getElementById('agent-grid');
-  grid.innerHTML = '';
-  AGENTS.forEach(a => {
-    const isSel = a.id === selected;
-    const dim = selected && !isSel;
-    grid.innerHTML += isSel ? expanded(a) : collapsed(a, dim);
-  });
-  document.querySelectorAll('[data-a]').forEach(el => {
-    el.addEventListener('click', () => { selected = el.dataset.a; render(); });
-  });
-  renderStatus();
-  renderLog();
-}
-
-function expanded(a) {
-  return `
-  <div class="card-expanded bg-s-low border border-${a.neon}/30 clipped cursor-pointer relative" style="box-shadow:0 0 14px ${a.hex}25,inset 0 0 14px ${a.hex}08" data-a="${a.id}">
-    <div class="h-full flex flex-col p-3.5">
-      <div class="flex gap-4 flex-1 min-h-0">
-        <!-- Avatar + Specs -->
-        <div class="flex flex-col items-center w-[130px] shrink-0">
-          <div class="w-[115px] h-[115px] bg-void border border-${a.neon}/25 flex items-center justify-center relative overflow-hidden" style="box-shadow:0 0 10px ${a.hex}35">
-            <img src="${BASE}sprites/${a.id}.png" class="sprite h-[105px] w-auto" alt="${a.name}"/>
-            <div class="absolute inset-0" style="background:${a.hex}08"></div>
-          </div>
-          <div class="mt-2.5 w-full space-y-1">
-            <div class="flex justify-between text-[8px]"><span class="text-muted">HEALTH</span><span class="text-${a.neon}">${a.health}</span></div>
-            <div class="text-[7px] text-dim">${a.specs}</div>
-            <div class="text-[7px] text-muted/70 leading-relaxed mt-1">${a.desc}</div>
-          </div>
-        </div>
-        <!-- Info + Activity -->
-        <div class="flex-1 flex flex-col min-w-0">
-          <div class="flex items-start justify-between mb-2">
-            <div>
-              <h2 class="text-base font-bold text-white tracking-tight uppercase">${a.name}</h2>
-              <div class="text-[9px] text-muted uppercase tracking-wider">${a.role}</div>
-              <div class="flex items-center gap-1.5 mt-1">
-                <div class="w-1.5 h-1.5 rounded-full ${SD[a.status]} ${a.status!=='offline'?'dot-pulse':''}"></div>
-                <span class="text-[9px] text-${a.neon} font-mono">${SL[a.status]}</span>
-              </div>
-            </div>
-            <span class="text-[7px] text-${a.neon}/30 font-mono tracking-widest">ID_${a.id.toUpperCase().slice(0,3)}</span>
-          </div>
-          <div class="flex-1 bg-void/60 border border-dim/15 p-2.5 overflow-y-auto min-h-0">
-            <div class="text-[7px] text-${a.neon}/50 uppercase tracking-wider mb-1.5">Recent Activity</div>
-            ${a.activity.map((act,i) => `<div class="flex gap-2 text-[10px] mb-1"><span class="text-dim shrink-0 tabular-nums">${String(14-i).padStart(2,'0')}:${String(30-i*7).padStart(2,'0')}</span><span class="text-gray-400">${act}</span></div>`).join('')}
-          </div>
-          <div class="mt-2">
-            <div class="text-[8px] text-muted truncate mb-0.5">${a.task}</div>
-            <div class="flex justify-between text-[7px] text-dim"><span>PROGRESS</span><span>${a.progress}%</span></div>
-            <div class="h-1 w-full bg-void mt-0.5 overflow-hidden"><div class="h-full" style="width:${a.progress}%;background:${a.hex};box-shadow:0 0 6px ${a.hex}"></div></div>
-          </div>
-        </div>
-      </div>
-      <!-- Module Bar -->
-      <div class="module-bar flex gap-1 mt-2.5 pt-2 border-t border-dim/12">
-        ${a.modules.map(m => `<div class="bg-void/40 border border-dim/15 py-1.5 text-center"><div class="text-[6px] text-muted uppercase">${m}</div></div>`).join('')}
-      </div>
-    </div>
-  </div>`;
-}
-
-function collapsed(a, dim) {
-  const off = a.status === 'offline';
-  return `
-  <div class="${dim?'opacity-50':'opacity-100'} ${off?'!opacity-30':''} bg-s-low border border-${a.neon}/12 clipped cursor-pointer hover:border-${a.neon}/35 transition-all" style="box-shadow:0 0 4px ${a.hex}10" data-a="${a.id}">
-    <div class="h-full flex flex-col p-2.5">
-      <div class="flex items-start gap-2.5 mb-auto">
-        <div class="w-12 h-12 bg-void border border-${a.neon}/12 flex items-center justify-center shrink-0 overflow-hidden" style="box-shadow:0 0 3px ${a.hex}15">
-          <img src="${BASE}sprites/${a.id}.png" class="sprite h-[44px] w-auto" alt="${a.name}"/>
+// ---- RENDER ALL CARDS (no expand/collapse) ----
+function render(){
+  document.getElementById('grid').innerHTML = A.map(a => {
+    const off = a.status==='offline';
+    return `
+    <div class="bg-card rounded-lg border border-border hover:border-border-light transition-colors ${off?'opacity-40':''}">
+      <!-- Top: Avatar + Name + Status -->
+      <div class="flex items-start gap-3 p-3 pb-2">
+        <div class="w-16 h-16 bg-bg rounded border border-border flex items-center justify-center shrink-0 overflow-hidden">
+          <img src="${B}sprites/${a.id}.png" class="sprite h-[58px] w-auto" alt="${a.name}"/>
         </div>
         <div class="flex-1 min-w-0">
           <div class="flex items-center justify-between">
-            <h3 class="text-xs font-bold text-white tracking-tight uppercase">${a.name}</h3>
-            <span class="text-[6px] text-${a.neon}/25 font-mono">ID_${a.id.toUpperCase().slice(0,3)}</span>
+            <h3 class="text-sm font-bold text-white">${a.name}</h3>
+            <span class="${SC[a.status]} text-[11px] font-mono font-medium">${SL[a.status]}</span>
           </div>
-          <div class="text-[7px] text-muted uppercase tracking-wider">${a.role}</div>
-          <div class="flex items-center gap-1 mt-1">
-            <div class="w-1 h-1 rounded-full ${SD[a.status]} ${!off?'dot-pulse':''}"></div>
-            <span class="text-[7px] text-${a.neon} font-mono">${SL[a.status]}</span>
+          <div class="text-[11px] text-text-dim mt-0.5">${a.role}</div>
+          <div class="flex items-center gap-3 mt-1.5 text-[11px]">
+            <span class="text-text-secondary">Health <span class="text-${a.color} font-medium">${a.health}</span></span>
+            <span class="text-text-dim">${a.specs}</span>
           </div>
         </div>
       </div>
-      <div class="mt-auto pt-1.5">
-        <div class="text-[7px] text-muted truncate mb-0.5">${a.task}</div>
-        <div class="h-0.5 w-full bg-void overflow-hidden"><div class="h-full" style="width:${a.progress}%;background:${a.hex};box-shadow:0 0 4px ${a.hex}"></div></div>
-      </div>
-    </div>
-  </div>`;
-}
 
-function renderStatus() {
-  const p = document.getElementById('status-panel');
-  p.innerHTML = AGENTS.map(a => `
-    <div class="flex items-center gap-2.5 px-3 py-2 hover:bg-s-low/50 cursor-pointer border-b border-dim/8" data-a="${a.id}">
-      <div class="w-1.5 h-1.5 rounded-full shrink-0 ${SD[a.status]}"></div>
+      <!-- Activity -->
+      <div class="mx-3 mb-2 bg-bg rounded border border-border p-2 max-h-[90px] overflow-y-auto">
+        <div class="text-[10px] text-text-dim uppercase tracking-wider mb-1">Recent Activity</div>
+        ${a.activity.map((act,i) => `<div class="text-[11px] text-text-secondary leading-relaxed flex gap-1.5"><span class="text-text-dim shrink-0 font-mono">${String(14-i).padStart(2,'0')}:${String(30-i*7).padStart(2,'0')}</span>${act}</div>`).join('')}
+      </div>
+
+      <!-- Task + Progress -->
+      <div class="mx-3 mb-2">
+        <div class="flex items-center justify-between text-[11px] mb-1">
+          <span class="text-text-secondary truncate">${a.task}</span>
+          <span class="text-text-dim font-mono ml-2">${a.progress}%</span>
+        </div>
+        <div class="h-1 w-full bg-bg rounded-full overflow-hidden">
+          <div class="h-full rounded-full" style="width:${a.progress}%;background:${a.hex}"></div>
+        </div>
+      </div>
+
+      <!-- Modules -->
+      <div class="flex gap-1 mx-3 mb-3">
+        ${a.modules.map(m => `<div class="flex-1 bg-bg border border-border rounded py-1 text-center hover:border-border-light hover:bg-card-hover transition-colors cursor-pointer"><span class="text-[8px] text-text-dim uppercase">${m}</span></div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Status panel
+  document.getElementById('status-panel').innerHTML = A.map(a => `
+    <div class="flex items-center gap-2.5 px-3 py-2 hover:bg-card-hover transition-colors border-b border-border/50">
+      <div class="w-2 h-2 rounded-full shrink-0 ${DC[a.status]}"></div>
       <div class="flex-1 min-w-0">
-        <div class="flex items-center justify-between"><span class="text-[11px] font-semibold text-white">${a.name}</span><span class="text-[7px] text-${a.neon} font-mono font-semibold">${SL[a.status]}</span></div>
-        <div class="text-[9px] text-muted truncate">${a.task}</div>
-        <div class="h-0.5 w-full bg-void mt-1 overflow-hidden"><div class="h-full" style="width:${a.progress}%;background:${a.hex}80"></div></div>
+        <div class="flex items-center justify-between">
+          <span class="text-[12px] font-semibold text-white">${a.name}</span>
+          <span class="${SC[a.status]} text-[10px] font-mono">${SL[a.status]}</span>
+        </div>
+        <div class="text-[11px] text-text-dim truncate">${a.task}</div>
+        <div class="h-0.5 w-full bg-bg rounded-full mt-1.5 overflow-hidden"><div class="h-full rounded-full" style="width:${a.progress}%;background:${a.hex}"></div></div>
       </div>
     </div>
   `).join('');
-  p.querySelectorAll('[data-a]').forEach(el => {
-    el.addEventListener('click', () => { selected = el.dataset.a; render(); });
-  });
-}
 
-function renderLog() {
-  const logs = [
-    {t:'14:32',a:'Lake',c:'text-neon-blue',m:'Research: AI dashboard innovations'},
-    {t:'14:28',a:'Cody',c:'text-neon-green',m:'Fleet health check \u2014 all systems nominal'},
-    {t:'14:15',a:'Claude',c:'text-neon-cyan',m:'Bastion v0.5 deployed to GitHub Pages'},
-    {t:'14:02',a:'Lake',c:'text-neon-blue',m:'Agent collaboration workflow research done'},
-    {t:'13:55',a:'Goku',c:'text-neon-orange',m:'Awaiting code review from Claude'},
-    {t:'13:40',a:'Fish',c:'text-neon-pink',m:'Inference batch 47 complete (312 tok/s)'},
-    {t:'13:22',a:'Cody',c:'text-neon-green',m:'Bastion Protocol deployed to workspace'},
-    {t:'13:10',a:'FallingCave',c:'text-neon-amber',m:'AWS health: all instances green'},
-    {t:'12:58',a:'Lake',c:'text-neon-blue',m:'Pixel art animation research complete'},
-    {t:'12:44',a:'Cody',c:'text-neon-green',m:'Heartbeat sweep \u2014 5/6 responding'},
+  // Log
+  const logs=[
+    {t:'14:32',a:'Lake',c:'text-blue',m:'Research: AI dashboard innovations'},
+    {t:'14:28',a:'Cody',c:'text-green',m:'Fleet health check \u2014 nominal'},
+    {t:'14:15',a:'Claude',c:'text-cyan',m:'Bastion v0.5 deployed'},
+    {t:'14:02',a:'Lake',c:'text-blue',m:'Agent collab workflow done'},
+    {t:'13:55',a:'Goku',c:'text-orange',m:'Awaiting code review'},
+    {t:'13:40',a:'Fish',c:'text-pink',m:'Batch 47 done (312 tok/s)'},
+    {t:'13:22',a:'Cody',c:'text-green',m:'Protocol deployed to workspace'},
+    {t:'13:10',a:'FallingCave',c:'text-amber',m:'AWS: all instances green'},
+    {t:'12:58',a:'Lake',c:'text-blue',m:'Pixel art research complete'},
+    {t:'12:44',a:'Cody',c:'text-green',m:'Heartbeat sweep 5/6'},
   ];
   document.getElementById('log-panel').innerHTML = logs.map(l => `
-    <div class="flex gap-2 text-[10px] leading-tight"><span class="text-dim shrink-0 tabular-nums">${l.t}</span><span class="${l.c} shrink-0 font-semibold">${l.a}</span><span class="text-gray-500">${l.m}</span></div>
+    <div class="flex gap-2 text-[11px] leading-relaxed py-0.5">
+      <span class="text-text-dim shrink-0 font-mono">${l.t}</span>
+      <span class="${l.c} shrink-0 font-medium">${l.a}</span>
+      <span class="text-text-secondary">${l.m}</span>
+    </div>
   `).join('');
 }
 
-setInterval(() => {
-  const d = new Date();
-  document.getElementById('clock').textContent = d.toLocaleTimeString('en-US',{hour12:false}) + ' // UPTIME 442:' + String(d.getMinutes()).padStart(2,'0') + ':' + String(d.getSeconds()).padStart(2,'0');
-}, 1000);
-
+setInterval(()=>{const d=new Date();document.getElementById('clock').textContent=d.toLocaleTimeString('en-US',{hour12:false})},1000);
 render();
 </script>
 </body>
