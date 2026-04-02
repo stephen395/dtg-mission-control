@@ -347,6 +347,31 @@ let contexts = {};
 let particles = { cody: [], fish: [], goku: [], lake: [] };
 let speechTimers = {};
 
+// === BLINK SYSTEM ===
+const blinkState = { cody: 0, goku: 0, lake: 0, fish: 0 };
+const blinkTimers = { cody: 120, goku: 145, lake: 160, fish: 100 };
+// Eye pixel positions in sprite grid (lx=left eye col, rx=right eye col, ey=eye row)
+const EYE_POS = {
+  cody: { lx: 12, rx: 17, ey: 9, ew: 2, eh: 2, skin: '#e0a882' },
+  goku: { lx: 12, rx: 17, ey: 8, ew: 2, eh: 2, skin: '#e0a882' },
+  lake: { lx: 12, rx: 17, ey: 9, ew: 2, eh: 2, skin: '#e0a882' },
+  fish: { lx: 12, rx: 17, ey: 9, ew: 2, eh: 2, skin: '#e0a882' },
+};
+function updateBlinks() {
+  for (const id of Object.keys(blinkTimers)) {
+    blinkTimers[id]--;
+    if (blinkTimers[id] <= 0) {
+      if (blinkState[id] === 0) {
+        blinkState[id] = 1;
+        blinkTimers[id] = 4; // blink duration ~4 frames
+      } else {
+        blinkState[id] = 0;
+        blinkTimers[id] = 120 + Math.floor(Math.random() * 120); // 2-4s between blinks
+      }
+    }
+  }
+}
+
 function initCanvases() {
   for (const id of Object.keys(AGENTS)) {
     const c = document.getElementById('canvas-' + id);
@@ -370,6 +395,17 @@ function darken(hex, amt) {
 function lighten(hex, amt) {
   const c = hexToRgb(hex);
   return rgbStr(Math.min(255,c.r+amt), Math.min(255,c.g+amt), Math.min(255,c.b+amt));
+}
+
+// === DAY/NIGHT TINT ===
+function getDayNightTint() {
+  const h = new Date().getHours() + new Date().getMinutes() / 60;
+  if (h >= 22 || h < 5)        return 'rgba(0,0,50,0.22)';   // deep night
+  if (h < 6)                   return 'rgba(0,0,50,0.14)';   // pre-dawn
+  if (h < 8)                   return 'rgba(255,140,60,0.12)'; // dawn warm
+  if (h >= 19 && h < 21)       return 'rgba(255,100,30,0.12)'; // sunset
+  if (h >= 21)                 return 'rgba(20,0,60,0.15)';  // dusk
+  return null; // daytime: no tint
 }
 
 // === PARTICLE SYSTEM ===
@@ -906,6 +942,15 @@ function drawSprite(ctx, agentId, state, x, y) {
     ctx.drawImage(spriteCache[key], x, y + Math.round(bob));
   }
 
+  // Eye blink overlay
+  if (!isOffline && blinkState[agentId] > 0) {
+    const ep = EYE_POS[agentId];
+    const bobY = Math.round(bob);
+    ctx.fillStyle = ep.skin;
+    ctx.fillRect(x + ep.lx * PX, y + ep.ey * PX + bobY, ep.ew * PX, ep.eh * PX);
+    ctx.fillRect(x + ep.rx * PX, y + ep.ey * PX + bobY, ep.ew * PX, ep.eh * PX);
+  }
+
   // Offline ZZZ
   if (isOffline) {
     const zOff = Math.sin(frame * 0.04) * 5;
@@ -1168,24 +1213,42 @@ function drawLakeScene(ctx, state) {
   ctx.strokeStyle = 'rgba(59,130,246,0.1)';
   ctx.strokeRect(60,130,180,60);
 
-  // Window with night sky
-  ctx.fillStyle = '#080c18';
+  // Window (day/night responsive)
+  const lakeHour = new Date().getHours();
+  const lakeIsDay = lakeHour >= 7 && lakeHour < 19;
+  ctx.fillStyle = lakeIsDay ? '#1a3a6a' : '#080c18';
   ctx.fillRect(220,15,60,60);
   ctx.strokeStyle = '#333';
   ctx.strokeRect(220,15,60,60);
   ctx.strokeRect(250,15,1,60);
   ctx.strokeRect(220,45,60,1);
   if (state !== 'offline') {
-    const stars = [[228,22],[240,30],[260,20],[270,38],[235,55],[265,52],[255,28]];
-    for (const [sx,sy] of stars) {
-      const tw = Math.sin(frame*0.05+sx*0.1)*0.3+0.7;
-      ctx.fillStyle = `rgba(255,255,255,${tw*0.8})`;
-      ctx.fillRect(sx,sy,2,2);
+    if (lakeIsDay) {
+      // Daytime: sky blue, clouds, sun
+      ctx.fillStyle = 'rgba(100,180,255,0.18)';
+      ctx.fillRect(223,22,20,7);
+      ctx.fillRect(236,28,18,6);
+      ctx.fillStyle = 'rgba(100,180,255,0.1)';
+      ctx.fillRect(225,19,12,5);
+      // Sun
+      ctx.fillStyle = 'rgba(255,230,80,0.95)';
+      ctx.fillRect(264,19,8,8);
+      ctx.fillStyle = 'rgba(255,240,120,0.4)';
+      ctx.fillRect(260,21,16,4);
+      ctx.fillRect(266,17,4,14);
+    } else {
+      // Nighttime: stars + crescent moon
+      const stars = [[228,22],[240,30],[260,20],[270,38],[235,55],[265,52],[255,28]];
+      for (const [sx,sy] of stars) {
+        const tw = Math.sin(frame*0.05+sx*0.1)*0.3+0.7;
+        ctx.fillStyle = `rgba(255,255,255,${tw*0.8})`;
+        ctx.fillRect(sx,sy,2,2);
+      }
+      ctx.fillStyle = 'rgba(255,255,200,0.6)';
+      ctx.fillRect(228,25,6,6);
+      ctx.fillStyle = '#080c18';
+      ctx.fillRect(230,24,5,5);
     }
-    ctx.fillStyle = 'rgba(255,255,200,0.6)';
-    ctx.fillRect(228,25,6,6);
-    ctx.fillStyle = '#080c18';
-    ctx.fillRect(230,24,5,5);
   }
 
   // Bookshelves
@@ -1426,18 +1489,45 @@ const SCENE_RENDERERS = {
 // =============================================
 // MAIN RENDER LOOP
 // =============================================
+// Character center X positions for each agent scene
+const AGENT_CENTER_X = { cody: 150, goku: 155, lake: 140, fish: 145 };
+
 function renderAllScenes() {
+  const dayNightTint = getDayNightTint();
   for (const id of Object.keys(AGENTS)) {
     const ctx = contexts[id];
     if (!ctx) continue;
     const state = agentStates[id]?.status || 'offline';
     ctx.clearRect(0, 0, NATIVE_W, NATIVE_H);
     SCENE_RENDERERS[id](ctx, state);
+
+    // Day/night atmospheric overlay
+    if (dayNightTint && state !== 'offline') {
+      ctx.fillStyle = dayNightTint;
+      ctx.fillRect(0, 0, NATIVE_W, NATIVE_H);
+    }
+
+    // Working indicator: animated dots above character head
+    if ((state === 'working' || state === 'online') && !( state === 'offline')) {
+      const dotPhase = Math.floor(frame / 18) % 4;
+      if (dotPhase > 0) {
+        const cx = AGENT_CENTER_X[id] || 150;
+        const dotX = cx - 12;
+        const agColor = AGENTS[id].color;
+        ctx.fillStyle = agColor;
+        ctx.globalAlpha = 0.8 + Math.sin(frame * 0.1) * 0.15;
+        for (let d = 0; d < Math.min(dotPhase, 3); d++) {
+          ctx.fillRect(dotX + d * 9, 58, 5, 5);
+        }
+        ctx.globalAlpha = 1;
+      }
+    }
   }
 }
 
 function gameLoop() {
   frame++;
+  updateBlinks();
   renderAllScenes();
   requestAnimationFrame(gameLoop);
 }
