@@ -65,6 +65,9 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
 .btn-primary{background:var(--cyan);color:#000}.btn-primary:hover{opacity:0.9}
 .btn-ghost{background:transparent;color:var(--text3);border:1px solid var(--border)}.btn-ghost:hover{color:var(--text);border-color:var(--border-light)}
 .btn-sm{padding:4px 10px;font-size:10px}
+.btn-danger{background:rgba(239,68,68,0.15);color:var(--red);border:1px solid rgba(239,68,68,0.2)}.btn-danger:hover{background:rgba(239,68,68,0.25)}
+.confirm-item{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2);padding:6px 10px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:6px;margin-bottom:4px}
+.confirm-item .material-symbols-outlined{font-size:14px;color:var(--text3)}
 .profile-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:60;display:flex;justify-content:flex-end}
 .profile-panel{width:380px;height:100%;background:#12121e;border-left:1px solid var(--border-light);overflow-y:auto;padding:0;animation:slideIn 0.2s ease}
 @keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
@@ -189,7 +192,7 @@ const SL={online:'Online',working:'Working',idle:'Idle',offline:'Offline'};
 const SC={online:'var(--green)',working:'var(--yellow)',idle:'var(--blue)',offline:'var(--text3)'};
 
 // ===== PROJECTS =====
-const PROJECTS=[
+const DEFAULT_PROJECTS=[
   {id:'bastion',name:'Bastion Dashboard',status:'active',progress:70,color:'var(--cyan)',lead:'cody',agents:['cody','lake','goku'],started:'2026-04-01',description:'Mission control dashboard for DTG agents.',tasks:{total:14,done:9,inProgress:3,blocked:0},repo:'stephen395/dtg-mission-control',tags:['frontend','dashboard']},
   {id:'audit-tool',name:'DTG Audit Tool',status:'maintenance',progress:92,color:'var(--green)',lead:'fish',agents:['fish','lake'],started:'2025-11-15',description:'Telecom wireless billing audit tool.',tasks:{total:28,done:26,inProgress:1,blocked:0},repo:'stephen395/dtg-audit-tool',tags:['telecom','billing']},
   {id:'fish-promo',name:'Fish Promo Automation',status:'active',progress:35,color:'var(--orange)',lead:'fish',agents:['fish','lake','cody'],started:'2026-03-28',description:'AT&T promo data to audit tool integration.',tasks:{total:8,done:3,inProgress:2,blocked:1},repo:null,tags:['automation','n8n']},
@@ -197,6 +200,9 @@ const PROJECTS=[
   {id:'hermes-fleet',name:'Hermes Agent Fleet',status:'maintenance',progress:88,color:'var(--purple)',lead:'cody',agents:['cody','goku','fallingcave'],started:'2026-03-15',description:'Agent infra on AgentPC1.',tasks:{total:18,done:16,inProgress:1,blocked:0},repo:null,tags:['hermes','infra']},
   {id:'openclaw',name:'OpenClaw / NemoClaw',status:'active',progress:60,color:'var(--pink)',lead:'fish',agents:['fish','fallingcave','blockhead'],started:'2026-02-10',description:'Discord bot gateway, local inference, HubSpot skill.',tasks:{total:22,done:13,inProgress:4,blocked:1},repo:null,tags:['discord','inference']},
 ];
+function loadProjects(){try{const d=JSON.parse(localStorage.getItem('bastion_projects'));return d&&d.length?d:null}catch{return null}}
+function saveProjects(){localStorage.setItem('bastion_projects',JSON.stringify(PROJECTS))}
+let PROJECTS=loadProjects()||JSON.parse(JSON.stringify(DEFAULT_PROJECTS));
 const STATUS_BADGE={active:'badge-active',paused:'badge-paused',completed:'badge-completed',maintenance:'badge-maintenance'};
 
 // ===== QUESTS =====
@@ -291,7 +297,7 @@ function renderProjects(){
         <div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span style="color:var(--text2)">Progress</span><span class="mono" style="color:var(--text3)">${p.progress}%</span></div><div class="bar" style="height:6px"><div class="bar-fill" style="width:${p.progress}%;background:${p.color}"></div></div></div>
         <div style="display:flex;gap:12px;margin-bottom:12px;font-size:11px"><span style="color:var(--text2)">Tasks: <span style="color:#fff;font-weight:600">${p.tasks.done}</span><span style="color:var(--text3)">/${p.tasks.total}</span></span><span style="color:var(--yellow)">${p.tasks.inProgress} in progress</span>${p.tasks.blocked>0?`<span style="color:var(--red)">${p.tasks.blocked} blocked</span>`:''}</div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em">Team:</span><div style="display:flex;gap:4px">${ag.map(a=>`<div style="display:flex;align-items:center;gap:3px;padding:2px 6px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:4px"><img src="${B}sprites/${a.id}.png" class="sprite" style="height:18px" alt="${a.name}"/><span style="font-size:10px;color:var(--text2)">${a.name}</span>${a.id===p.lead?'<span style="font-size:8px;color:var(--cyan)">LEAD</span>':''}</div>`).join('')}</div></div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:8px;border-top:1px solid var(--border)"><div style="display:flex;gap:4px;flex-wrap:wrap">${p.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div><span style="font-size:10px;color:var(--text3)">${p.started}</span></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:8px;border-top:1px solid var(--border)"><div style="display:flex;gap:4px;flex-wrap:wrap">${p.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div><div style="display:flex;align-items:center;gap:8px"><span style="font-size:10px;color:var(--text3)">${p.started}</span><button class="btn btn-sm btn-danger" onclick="confirmRemoveProject('${p.id}')" style="display:flex;align-items:center;gap:2px;padding:3px 8px" title="Remove project"><span class="material-symbols-outlined" style="font-size:13px">delete</span></button></div></div>
       </div>`}).join('')}</div>`;
 }
 
@@ -401,6 +407,128 @@ function getUseCases(q){
 function toggleQuest(id){expandedQuest=expandedQuest===id?null:id;renderContent()}
 function completeQuest(id){const q=quests.find(x=>x.id===id);if(q){q.status='completed';q.progress=100;q.completedAt=new Date().toISOString();q.notes.push({time:new Date().toISOString(),agent:'cody',text:'Quest completed. Moving to archive.'});saveQuests(quests);renderContent()}}
 function archiveQuest(id){const q=quests.find(x=>x.id===id);if(q){q.status='archived';saveQuests(quests);renderContent()}}
+
+// ===== PROJECT REMOVAL =====
+function confirmRemoveProject(pid){
+  const proj=PROJECTS.find(p=>p.id===pid);if(!proj)return;
+  // Find related quests: match by project tags, assigned agents overlap, or quest tags overlap
+  const projTags=new Set(proj.tags||[]);
+  const projAgents=new Set(proj.agents||[]);
+  const relatedQuests=quests.filter(q=>{
+    const qTags=new Set(q.tags||[]);
+    const qAgents=new Set(q.assignedTo||[]);
+    // Quest is related if it shares tags with the project or agents overlap
+    const tagOverlap=[...qTags].some(t=>projTags.has(t));
+    const agentOverlap=[...qAgents].some(a=>projAgents.has(a));
+    return tagOverlap||agentOverlap;
+  });
+  const activeRelated=relatedQuests.filter(q=>['new','assigned','active','review'].includes(q.status));
+  const completedRelated=relatedQuests.filter(q=>['completed','archived'].includes(q.status));
+  const teamAgents=proj.agents.map(id=>AGENTS.find(a=>a.id===id)).filter(Boolean);
+
+  document.getElementById('modal-root').innerHTML=`
+  <div class="modal-bg" onclick="closeModal()">
+    <div class="modal" onclick="event.stopPropagation()" style="width:520px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <span class="material-symbols-outlined" style="font-size:24px;color:var(--red)">warning</span>
+        <span style="font-size:16px;font-weight:700;color:#fff">Remove Project</span>
+      </div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.5">
+        You're about to remove <span style="color:#fff;font-weight:700">${proj.name}</span>. The following will be affected:
+      </div>
+
+      <!-- Team -->
+      <div style="margin-bottom:12px">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Team (${teamAgents.length} agents unassigned)</div>
+        ${teamAgents.map(a=>`<div class="confirm-item">
+          <img src="${B}sprites/${a.id}.png" class="sprite" style="height:20px"/>
+          <span style="color:#fff;font-weight:600">${a.name}</span>
+          <span style="color:var(--text3)">${a.role}</span>
+          ${a.id===proj.lead?'<span style="font-size:8px;color:var(--cyan);font-weight:600">LEAD</span>':''}
+        </div>`).join('')}
+      </div>
+
+      <!-- Active quests -->
+      ${activeRelated.length?`<div style="margin-bottom:12px">
+        <div style="font-size:10px;color:var(--yellow);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;display:flex;align-items:center;gap:4px"><span class="material-symbols-outlined" style="font-size:13px">assignment_late</span>Active Quests (${activeRelated.length})</div>
+        ${activeRelated.map(q=>`<div class="confirm-item">
+          <span class="material-symbols-outlined">${CAT_ICON[q.category]||'help'}</span>
+          <span style="flex:1;color:#fff">${q.title}</span>
+          <span class="badge badge-${q.priority}" style="font-size:8px">${q.priority}</span>
+          <span style="font-size:10px;color:var(--text3)">${q.progress}%</span>
+        </div>`).join('')}
+      </div>`:''}
+
+      <!-- Completed quests -->
+      ${completedRelated.length?`<div style="margin-bottom:12px">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Completed/Archived Quests (${completedRelated.length})</div>
+        ${completedRelated.slice(0,3).map(q=>`<div class="confirm-item" style="opacity:0.6">
+          <span class="material-symbols-outlined">check_circle</span>
+          <span style="flex:1">${q.title}</span>
+        </div>`).join('')}
+        ${completedRelated.length>3?`<div style="font-size:10px;color:var(--text3);padding-left:10px">...and ${completedRelated.length-3} more</div>`:''}
+      </div>`:''}
+
+      <!-- Repo -->
+      ${proj.repo?`<div style="margin-bottom:12px">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Repository</div>
+        <div class="confirm-item"><span class="material-symbols-outlined">code</span><span style="color:var(--text2)">${proj.repo}</span><span style="font-size:9px;color:var(--text3)">(link only — repo not deleted)</span></div>
+      </div>`:''}
+
+      <!-- Task stats -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Project Tasks</div>
+        <div class="confirm-item">
+          <span class="material-symbols-outlined">task</span>
+          <span>${proj.tasks.total} total tasks</span>
+          <span style="color:var(--green)">${proj.tasks.done} done</span>
+          <span style="color:var(--yellow)">${proj.tasks.inProgress} in progress</span>
+          ${proj.tasks.blocked>0?`<span style="color:var(--red)">${proj.tasks.blocked} blocked</span>`:''}
+        </div>
+      </div>
+
+      <!-- Checkbox for related quests -->
+      ${activeRelated.length?`<div style="margin-bottom:16px;padding:10px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:8px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text2);text-transform:none;letter-spacing:normal">
+          <input type="checkbox" id="rm-quests" style="width:auto;accent-color:var(--red)"/>
+          Also remove ${activeRelated.length} related active quest${activeRelated.length>1?'s':''}
+        </label>
+      </div>`:''}
+
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-danger" onclick="removeProject('${pid}')" style="padding:8px 20px;font-weight:700">Remove Project</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function removeProject(pid){
+  const proj=PROJECTS.find(p=>p.id===pid);if(!proj)return;
+  const rmQuests=document.getElementById('rm-quests')&&document.getElementById('rm-quests').checked;
+
+  if(rmQuests){
+    const projTags=new Set(proj.tags||[]);
+    const projAgents=new Set(proj.agents||[]);
+    quests=quests.filter(q=>{
+      if(['completed','archived'].includes(q.status))return true; // keep completed
+      const qTags=new Set(q.tags||[]);
+      const qAgents=new Set(q.assignedTo||[]);
+      const tagOverlap=[...qTags].some(t=>projTags.has(t));
+      const agentOverlap=[...qAgents].some(a=>projAgents.has(a));
+      return !(tagOverlap||agentOverlap); // remove if related
+    });
+    saveQuests(quests);
+  }
+
+  // Remove project from array
+  const idx=PROJECTS.findIndex(p=>p.id===pid);
+  if(idx>-1)PROJECTS.splice(idx,1);
+  saveProjects();
+  closeModal();
+  renderContent();
+}
+
 function timeAgo(iso){const d=Date.now()-new Date(iso).getTime(),h=Math.floor(d/3600000),dy=Math.floor(h/24);return dy>0?dy+'d ago':h>0?h+'h ago':'just now'}
 
 // ===== NEW QUEST MODAL =====
@@ -611,4 +739,4 @@ initQuests();
 </script>
 </body>
 </html>
-<!-- cache-bust: 1775137771 -->
+<!-- cache-bust: 1775138500 -->
