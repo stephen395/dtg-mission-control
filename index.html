@@ -874,6 +874,42 @@ const SPRITE_DATA = {
   SPRITE_DATA.fish.idle.push(mod(FISH_IDLE_0, [[18,22,3],[18,23,1],[21,21,0],[21,22,0]]));
 })();
 
+// === THIRD IDLE FRAMES: left arm raises (opposite shoulder sway for smooth 3-frame cycle) ===
+// Pixel art best practice: opposite-arm alternation makes idle feel alive with minimal pixels
+(function addIdleFrame2() {
+  const mod = (src, changes) => {
+    const f = src.map(r => [...r]);
+    for (const [r, c, v] of changes) f[r][c] = v;
+    return f;
+  };
+  // Cody idle_2: left arm rises (row17 gains arm at cols 6-7, row21 loses left hand at cols 7-8)
+  SPRITE_DATA.cody.idle.push(mod(CODY_IDLE_0, [[17,6,1],[17,7,3],[21,7,0],[21,8,0]]));
+  // Goku idle_2: left arm rises (row16 gains arm at cols 8-9, row20 loses arm at cols 8-9)
+  SPRITE_DATA.goku.idle.push(mod(GOKU_IDLE_0, [[16,8,1],[16,9,3],[20,8,0],[20,9,0]]));
+  // Lake idle_2: left arm rises (row17 gains arm at cols 6-7, row21 loses left hand at cols 7-8)
+  SPRITE_DATA.lake.idle.push(mod(LAKE_IDLE_0, [[17,6,1],[17,7,3],[21,7,0],[21,8,0]]));
+  // Fish idle_2: left arm rises (row17 gains arm at cols 6-7, row21 loses left hand at cols 7-8)
+  SPRITE_DATA.fish.idle.push(mod(FISH_IDLE_0, [[17,6,1],[17,7,3],[21,7,0],[21,8,0]]));
+})();
+
+// === SECOND WORK FRAMES: alternate arm/body position so working state actually animates ===
+// Currently work state is completely frozen (1 frame). This adds motion to active agents.
+(function addWorkFrame1() {
+  const mod = (src, changes) => {
+    const f = src.map(r => [...r]);
+    for (const [r, c, v] of changes) f[r][c] = v;
+    return f;
+  };
+  // Cody work_1: extended arm reaches 1px further left (row19 gains col2-3, row22 loses col5)
+  SPRITE_DATA.cody.work.push(mod(CODY_WORK_0, [[19,2,3],[19,3,1],[22,5,0]]));
+  // Goku work_1: hammer arm 1 row higher (row17 gains col6-7, row20 loses col4-5)
+  SPRITE_DATA.goku.work.push(mod(GOKU_WORK_0, [[17,6,1],[17,7,3],[20,4,0],[20,5,0]]));
+  // Lake work_1: book arm 1 row higher (row17 gains book cols 4-6, row21 loses cols 6-7)
+  SPRITE_DATA.lake.work.push(mod(LAKE_WORK_0, [[17,4,1],[17,5,20],[17,6,19],[21,6,0],[21,7,0]]));
+  // Fish work_1: right arm extends 1px at row18 (col22-23), row22 loses col22
+  SPRITE_DATA.fish.work.push(mod(FISH_WORK_0, [[18,22,3],[18,23,1],[22,22,0]]));
+})();
+
 // Pre-render sprites to offscreen canvases for performance
 const spriteCache = {};
 
@@ -940,7 +976,7 @@ function drawSprite(ctx, agentId, state, x, y) {
   const isWorking = state === 'working' || state === 'online';
 
   const frames = isWorking ? SPRITE_DATA[agentId].work : SPRITE_DATA[agentId].idle;
-  const animSpeed = isWorking ? 10 : 28; // idle: ~470ms/frame (pixel art best practice), work: snappier
+  const animSpeed = isWorking ? 15 : 28; // idle: ~470ms/frame (pixel art best practice), work: 0.5s/frame (2-frame cycle = 1s total)
   const fi = Math.floor(frame / animSpeed) % frames.length;
   const suffix = (isWorking ? 'work_' : 'idle_') + fi;
   const key = agentId + '_' + suffix + (isOffline ? '_gray' : '');
@@ -1266,9 +1302,16 @@ function drawGokuScene(ctx, state) {
   ctx.fillStyle = state!=='offline'?'rgba(249,115,22,0.5)':'#333';
   ctx.fillRect(260,105,10,6);
 
-  // Sparks when working
-  if ((state==='working'||state==='online') && frame%4===0) {
-    for (let si=0;si<3;si++) addParticle('goku',168+Math.random()*8,120,(Math.random()-0.5)*4,-2-Math.random()*3,12+Math.random()*10,Math.random()>0.3?'#f97316':'#eab308',Math.random()>0.5?2:1);
+  // Sparks when working — enhanced: more frequent, brighter, size variety
+  if ((state==='working'||state==='online') && frame%3===0) {
+    for (let si=0;si<4;si++) {
+      const sc = Math.random()>0.5?'#f97316':(Math.random()>0.5?'#eab308':'#ffdd44');
+      addParticle('goku',165+Math.random()*12,118,(Math.random()-0.5)*5,-2.5-Math.random()*3.5,14+Math.random()*10,sc,Math.random()>0.4?2:1);
+    }
+  }
+  // Occasional ember drift up chimney
+  if ((state==='working'||state==='online') && frame%7===0) {
+    addParticle('goku',72+Math.random()*10,88,(Math.random()-0.5)*0.8,-1.2-Math.random()*0.8,35,'rgba(249,115,22,0.55)',2);
   }
   updateParticles('goku');
   drawParticles(ctx, 'goku');
@@ -1293,10 +1336,12 @@ function drawGokuScene(ctx, state) {
     ctx.fillStyle = '#bbb';
     ctx.fillRect(-6, -33, 5, 3);
     ctx.restore();
-    // Clang spark burst at bottom of swing
+    // Clang spark burst at bottom of swing — enhanced: 10 sparks, white-hot center, high velocity
     if (swing < -0.88 && frame % 3 === 0) {
-      for (let si = 0; si < 5; si++) {
-        addParticle('goku', charX + 84 + (Math.random()-0.5)*8, charY + 100, (Math.random()-0.5)*6, -2-Math.random()*4, 10, Math.random()>0.4?'#ffaa00':'#ffffff', 2);
+      for (let si = 0; si < 10; si++) {
+        const sparkColor = si < 3 ? '#ffffff' : (si < 6 ? '#ffdd44' : '#ff6600');
+        const sparkSize = si < 3 ? 1 : 2;
+        addParticle('goku', charX + 84 + (Math.random()-0.5)*6, charY + 100, (Math.random()-0.5)*9, -3-Math.random()*5, 14, sparkColor, sparkSize);
       }
     }
   }
