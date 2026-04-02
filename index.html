@@ -283,11 +283,11 @@ if(!quests.length){
   // Seed example quests
   quests=[
     {id:'q001',title:'Add dark mode to Audit Tool',description:'Implement a dark/light theme toggle for the DTG Audit Tool. Should persist user preference in localStorage and apply to all report views.',category:'feature',priority:'normal',status:'active',assignedTo:['goku'],assignedBy:'cody',requestedBy:'stephen',createdAt:'2026-04-01T10:00:00Z',completedAt:null,progress:40,tags:['frontend','css'],notes:[{time:'2026-04-01T10:05:00Z',agent:'cody',text:'Assigned to Goku \u2014 frontend feature'},{time:'2026-04-01T14:00:00Z',agent:'goku',text:'CSS variables scaffolded, toggle component built'}]},
-    {id:'q002',title:'Research: WebSocket vs SSE for live updates',description:'Compare WebSocket and Server-Sent Events for real-time agent status updates in Bastion. Include latency benchmarks, reconnection handling, and browser support.',category:'research',priority:'high',status:'completed',assignedTo:['lake'],assignedBy:'cody',requestedBy:'stephen',createdAt:'2026-03-30T09:00:00Z',completedAt:'2026-04-01T16:00:00Z',progress:100,tags:['research','realtime'],notes:[{time:'2026-03-30T09:10:00Z',agent:'cody',text:'Assigned to Lake'},{time:'2026-04-01T16:00:00Z',agent:'lake',text:'Completed. SSE recommended for status broadcasts. Report in research/'}]},
+    {id:'q002',title:'Research: WebSocket vs SSE for live updates',description:'Compare WebSocket and Server-Sent Events for real-time agent status updates in Bastion. Include latency benchmarks, reconnection handling, and browser support.',category:'research',priority:'high',status:'completed',assignedTo:['lake'],assignedBy:'cody',requestedBy:'stephen',createdAt:'2026-03-30T09:00:00Z',completedAt:'2026-04-01T16:00:00Z',progress:100,tags:['research','realtime'],completedBy:'lake',result:'SSE recommended over WebSocket for agent status broadcasts. SSE has simpler reconnection (built-in), lower overhead for one-way data, and universal browser support. WebSocket only needed if bidirectional real-time comms required. Full benchmarks and comparison matrix in research/ directory.',notes:[{time:'2026-03-30T09:10:00Z',agent:'cody',text:'Assigned to Lake'},{time:'2026-04-01T16:00:00Z',agent:'lake',text:'Completed. SSE recommended for status broadcasts. Report in research/'}]},
     {id:'q003',title:'Fix Verizon parser date format bug',description:'Verizon bills from March 2026 use a new date format (MM-DD-YYYY instead of MM/DD/YYYY). Parser throws on these bills.',category:'bugfix',priority:'critical',status:'active',assignedTo:['goku'],assignedBy:'cody',requestedBy:'stephen',createdAt:'2026-04-02T08:00:00Z',completedAt:null,progress:20,tags:['parser','verizon'],notes:[{time:'2026-04-02T08:05:00Z',agent:'cody',text:'CRITICAL \u2014 assigned to Goku immediately'},{time:'2026-04-02T09:00:00Z',agent:'goku',text:'Root cause found: regex expects / not -. Fix in progress.'}]},
     {id:'q004',title:'Set up CloudWatch alarms for FallingCave',description:'Configure CPU, memory, and disk CloudWatch alarms on AWS VPS. Alert threshold: CPU >80% for 5min, disk >90%.',category:'infra',priority:'normal',status:'assigned',assignedTo:['fallingcave'],assignedBy:'cody',requestedBy:'stephen',createdAt:'2026-04-02T11:00:00Z',completedAt:null,progress:0,tags:['aws','monitoring'],notes:[{time:'2026-04-02T11:02:00Z',agent:'cody',text:'Assigned to FallingCave \u2014 infra task'}]},
     {id:'q005',title:'Build HubSpot ticket auto-responder',description:'Create an n8n workflow that auto-acknowledges new HubSpot tickets with a templated response and assigns to the right inbox.',category:'automation',priority:'high',status:'active',assignedTo:['fish','cody'],assignedBy:'cody',requestedBy:'stephen',createdAt:'2026-03-29T14:00:00Z',completedAt:null,progress:65,tags:['hubspot','n8n','email'],notes:[{time:'2026-03-29T14:10:00Z',agent:'cody',text:'Assigned to Fish + Cody collab'},{time:'2026-04-01T10:00:00Z',agent:'fish',text:'Webhook trigger built, template drafted'},{time:'2026-04-02T09:00:00Z',agent:'cody',text:'Inbox routing logic added. Testing.'}]},
-    {id:'q006',title:'Research carrier 5G enterprise plans',description:'Survey AT&T, Verizon, T-Mobile enterprise 5G plans for Q2 2026. Compare pricing, data caps, and management features.',category:'research',priority:'low',status:'completed',assignedTo:['lake'],assignedBy:'cody',requestedBy:'stephen',createdAt:'2026-03-25T09:00:00Z',completedAt:'2026-03-28T15:00:00Z',progress:100,tags:['telecom','5g','research'],notes:[{time:'2026-03-28T15:00:00Z',agent:'lake',text:'Complete. Report in research/. AT&T Business Unlimited Elite best value for 50+ lines.'}]},
+    {id:'q006',title:'Research carrier 5G enterprise plans',description:'Survey AT&T, Verizon, T-Mobile enterprise 5G plans for Q2 2026. Compare pricing, data caps, and management features.',category:'research',priority:'low',status:'completed',assignedTo:['lake'],assignedBy:'cody',requestedBy:'stephen',createdAt:'2026-03-25T09:00:00Z',completedAt:'2026-03-28T15:00:00Z',progress:100,tags:['telecom','5g','research'],completedBy:'lake',result:'AT&T Business Unlimited Elite is best value for 50+ lines at $35/line. Verizon Business Unlimited Pro competitive for 10-49 lines with better 5G Ultra Wideband coverage. T-Mobile Business Unlimited Advanced cheapest per-line but weakest enterprise management portal. Full pricing matrix and feature comparison in research/ directory.',notes:[{time:'2026-03-28T15:00:00Z',agent:'lake',text:'Complete. Report in research/. AT&T Business Unlimited Elite best value for 50+ lines.'}]},
   ];
   saveQuests(quests);
 }
@@ -447,18 +447,24 @@ function renderQuests(){
                 </div>`}).join('')}
             </div>`:''}
 
-            <!-- Use Cases (shown on completed quests) -->
-            ${(q.status==='completed'||q.status==='archived')?`<div style="margin-bottom:10px;padding:10px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);border-radius:8px">
-              <div style="font-size:10px;color:var(--green);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;display:flex;align-items:center;gap:4px"><span class="material-symbols-outlined" style="font-size:13px">lightbulb</span>What You Can Do With This</div>
-              <div style="font-size:11px;color:var(--text2);line-height:1.6">${getUseCases(q)}</div>
-              ${q.useCases?`<div style="margin-top:6px;font-size:11px;color:var(--text);font-weight:500">${q.useCases}</div>`:''}
+            <!-- Result (shown on completed quests) -->
+            ${(q.status==='completed'||q.status==='archived')?`<div style="margin-bottom:10px">
+              ${q.result?`<div style="padding:10px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);border-radius:8px;margin-bottom:8px">
+                <div style="font-size:10px;color:var(--green);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;display:flex;align-items:center;gap:4px"><span class="material-symbols-outlined" style="font-size:13px">task_alt</span>Result</div>
+                ${q.completedBy?`<div style="display:flex;align-items:center;gap:4px;margin-bottom:6px">${(()=>{const ca=AGENTS.find(a=>a.id===q.completedBy);return ca?`<img src="${B}sprites/${ca.id}.png" class="sprite" style="height:16px"/><span style="font-size:11px;font-weight:600;color:${ca.c}">${ca.name}</span>`:`<span style="font-size:11px;color:var(--text2)">${q.completedBy}</span>`})()}<span style="font-size:10px;color:var(--text3)">completed this</span></div>`:''}
+                <div style="font-size:12px;color:var(--text);line-height:1.6">${q.result}</div>
+              </div>`:'<div style="padding:10px;background:rgba(255,255,255,0.02);border:1px dashed var(--border);border-radius:8px;margin-bottom:8px;font-size:11px;color:var(--text3);text-align:center">No result recorded</div>'}
+              <div style="padding:10px;background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.12);border-radius:8px">
+                <div style="font-size:10px;color:var(--blue);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;display:flex;align-items:center;gap:4px"><span class="material-symbols-outlined" style="font-size:13px">lightbulb</span>What You Can Do With This</div>
+                <div style="font-size:11px;color:var(--text2);line-height:1.6">${getUseCases(q)}</div>
+              </div>
             </div>`:''}
 
             <!-- Actions -->
             <div style="display:flex;gap:6px">
               ${q.status!=='completed'&&q.status!=='archived'&&q.status!=='paused'?`<button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();pauseQuest('${q.id}')" style="display:flex;align-items:center;gap:3px"><span class="material-symbols-outlined" style="font-size:13px">pause</span>Pause</button>`:''}
               ${q.status==='paused'?`<button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();resumeQuest('${q.id}')" style="display:flex;align-items:center;gap:3px;color:var(--green);border-color:rgba(34,197,94,0.3)"><span class="material-symbols-outlined" style="font-size:13px">play_arrow</span>Resume</button>`:''}
-              ${q.status!=='completed'&&q.status!=='archived'?`<button class="btn btn-sm btn-primary" onclick="event.stopPropagation();completeQuest('${q.id}')">Mark Complete</button>`:''}
+              ${q.status!=='completed'&&q.status!=='archived'?`<button class="btn btn-sm btn-primary" onclick="event.stopPropagation();openCompleteQuest('${q.id}')">Mark Complete</button>`:''}
               ${q.status==='completed'?`<button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();archiveQuest('${q.id}')">Archive</button>`:''}
             </div>
           </div>`:''}
@@ -479,6 +485,41 @@ function getUseCases(q){
 }
 function toggleQuest(id){expandedQuest=expandedQuest===id?null:id;renderContent()}
 function completeQuest(id){const q=quests.find(x=>x.id===id);if(q){q.status='completed';q.progress=100;q.completedAt=new Date().toISOString();q.notes.push({time:new Date().toISOString(),agent:'cody',text:'Quest completed. Moving to archive.'});saveQuests(quests);dispatchEvent('quest_completed',{questId:id,title:q.title,agents:q.assignedTo||[]});renderContent()}}
+function openCompleteQuest(id){
+  const q=quests.find(x=>x.id===id);if(!q)return;
+  const agents=(q.assignedTo||[]).map(aid=>AGENTS.find(a=>a.id===aid)).filter(Boolean);
+  const allAgents=AGENTS;
+  document.getElementById('modal-root').innerHTML=`
+  <div class="modal-bg" onclick="closeModal()">
+    <div class="modal" onclick="event.stopPropagation()" style="width:480px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <span class="material-symbols-outlined" style="color:var(--green);font-size:28px">task_alt</span>
+        <div><div style="font-size:16px;font-weight:700">Complete Quest</div><div style="font-size:12px;color:#888">${q.title}</div></div>
+      </div>
+      <label style="font-size:11px;text-transform:uppercase;color:#888;letter-spacing:0.5px">Completed By</label>
+      <select id="completeAgent" style="width:100%;padding:8px 10px;background:#161620;border:1px solid var(--border-light);border-radius:6px;color:#fff;margin:6px 0 14px">
+        ${allAgents.map(a=>`<option value="${a.id}" ${(q.assignedTo||[])[0]===a.id?'selected':''}>${a.name} (${a.role})</option>`).join('')}
+      </select>
+      <label style="font-size:11px;text-transform:uppercase;color:#888;letter-spacing:0.5px">Result / Outcome</label>
+      <textarea id="completeResult" rows="4" placeholder="What was accomplished? Key findings, deliverables, or outcomes..." style="width:100%;padding:10px;background:#161620;border:1px solid var(--border-light);border-radius:6px;color:#fff;margin:6px 0 14px;resize:vertical;font-family:inherit;font-size:13px"></textarea>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-sm" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-sm btn-primary" onclick="submitCompleteQuest('${q.id}')"><span class="material-symbols-outlined" style="font-size:14px">check_circle</span> Complete</button>
+      </div>
+    </div>
+  </div>`;
+}
+function submitCompleteQuest(id){
+  const q=quests.find(x=>x.id===id);if(!q)return;
+  const agent=document.getElementById('completeAgent').value;
+  const result=document.getElementById('completeResult').value.trim();
+  q.status='completed';q.progress=100;q.completedAt=new Date().toISOString();
+  q.completedBy=agent;q.result=result||null;
+  const agentName=(AGENTS.find(a=>a.id===agent)||{}).name||agent;
+  q.notes=(q.notes||[]);q.notes.push({time:new Date().toISOString(),agent:agent,text:'Quest completed by '+agentName+'.'+(result?' Result: '+result.slice(0,80)+(result.length>80?'...':''):'')});
+  saveQuests(quests);dispatchEvent('quest_completed',{questId:id,title:q.title,completedBy:agent,result:result,agents:q.assignedTo||[]});
+  closeModal();renderContent();
+}
 function archiveQuest(id){const q=quests.find(x=>x.id===id);if(q){q.status='archived';saveQuests(quests);dispatchEvent('quest_archived',{questId:id,title:q.title});renderContent()}}
 function pauseQuest(id){const q=quests.find(x=>x.id===id);if(q){q.prevStatus=q.status;q.status='paused';q.notes.push({time:new Date().toISOString(),agent:'stephen',text:'Quest paused by Stephen.'});saveQuests(quests);dispatchEvent('quest_paused',{questId:id,title:q.title,agents:q.assignedTo||[]});renderContent()}}
 function resumeQuest(id){const q=quests.find(x=>x.id===id);if(q){q.status=q.prevStatus||'active';delete q.prevStatus;q.notes.push({time:new Date().toISOString(),agent:'stephen',text:'Quest resumed by Stephen.'});saveQuests(quests);dispatchEvent('quest_resumed',{questId:id,title:q.title,agents:q.assignedTo||[]});renderContent()}}
