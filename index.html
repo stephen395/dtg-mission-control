@@ -238,12 +238,20 @@ const SC={online:'var(--green)',working:'var(--yellow)',idle:'var(--blue)',offli
 
 // ===== PROJECTS =====
 const DEFAULT_PROJECTS=[
-  {id:'bastion',name:'Bastion Dashboard',status:'active',progress:70,color:'var(--cyan)',lead:'cody',agents:['cody','lake','goku'],started:'2026-04-01',description:'Mission control dashboard for DTG agents.',tasks:{total:14,done:9,inProgress:3,blocked:0},repo:'stephen395/dtg-mission-control',tags:['frontend','dashboard']},
-  {id:'audit-tool',name:'DTG Audit Tool',status:'maintenance',progress:92,color:'var(--green)',lead:'fish',agents:['fish','lake'],started:'2025-11-15',description:'Telecom wireless billing audit tool.',tasks:{total:28,done:26,inProgress:1,blocked:0},repo:'stephen395/dtg-audit-tool',tags:['telecom','billing']},
-  {id:'fish-promo',name:'Fish Promo Automation',status:'active',progress:35,color:'var(--orange)',lead:'fish',agents:['fish','lake','cody'],started:'2026-03-28',description:'AT&T promo data to audit tool integration.',tasks:{total:8,done:3,inProgress:2,blocked:1},repo:null,tags:['automation','n8n']},
-  {id:'n8n-auto',name:'n8n Automation Hub',status:'active',progress:55,color:'var(--blue)',lead:'cody',agents:['cody','lake'],started:'2026-03-20',description:'Workflow automation at automation.dedicatedtelecom.com.',tasks:{total:10,done:5,inProgress:3,blocked:0},repo:null,tags:['n8n','webhooks']},
-  {id:'hermes-fleet',name:'Hermes Agent Fleet',status:'maintenance',progress:88,color:'var(--purple)',lead:'cody',agents:['cody','goku','fallingcave'],started:'2026-03-15',description:'Agent infra on AgentPC1.',tasks:{total:18,done:16,inProgress:1,blocked:0},repo:null,tags:['hermes','infra']},
-  {id:'openclaw',name:'OpenClaw / NemoClaw',status:'active',progress:60,color:'var(--pink)',lead:'fish',agents:['fish','fallingcave','blockhead'],started:'2026-02-10',description:'Discord bot gateway, local inference, HubSpot skill.',tasks:{total:22,done:13,inProgress:4,blocked:1},repo:null,tags:['discord','inference']},
+  {id:'bastion',name:'Bastion Dashboard',status:'active',progress:70,color:'var(--cyan)',lead:'cody',agents:['cody','lake','goku'],started:'2026-04-01',description:'Mission control dashboard for DTG agents.',tasks:{total:14,done:9,inProgress:3,blocked:0},repo:'stephen395/dtg-mission-control',tags:['frontend','dashboard'],blockers:[],
+    logs:[{time:'2026-04-01T08:00:00Z',agent:'cody',type:'milestone',text:'Project created. Cody assigned as lead.'},{time:'2026-04-01T10:00:00Z',agent:'goku',type:'update',text:'Initial scaffold with PixiJS v8. Sprite rendering working.'},{time:'2026-04-01T14:00:00Z',agent:'lake',type:'update',text:'Researched dark glass UI patterns. Shared references with Goku.'},{time:'2026-04-02T09:00:00Z',agent:'cody',type:'update',text:'Quest Board deployed with API sync. 3 tabs operational.'},{time:'2026-04-02T14:00:00Z',agent:'cody',type:'milestone',text:'v1.4 — Mission Comms chat panel, event dispatch, agent profiles all live.'}]},
+  {id:'audit-tool',name:'DTG Audit Tool',status:'maintenance',progress:92,color:'var(--green)',lead:'fish',agents:['fish','lake'],started:'2025-11-15',description:'Telecom wireless billing audit tool.',tasks:{total:28,done:26,inProgress:1,blocked:0},repo:'stephen395/dtg-audit-tool',tags:['telecom','billing'],blockers:[],
+    logs:[{time:'2026-03-15T10:00:00Z',agent:'fish',type:'update',text:'Verizon TXT parser completed. All 3 carriers supported.'},{time:'2026-03-20T14:00:00Z',agent:'lake',type:'update',text:'Rate plan comparison data updated for Q1 2026.'},{time:'2026-03-28T10:00:00Z',agent:'fish',type:'update',text:'PDF report generator added. Excel export working.'},{time:'2026-04-01T11:00:00Z',agent:'fish',type:'update',text:'Rate plans now auto-push to n8n after each audit.'}]},
+  {id:'fish-promo',name:'Fish Promo Automation',status:'active',progress:35,color:'var(--orange)',lead:'fish',agents:['fish','lake','cody'],started:'2026-03-28',description:'AT&T promo data to audit tool integration.',tasks:{total:8,done:3,inProgress:2,blocked:1},repo:null,tags:['automation','n8n'],
+    blockers:[{id:'b001',title:'AT&T promo scraper returns stale data',description:'The promo scraper on n8n pulls cached pages from AT&T Premier. Promos from March are still showing instead of April. Need to add cache-busting headers or switch to headless browser scrape.',reporter:'fish',reportedAt:'2026-03-31T14:00:00Z',severity:'high',assignedTo:'cody'}],
+    logs:[{time:'2026-03-28T09:00:00Z',agent:'fish',type:'milestone',text:'Project kicked off. Goal: connect AT&T promo data to audit tool rate plan recommendations.'},{time:'2026-03-29T11:00:00Z',agent:'lake',type:'update',text:'Scraped AT&T Premier promo page. 12 active promos found for wireless.'},{time:'2026-03-31T14:00:00Z',agent:'fish',type:'blocker',text:'AT&T promo scraper returns stale cached data. Promos stuck on March.'},{time:'2026-04-01T10:00:00Z',agent:'cody',type:'update',text:'Investigating cache-busting. May need headless browser approach.'}]},
+  {id:'n8n-auto',name:'n8n Automation Hub',status:'active',progress:55,color:'var(--blue)',lead:'cody',agents:['cody','lake'],started:'2026-03-20',description:'Workflow automation at automation.dedicatedtelecom.com.',tasks:{total:10,done:5,inProgress:3,blocked:0},repo:null,tags:['n8n','webhooks'],blockers:[],
+    logs:[{time:'2026-03-20T10:00:00Z',agent:'cody',type:'milestone',text:'n8n instance deployed at automation.dedicatedtelecom.com.'},{time:'2026-03-22T14:00:00Z',agent:'cody',type:'update',text:'Rate_Plans table created. Webhook receives audit tool data.'},{time:'2026-03-25T09:00:00Z',agent:'lake',type:'update',text:'Promotions table added. AT&T scraper feeding data.'},{time:'2026-04-01T10:00:00Z',agent:'cody',type:'update',text:'HubSpot ticket auto-responder workflow in testing.'}]},
+  {id:'hermes-fleet',name:'Hermes Agent Fleet',status:'maintenance',progress:88,color:'var(--purple)',lead:'cody',agents:['cody','goku','fallingcave'],started:'2026-03-15',description:'Agent infra on AgentPC1.',tasks:{total:18,done:16,inProgress:1,blocked:0},repo:null,tags:['hermes','infra'],blockers:[],
+    logs:[{time:'2026-03-15T08:00:00Z',agent:'cody',type:'milestone',text:'Hermes Agent v0.6 deployed for Cody, Lake, Goku on AgentPC1.'},{time:'2026-03-20T12:00:00Z',agent:'goku',type:'update',text:'5-layer memory system operational. FTS5 indexing tested.'},{time:'2026-03-25T14:00:00Z',agent:'fallingcave',type:'update',text:'AWS health monitoring connected to Mission Control.'},{time:'2026-04-01T09:00:00Z',agent:'cody',type:'update',text:'Bastion event dispatch wired. Agents can poll /api/events.'}]},
+  {id:'openclaw',name:'OpenClaw / NemoClaw',status:'active',progress:60,color:'var(--pink)',lead:'fish',agents:['fish','fallingcave','blockhead'],started:'2026-02-10',description:'Discord bot gateway, local inference, HubSpot skill.',tasks:{total:22,done:13,inProgress:4,blocked:1},repo:null,tags:['discord','inference'],
+    blockers:[{id:'b002',title:'Blockhead VPS runs out of memory on large prompts',description:'Tencent VPS only has 2GB RAM. When prompts exceed ~4k tokens with context, the inference process gets OOM killed. Need to either upgrade RAM or add prompt truncation.',reporter:'blockhead',reportedAt:'2026-03-25T16:00:00Z',severity:'normal',assignedTo:'fish'}],
+    logs:[{time:'2026-02-10T10:00:00Z',agent:'fish',type:'milestone',text:'OpenClaw gateway deployed. FallingCave Discord bot online.'},{time:'2026-03-01T14:00:00Z',agent:'fish',type:'update',text:'Google AI Studio cleaning proxy running on port 9222.'},{time:'2026-03-15T10:00:00Z',agent:'fallingcave',type:'update',text:'HubSpot skill deployed — 5 inbox scanning operational.'},{time:'2026-03-25T16:00:00Z',agent:'blockhead',type:'blocker',text:'OOM kills on large prompts. 2GB RAM limit on Tencent VPS.'},{time:'2026-03-28T11:00:00Z',agent:'fish',type:'update',text:'Investigating prompt truncation as workaround for Blockhead RAM.'}]},
 ];
 function loadProjects(){try{const d=JSON.parse(localStorage.getItem('bastion_projects'));return d&&d.length?d:null}catch{return null}}
 function saveProjects(){localStorage.setItem('bastion_projects',JSON.stringify(PROJECTS))}
@@ -327,7 +335,9 @@ function renderAgents(){
 
 // ===== PROJECTS VIEW =====
 function renderProjects(){
-  const ac=PROJECTS.filter(p=>p.status==='active').length,tt=PROJECTS.reduce((s,p)=>s+p.tasks.total,0),td=PROJECTS.reduce((s,p)=>s+p.tasks.done,0),tb=PROJECTS.reduce((s,p)=>s+p.tasks.blocked,0);
+  const ac=PROJECTS.filter(p=>p.status==='active').length,tt=PROJECTS.reduce((s,p)=>s+p.tasks.total,0),td=PROJECTS.reduce((s,p)=>s+p.tasks.done,0),tb=PROJECTS.reduce((s,p)=>s+(p.blockers||[]).length,0);
+  // Activity score per project: logs + blockers + in-progress tasks
+  const maxActivity=Math.max(1,...PROJECTS.map(p=>(p.logs||[]).length+p.tasks.inProgress+(p.blockers||[]).length));
   document.getElementById('content').innerHTML=`
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px">
       <div class="glass" style="padding:14px 16px"><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Projects</div><div style="font-size:28px;font-weight:700;color:#fff">${PROJECTS.length}</div><div style="font-size:11px;color:var(--green);margin-top:2px">${ac} active</div></div>
@@ -335,13 +345,29 @@ function renderProjects(){
       <div class="glass" style="padding:14px 16px"><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Completion</div><div style="font-size:28px;font-weight:700;color:#fff">${Math.round(td/tt*100)}%</div><div class="bar" style="margin-top:8px;height:6px"><div class="bar-fill" style="width:${Math.round(td/tt*100)}%;background:var(--green)"></div></div></div>
       <div class="glass" style="padding:14px 16px"><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Blocked</div><div style="font-size:28px;font-weight:700;color:${tb>0?'var(--red)':'#fff'}">${tb}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${tb>0?'needs attention':'all clear'}</div></div>
     </div>
+    <!-- Activity comparison -->
+    <div class="glass" style="padding:14px 16px;margin-bottom:12px">
+      <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px">Activity Across Projects</div>
+      <div style="display:flex;flex-direction:column;gap:6px">${PROJECTS.map(p=>{
+        const activity=(p.logs||[]).length+p.tasks.inProgress+(p.blockers||[]).length;
+        const pct=Math.round(activity/maxActivity*100);
+        return `<div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:11px;color:var(--text2);width:140px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</span>
+          <div class="bar" style="flex:1;height:8px;border-radius:4px"><div class="bar-fill" style="width:${pct}%;background:${p.color};border-radius:4px"></div></div>
+          <span class="mono" style="font-size:10px;color:var(--text3);width:28px;text-align:right">${activity}</span>
+        </div>`}).join('')}</div>
+    </div>
     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">${PROJECTS.map(p=>{
       const ag=p.agents.map(id=>AGENTS.find(a=>a.id===id)).filter(Boolean);
+      const leadAgent=AGENTS.find(a=>a.id===p.lead);
+      const lastLog=(p.logs||[]).length?(p.logs[p.logs.length-1]):null;
       return `<div class="glass" style="display:flex;flex-direction:column;padding:16px;cursor:pointer" onclick="openProjectDetail('${p.id}')">
-        <div style="margin-bottom:10px"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:15px;font-weight:700;color:#fff">${p.name}</span><span class="badge ${STATUS_BADGE[p.status]}">${p.status}</span></div><div style="font-size:11px;color:var(--text3);margin-top:3px">${p.description}</div></div>
+        <div style="margin-bottom:10px"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:15px;font-weight:700;color:#fff">${p.name}</span><span class="badge ${STATUS_BADGE[p.status]}">${p.status}</span></div><div style="font-size:11px;color:var(--text3);margin-top:3px">${p.description}</div>${leadAgent?`<div style="display:flex;align-items:center;gap:4px;margin-top:6px"><img src="${B}sprites/${leadAgent.id}.png" class="sprite" style="height:16px"/><span style="font-size:10px;color:var(--text2)">${leadAgent.name}</span><span style="font-size:8px;color:var(--cyan);font-weight:600">LEAD</span></div>`:''}</div>
         <div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span style="color:var(--text2)">Progress</span><span class="mono" style="color:var(--text3)">${p.progress}%</span></div><div class="bar" style="height:6px"><div class="bar-fill" style="width:${p.progress}%;background:${p.color}"></div></div></div>
-        <div style="display:flex;gap:12px;margin-bottom:12px;font-size:11px"><span style="color:var(--text2)">Tasks: <span style="color:#fff;font-weight:600">${p.tasks.done}</span><span style="color:var(--text3)">/${p.tasks.total}</span></span><span style="color:var(--yellow)">${p.tasks.inProgress} in progress</span>${p.tasks.blocked>0?`<span style="color:var(--red)">${p.tasks.blocked} blocked</span>`:''}</div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em">Team:</span><div style="display:flex;gap:4px">${ag.map(a=>`<div style="display:flex;align-items:center;gap:3px;padding:2px 6px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:4px"><img src="${B}sprites/${a.id}.png" class="sprite" style="height:18px" alt="${a.name}"/><span style="font-size:10px;color:var(--text2)">${a.name}</span>${a.id===p.lead?'<span style="font-size:8px;color:var(--cyan)">LEAD</span>':''}</div>`).join('')}</div></div>
+        <div style="display:flex;gap:12px;margin-bottom:8px;font-size:11px"><span style="color:var(--text2)">Tasks: <span style="color:#fff;font-weight:600">${p.tasks.done}</span><span style="color:var(--text3)">/${p.tasks.total}</span></span><span style="color:var(--yellow)">${p.tasks.inProgress} in progress</span>${p.tasks.blocked>0?`<span style="color:var(--red)">${p.tasks.blocked} blocked</span>`:''}</div>
+        ${(p.blockers||[]).length?`<div style="margin-bottom:10px">${p.blockers.map(b=>`<div style="display:flex;align-items:flex-start;gap:6px;padding:6px 8px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:6px;margin-bottom:4px"><span class="material-symbols-outlined" style="font-size:13px;color:var(--red);flex-shrink:0;margin-top:1px">block</span><div style="flex:1;min-width:0"><div style="font-size:11px;color:var(--red);font-weight:600">${b.title}</div><div style="font-size:10px;color:var(--text3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${b.description}</div></div></div>`).join('')}</div>`:''}
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em">Team:</span><div style="display:flex;gap:4px">${ag.map(a=>`<div style="display:flex;align-items:center;gap:3px;padding:2px 6px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:4px"><img src="${B}sprites/${a.id}.png" class="sprite" style="height:18px" alt="${a.name}"/><span style="font-size:10px;color:var(--text2)">${a.name}</span></div>`).join('')}</div></div>
+        ${lastLog?`<div style="padding:6px 8px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:6px;margin-bottom:8px;display:flex;gap:6px;align-items:flex-start"><span class="material-symbols-outlined" style="font-size:12px;color:var(--text3);flex-shrink:0;margin-top:1px">${lastLog.type==='blocker'?'block':lastLog.type==='milestone'?'flag':'edit_note'}</span><div style="flex:1;min-width:0"><div style="font-size:10px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${lastLog.text}</div><div style="font-size:9px;color:var(--text3);margin-top:2px">${lastLog.agent} \u00b7 ${lastLog.time.slice(5,10)}</div></div></div>`:''}
         <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:8px;border-top:1px solid var(--border)"><div style="display:flex;gap:4px;flex-wrap:wrap">${p.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div><div style="display:flex;align-items:center;gap:8px"><span style="font-size:10px;color:var(--text3)">${p.started}</span><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();confirmRemoveProject('${p.id}')" style="display:flex;align-items:center;gap:2px;padding:3px 8px" title="Remove project"><span class="material-symbols-outlined" style="font-size:13px">delete</span></button></div></div>
       </div>`}).join('')}</div>`;
 }
@@ -594,6 +620,8 @@ function openProjectDetail(pid){
   });
   const activeQuests=relatedQuests.filter(q=>['new','assigned','active','review'].includes(q.status));
   const completedQuests=relatedQuests.filter(q=>['completed','archived'].includes(q.status));
+  const blockers=proj.blockers||[];
+  const logs=proj.logs||[];
 
   // Task breakdown
   const taskPct=proj.tasks.total>0?Math.round(proj.tasks.done/proj.tasks.total*100):0;
@@ -631,64 +659,88 @@ function openProjectDetail(pid){
         <div class="bar" style="height:8px;border-radius:4px">
           <div class="bar-fill" style="width:${taskPct}%;background:${proj.color};border-radius:4px"></div>
         </div>
-        ${proj.tasks.blocked>0?`<div style="margin-top:6px;display:flex;align-items:center;gap:4px;font-size:11px;color:var(--red)"><span class="material-symbols-outlined" style="font-size:14px">block</span>${proj.tasks.blocked} blocked task${proj.tasks.blocked>1?'s':''} need attention</div>`:''}
       </div>
 
-      <!-- Team section -->
+      <!-- Blockers section -->
+      ${blockers.length?`<div style="padding:12px 20px;border-top:1px solid rgba(239,68,68,0.2);background:rgba(239,68,68,0.03);flex-shrink:0">
+        <div style="font-size:10px;color:var(--red);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;font-weight:600;display:flex;align-items:center;gap:4px"><span class="material-symbols-outlined" style="font-size:14px">block</span>Blockers (${blockers.length})</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${blockers.map(b=>{
+            const assignee=AGENTS.find(a=>a.id===b.assignedTo);
+            return `<div style="padding:10px 12px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:8px">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+                <span class="badge badge-${b.severity||'normal'}" style="font-size:8px">${b.severity||'normal'}</span>
+                <span style="font-size:12px;font-weight:600;color:var(--red)">${b.title}</span>
+              </div>
+              <div style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:8px">${b.description}</div>
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <div style="display:flex;align-items:center;gap:6px">
+                  ${assignee?`<div style="display:flex;align-items:center;gap:3px"><img src="${B}sprites/${assignee.id}.png" class="sprite" style="height:16px"/><span style="font-size:10px;color:var(--text2)">${assignee.name} investigating</span></div>`:'<span style="font-size:10px;color:var(--text3)">Unassigned</span>'}
+                </div>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span style="font-size:10px;color:var(--text3)">Reported ${timeAgo(b.reportedAt)} by ${b.reporter}</span>
+                  <button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();resolveBlocker('${pid}','${b.id}')" style="padding:2px 8px;font-size:9px;color:var(--green)">Resolve</button>
+                </div>
+              </div>
+            </div>`}).join('')}
+        </div>
+      </div>`:`<div style="padding:6px 20px;flex-shrink:0"><div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--green)"><span class="material-symbols-outlined" style="font-size:14px">check_circle</span>No blockers</div></div>`}
+
+      <!-- Team section (compact) -->
       <div style="padding:12px 20px;border-top:1px solid var(--border);flex-shrink:0">
         <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;font-weight:600">Team (${teamAgents.length})</div>
-        <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
           ${teamAgents.map(a=>{
             const isLead=a.id===proj.lead;
-            const agentQuests=activeQuests.filter(q=>(q.assignedTo||[]).includes(a.id));
-            return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;cursor:pointer" onclick="event.stopPropagation();closeModal();openProfile('${a.id}')">
-              <img src="${B}sprites/${a.id}.png" class="sprite" style="height:28px"/>
-              <div style="flex:1;min-width:0">
-                <div style="display:flex;align-items:center;gap:6px"><span style="font-size:13px;font-weight:600;color:#fff">${a.name}</span>${isLead?'<span style="font-size:8px;padding:1px 6px;background:rgba(6,182,212,0.15);color:var(--cyan);border-radius:3px;font-weight:700">LEAD</span>':''}<div class="dot" style="background:${SC[a.s]}"></div></div>
-                <div style="font-size:10px;color:var(--text3)">${a.role}</div>
-              </div>
-              <div style="text-align:right"><span style="font-size:11px;color:var(--text2)">${agentQuests.length} active quest${agentQuests.length!==1?'s':''}</span></div>
+            return `<div style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;cursor:pointer" onclick="event.stopPropagation();closeModal();openProfile('${a.id}')">
+              <img src="${B}sprites/${a.id}.png" class="sprite" style="height:22px"/>
+              <span style="font-size:12px;font-weight:600;color:#fff">${a.name}</span>${isLead?'<span style="font-size:8px;padding:1px 6px;background:rgba(6,182,212,0.15);color:var(--cyan);border-radius:3px;font-weight:700">LEAD</span>':''}
+              <div class="dot" style="background:${SC[a.s]}"></div>
             </div>`}).join('')}
         </div>
       </div>
 
-      <!-- Active Quests section -->
+      <!-- Project Log -->
       <div style="padding:12px 20px;border-top:1px solid var(--border);flex:1;overflow-y:auto">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;font-weight:600">Active Quests (${activeQuests.length})</div>
-          ${completedQuests.length?`<span style="font-size:10px;color:var(--text3)">${completedQuests.length} completed</span>`:''}
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;font-weight:600">Project Log (${logs.length})</div>
+          <div style="display:flex;gap:4px">
+            <button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();openAddLog('${pid}','update')" style="display:flex;align-items:center;gap:3px;padding:2px 8px"><span class="material-symbols-outlined" style="font-size:12px">add</span>Log</button>
+            <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();openAddLog('${pid}','blocker')" style="display:flex;align-items:center;gap:3px;padding:2px 8px"><span class="material-symbols-outlined" style="font-size:12px">block</span>Blocker</button>
+          </div>
         </div>
-        ${activeQuests.length===0?`<div style="padding:20px;text-align:center;font-size:12px;color:var(--text3);background:rgba(255,255,255,0.02);border:1px dashed var(--border);border-radius:8px">No active quests for this project</div>`:''}
-        <div style="display:flex;flex-direction:column;gap:6px">
-          ${activeQuests.map(q=>{
-            const agents=(q.assignedTo||[]).map(id=>AGENTS.find(a=>a.id===id)).filter(Boolean);
-            const lastNote=(q.notes||[]).length?(q.notes[q.notes.length-1]):null;
-            return `<div style="padding:10px 12px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;cursor:pointer" onclick="event.stopPropagation();closeModal();questFilter='active';expandedQuest='${q.id}';currentTab='quests';renderContent()">
-              <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-                <span class="badge badge-${q.priority}" style="font-size:8px">${q.priority}</span>
-                <span style="font-size:12px;font-weight:600;color:#fff;flex:1">${q.title}</span>
-                <span class="badge badge-${q.status}" style="font-size:8px">${q.status}</span>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          ${logs.slice().reverse().map(l=>{
+            const la=AGENTS.find(a=>a.id===l.agent);
+            const icon=l.type==='milestone'?'flag':l.type==='blocker'?'block':'edit_note';
+            const iconColor=l.type==='milestone'?'var(--cyan)':l.type==='blocker'?'var(--red)':'var(--text3)';
+            return `<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;width:36px">
+                <span class="material-symbols-outlined" style="font-size:16px;color:${iconColor}">${icon}</span>
+                <span class="mono" style="font-size:9px;color:var(--text3)">${l.time.slice(5,10)}</span>
               </div>
-              ${q.progress>0?`<div class="bar" style="height:3px;margin-bottom:6px"><div class="bar-fill" style="width:${q.progress}%;background:${CAT_COLOR[q.category]}"></div></div>`:''}
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
-                <div style="display:flex;gap:-2px">${agents.map(a=>`<img src="${B}sprites/${a.id}.png" class="sprite" style="height:16px;margin-left:-2px" title="${a.name}"/>`).join('')}</div>
-                ${lastNote?`<div style="font-size:10px;color:var(--text3);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-left:8px">${lastNote.text}</div>`:''}
-                <span style="font-size:10px;color:var(--text3)">${timeAgo(q.createdAt)}</span>
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+                  ${la?`<img src="${B}sprites/${la.id}.png" class="sprite" style="height:16px"/>`:''}<span style="font-size:11px;font-weight:600;color:${la?la.c:'var(--text2)'}">${la?la.name:l.agent}</span>
+                  <span class="badge badge-${l.type==='blocker'?'critical':l.type==='milestone'?'new':'active'}" style="font-size:7px">${l.type}</span>
+                </div>
+                <div style="font-size:11px;color:var(--text2);line-height:1.5">${l.text}</div>
               </div>
             </div>`}).join('')}
         </div>
 
-        <!-- Completed quests (collapsed) -->
-        ${completedQuests.length?`<div style="margin-top:12px">
-          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;font-weight:600">Completed (${completedQuests.length})</div>
-          ${completedQuests.slice(0,5).map(q=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;font-size:11px;opacity:0.6">
-            <span class="material-symbols-outlined" style="font-size:14px;color:var(--green)">check_circle</span>
-            <span style="color:var(--text2);flex:1">${q.title}</span>
-            <span style="color:var(--text3);font-size:10px">${q.completedAt?timeAgo(q.completedAt):''}</span>
-          </div>`).join('')}
-          ${completedQuests.length>5?`<div style="font-size:10px;color:var(--text3);padding-left:32px;margin-top:4px">+${completedQuests.length-5} more</div>`:''}
+        <!-- Related Quests (compact) -->
+        ${activeQuests.length||completedQuests.length?`<div style="margin-top:14px">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;font-weight:600">Related Quests (${activeQuests.length} active${completedQuests.length?', '+completedQuests.length+' done':''})</div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            ${activeQuests.slice(0,5).map(q=>`<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:11px" onclick="event.stopPropagation();closeModal();questFilter='active';expandedQuest='${q.id}';currentTab='quests';renderContent()">
+              <span class="badge badge-${q.priority}" style="font-size:7px">${q.priority}</span>
+              <span style="color:#fff;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${q.title}</span>
+              <span class="badge badge-${q.status}" style="font-size:7px">${q.status}</span>
+              <span class="mono" style="color:var(--text3);font-size:10px">${q.progress}%</span>
+            </div>`).join('')}
+          </div>
         </div>`:''}
-      </div>
 
       <!-- Footer actions -->
       <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0">
@@ -696,6 +748,72 @@ function openProjectDetail(pid){
       </div>
     </div>
   </div>`;
+}
+
+// ===== PROJECT LOG / BLOCKER MANAGEMENT =====
+function openAddLog(pid,type){
+  const isBlocker=type==='blocker';
+  document.getElementById('modal-root').innerHTML=`
+  <div class="modal-bg" onclick="closeModal()">
+    <div class="modal" onclick="event.stopPropagation()" style="width:440px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+        <span class="material-symbols-outlined" style="font-size:20px;color:${isBlocker?'var(--red)':'var(--cyan)'}">${isBlocker?'block':'edit_note'}</span>
+        <span style="font-size:16px;font-weight:700;color:#fff">${isBlocker?'Report Blocker':'Add Log Entry'}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        ${isBlocker?`<div><label>Blocker Title</label><input id="pl-title" placeholder="What's blocking progress?"/></div>`:''}
+        <div><label>${isBlocker?'Description':'Log Entry'}</label><textarea id="pl-text" rows="${isBlocker?3:2}" placeholder="${isBlocker?'Details about the blocker, impact, and what needs to happen...':'What happened? Status update, decision, milestone...'}"></textarea></div>
+        ${isBlocker?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div><label>Severity</label><select id="pl-severity"><option value="high">High</option><option value="critical">Critical</option><option value="normal">Normal</option></select></div>
+          <div><label>Assign To</label><select id="pl-assign">${AGENTS.filter(a=>a.s!=='offline').map(a=>`<option value="${a.id}">${a.name}</option>`).join('')}</select></div>
+        </div>`:`<div><label>Type</label><select id="pl-type"><option value="update">Update</option><option value="milestone">Milestone</option></select></div>`}
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+          <button class="btn btn-ghost" onclick="closeModal();openProjectDetail('${pid}')">Cancel</button>
+          <button class="btn ${isBlocker?'btn-danger':'btn-primary'}" onclick="submitProjectLog('${pid}','${type}')">${isBlocker?'Report Blocker':'Add Log'}</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  setTimeout(()=>document.getElementById(isBlocker?'pl-title':'pl-text').focus(),100);
+}
+
+function submitProjectLog(pid,type){
+  const proj=PROJECTS.find(p=>p.id===pid);if(!proj)return;
+  if(!proj.logs)proj.logs=[];
+  if(!proj.blockers)proj.blockers=[];
+  const isBlocker=type==='blocker';
+
+  if(isBlocker){
+    const title=document.getElementById('pl-title').value.trim();
+    const desc=document.getElementById('pl-text').value.trim();
+    const severity=document.getElementById('pl-severity').value;
+    const assignTo=document.getElementById('pl-assign').value;
+    if(!title){document.getElementById('pl-title').style.borderColor='var(--red)';return}
+    const b={id:'b'+Date.now(),title,description:desc||title,reporter:'stephen',reportedAt:new Date().toISOString(),severity,assignedTo:assignTo};
+    proj.blockers.push(b);
+    proj.tasks.blocked=(proj.tasks.blocked||0)+1;
+    proj.logs.push({time:new Date().toISOString(),agent:'stephen',type:'blocker',text:title});
+    dispatchEvent('project_blocker',{projectId:pid,name:proj.name,blocker:title,severity,agents:[assignTo]});
+  }else{
+    const text=document.getElementById('pl-text').value.trim();
+    const logType=document.getElementById('pl-type').value;
+    if(!text){document.getElementById('pl-text').style.borderColor='var(--red)';return}
+    proj.logs.push({time:new Date().toISOString(),agent:'stephen',type:logType,text});
+    dispatchEvent('project_update',{projectId:pid,name:proj.name,text,type:logType,agents:proj.agents||[]});
+  }
+  saveProjects();
+  closeModal();
+  openProjectDetail(pid);
+}
+
+function resolveBlocker(pid,bid){
+  const proj=PROJECTS.find(p=>p.id===pid);if(!proj)return;
+  proj.blockers=(proj.blockers||[]).filter(b=>b.id!==bid);
+  proj.tasks.blocked=Math.max(0,(proj.tasks.blocked||0)-1);
+  proj.logs.push({time:new Date().toISOString(),agent:'stephen',type:'milestone',text:'Blocker resolved.'});
+  saveProjects();
+  dispatchEvent('blocker_resolved',{projectId:pid,name:proj.name,agents:proj.agents||[]});
+  openProjectDetail(pid);
 }
 
 function timeAgo(iso){const d=Date.now()-new Date(iso).getTime(),h=Math.floor(d/3600000),dy=Math.floor(h/24);return dy>0?dy+'d ago':h>0?h+'h ago':'just now'}
@@ -1187,4 +1305,4 @@ initQuests();
 </script>
 </body>
 </html>
-<!-- cache-bust: 1775140500 -->
+<!-- cache-bust: 1775141800 -->
