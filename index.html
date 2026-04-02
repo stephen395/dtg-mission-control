@@ -550,36 +550,45 @@ function fetchRequests(){
 let wfRequests=loadRequests();
 // No seed requests — real requests come from API. fetchRequests() pulls live data.
 
-// Seed pipeline data
-const PIPELINE_RESEARCH=[
-  {file:'2026-04-02-event-sourcing-bastion.md',topic:'Event Sourcing for Bastion',date:'2026-04-02'},
-  {file:'2026-04-02-agent-collaboration-workflows.md',topic:'Agent Collaboration Workflows',date:'2026-04-02'},
-  {file:'2026-04-02-ai-dashboard-updates.md',topic:'AI Dashboard Innovations',date:'2026-04-02'},
-  {file:'2026-04-03.md',topic:'Self-Improvement Techniques (Reflexion)',date:'2026-04-02'},
-  {file:'2026-04-04.md',topic:'Hallucination Detection (SelfCheckGPT)',date:'2026-04-02'},
-  {file:'2026-04-04-search-strategies.md',topic:'Search Query Optimization',date:'2026-04-02'}
-];
-const PIPELINE_BUILDS=[
-  {title:'Research Verifier CLI',time:'2026-04-02T16:30:00Z',files:['research_verifier.py'],status:'done'},
-  {title:'Reflection Buffer Module',time:'2026-04-02T09:30:00Z',files:['bastion-pipeline/reflection_buffer.py'],status:'done'},
-  {title:'Agent Capabilities Router',time:'2026-04-02T08:00:00Z',files:['workspace_utils.py'],status:'done'}
-];
-const PIPELINE_TRASHED=[
-  {file:'pixel-art-agent-scenes.md',reason:"Goku's domain — pixel art",expiresAt:'2026-04-05T08:00:00Z'},
-  {file:'pixel-animation-research.md',reason:'Pixel animation — frontend work',expiresAt:'2026-04-05T08:00:00Z'},
-  {file:'2026-04-01-tts-voice-alerts.md',reason:'Browser TTS — frontend',expiresAt:'2026-04-05T08:00:00Z'},
-  {file:'2026-04-01-realtime-status.md',reason:'SSE/Socket.io — Goku domain',expiresAt:'2026-04-05T08:00:00Z'},
-  {file:'lake-research-toolkit.md',reason:"Lake's own tools — not coder domain",expiresAt:'2026-04-05T08:00:00Z'},
-  {file:'2026-04-01-evening-sweep.md',reason:'Informational only — no code deliverable',expiresAt:'2026-04-05T08:00:00Z'},
-  {file:'video_transcripts/*.vtt',reason:'Raw subtitles — no actionable code',expiresAt:'2026-04-05T11:00:00Z'},
-  {file:'2026-04-04-search-strategies.md',reason:"Lake's research methodology",expiresAt:'2026-04-05T18:00:00Z'}
-];
+// Pipeline data — fetched live from /api/pipeline
+let PIPELINE_RESEARCH=[];
+let PIPELINE_BUILDS=[];
+let PIPELINE_TRASHED=[];
+let pipelineLastFetched=null;
 let trashedOpen=false;
+
+function fetchPipeline(){
+  fetch(API+'/api/pipeline').then(r=>r.json()).then(data=>{
+    if(data.research)PIPELINE_RESEARCH=data.research;
+    if(data.builds)PIPELINE_BUILDS=data.builds;
+    if(data.trashed)PIPELINE_TRASHED=data.trashed;
+    pipelineLastFetched=data.updatedAt||new Date().toISOString();
+    // Update heartbeats from live data
+    if(PIPELINE_RESEARCH.length){
+      const newest=PIPELINE_RESEARCH.reduce((a,b)=>new Date(a.mtime||a.date)>new Date(b.mtime||b.date)?a:b);
+      PIPELINE_HEARTBEATS.research=newest.mtime||newest.date;
+    }
+    if(PIPELINE_BUILDS.length){
+      PIPELINE_HEARTBEATS.build=PIPELINE_BUILDS[0].time;
+    }
+    localStorage.setItem('bastion_pipeline_cache',JSON.stringify({research:PIPELINE_RESEARCH,builds:PIPELINE_BUILDS,trashed:PIPELINE_TRASHED}));
+    if(currentTab==='workflow')renderContent();
+  }).catch(()=>{
+    // Fallback to localStorage cache
+    try{const c=JSON.parse(localStorage.getItem('bastion_pipeline_cache'));
+      if(c){PIPELINE_RESEARCH=c.research||[];PIPELINE_BUILDS=c.builds||[];PIPELINE_TRASHED=c.trashed||[];}
+    }catch{}
+  });
+}
+// Load cached data immediately, then fetch live
+try{const c=JSON.parse(localStorage.getItem('bastion_pipeline_cache'));
+  if(c){PIPELINE_RESEARCH=c.research||[];PIPELINE_BUILDS=c.builds||[];PIPELINE_TRASHED=c.trashed||[];}
+}catch{}
 
 // Heartbeat tracking — last activity timestamps per pipeline stage
 const PIPELINE_HEARTBEATS={
-  research: PIPELINE_RESEARCH.length ? '2026-04-02T18:00:00Z' : null,
-  build: PIPELINE_BUILDS.length ? PIPELINE_BUILDS[0].time : null,
+  research: null,
+  build: null,
   test: null,
   done: null
 };
@@ -1634,7 +1643,9 @@ if(!chatMessages.length){
 renderContent();
 initQuests();
 fetchRequests();
+fetchPipeline();
 setInterval(fetchRequests,30000); // poll requests every 30s
+setInterval(fetchPipeline,60000); // poll pipeline every 60s
 </script>
 </body>
 </html>
