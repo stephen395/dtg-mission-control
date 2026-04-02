@@ -557,27 +557,31 @@ let PIPELINE_TRASHED=[];
 let pipelineLastFetched=null;
 let trashedOpen=false;
 
+function applyPipelineData(data){
+  if(data.research)PIPELINE_RESEARCH=data.research;
+  if(data.builds)PIPELINE_BUILDS=data.builds;
+  if(data.trashed)PIPELINE_TRASHED=data.trashed;
+  pipelineLastFetched=data.updatedAt||new Date().toISOString();
+  if(PIPELINE_RESEARCH.length){
+    const newest=PIPELINE_RESEARCH.reduce((a,b)=>new Date(a.mtime||a.date)>new Date(b.mtime||b.date)?a:b);
+    PIPELINE_HEARTBEATS.research=newest.mtime||newest.date;
+  }
+  if(PIPELINE_BUILDS.length){PIPELINE_HEARTBEATS.build=PIPELINE_BUILDS[0].time}
+  localStorage.setItem('bastion_pipeline_cache',JSON.stringify({research:PIPELINE_RESEARCH,builds:PIPELINE_BUILDS,trashed:PIPELINE_TRASHED}));
+  if(currentTab==='workflow')renderContent();
+}
 function fetchPipeline(){
-  fetch(API+'/api/pipeline').then(r=>r.json()).then(data=>{
-    if(data.research)PIPELINE_RESEARCH=data.research;
-    if(data.builds)PIPELINE_BUILDS=data.builds;
-    if(data.trashed)PIPELINE_TRASHED=data.trashed;
-    pipelineLastFetched=data.updatedAt||new Date().toISOString();
-    // Update heartbeats from live data
-    if(PIPELINE_RESEARCH.length){
-      const newest=PIPELINE_RESEARCH.reduce((a,b)=>new Date(a.mtime||a.date)>new Date(b.mtime||b.date)?a:b);
-      PIPELINE_HEARTBEATS.research=newest.mtime||newest.date;
-    }
-    if(PIPELINE_BUILDS.length){
-      PIPELINE_HEARTBEATS.build=PIPELINE_BUILDS[0].time;
-    }
-    localStorage.setItem('bastion_pipeline_cache',JSON.stringify({research:PIPELINE_RESEARCH,builds:PIPELINE_BUILDS,trashed:PIPELINE_TRASHED}));
-    if(currentTab==='workflow')renderContent();
-  }).catch(()=>{
-    // Fallback to localStorage cache
-    try{const c=JSON.parse(localStorage.getItem('bastion_pipeline_cache'));
-      if(c){PIPELINE_RESEARCH=c.research||[];PIPELINE_BUILDS=c.builds||[];PIPELINE_TRASHED=c.trashed||[];}
-    }catch{}
+  fetch(API+'/api/pipeline').then(r=>{if(!r.ok)throw new Error(r.status);return r.json()}).then(applyPipelineData)
+  .catch(()=>{
+    // Fallback: try static pipeline.json shipped with dashboard
+    fetch('pipeline.json').then(r=>{if(!r.ok)throw new Error(r.status);return r.json()}).then(data=>{
+      if(!pipelineLastFetched)applyPipelineData(data);
+    }).catch(()=>{
+      // Final fallback: localStorage cache
+      try{const c=JSON.parse(localStorage.getItem('bastion_pipeline_cache'));
+        if(c&&!pipelineLastFetched){PIPELINE_RESEARCH=c.research||[];PIPELINE_BUILDS=c.builds||[];PIPELINE_TRASHED=c.trashed||[];if(currentTab==='workflow')renderContent()}
+      }catch{}
+    });
   });
 }
 // Load cached data immediately, then fetch live
