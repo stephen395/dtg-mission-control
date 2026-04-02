@@ -1,14 +1,224 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BASTION - DTG Mission Control</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏰</text></svg>" />
-    <script type="module" crossorigin src="/dtg-mission-control/assets/index-7SKBV-F3.js"></script>
-    <link rel="stylesheet" crossorigin href="/dtg-mission-control/assets/index-NJ4Tfwh_.css">
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BASTION - DTG Mission Control</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏰</text></svg>"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        "void": "#0a0a0f",
+        "surface": "#131318",
+        "surface-low": "#1a1a22",
+        "surface-mid": "#222230",
+        "surface-high": "#2a2a38",
+        "accent-cyan": "#00fbfb",
+        "accent-green": "#44ff88",
+        "accent-blue": "#4488ff",
+        "accent-orange": "#ff6644",
+        "accent-amber": "#ffaa00",
+        "accent-purple": "#aa66ff",
+        "accent-pink": "#ff66aa",
+        "muted": "#5a5e72",
+        "dim": "#3a3e52",
+      },
+      fontFamily: {
+        "display": ["Space Grotesk"],
+        "pixel": ["Press Start 2P", "monospace"],
+        "mono": ["Space Grotesk"],
+      },
+    },
+  },
+}
+</script>
+<style>
+  body { background: #0a0a0f; overflow: hidden; }
+  .scanlines { background: repeating-linear-gradient(to bottom, transparent 0px, transparent 2px, rgba(0,251,251,0.02) 2px, rgba(0,251,251,0.02) 4px); pointer-events: none; }
+  .clipped { clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%); }
+  .glow-cyan { box-shadow: 0 0 8px rgba(0,251,251,0.3), inset 0 0 8px rgba(0,251,251,0.05); }
+  .glow-green { box-shadow: 0 0 8px rgba(68,255,136,0.3), inset 0 0 8px rgba(68,255,136,0.05); }
+  .glow-blue { box-shadow: 0 0 8px rgba(68,136,255,0.3), inset 0 0 8px rgba(68,136,255,0.05); }
+  .glow-orange { box-shadow: 0 0 8px rgba(255,102,68,0.3), inset 0 0 8px rgba(255,102,68,0.05); }
+  .glow-amber { box-shadow: 0 0 8px rgba(255,170,0,0.3), inset 0 0 8px rgba(255,170,0,0.05); }
+  .glow-purple { box-shadow: 0 0 8px rgba(170,102,255,0.3), inset 0 0 8px rgba(170,102,255,0.05); }
+  .glow-pink { box-shadow: 0 0 8px rgba(255,102,170,0.3), inset 0 0 8px rgba(255,102,170,0.05); }
+  .dot-pulse { animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .agent-sprite { image-rendering: pixelated; image-rendering: crisp-edges; transition: transform 0.3s; }
+  .agent-sprite:hover { transform: scale(1.05); }
+  .pod:hover .pod-border { opacity: 1; }
+  .pod-border { opacity: 0.3; transition: opacity 0.15s; }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: #131318; }
+  ::-webkit-scrollbar-thumb { background: #2a2a38; }
+</style>
+</head>
+<body class="text-gray-200 font-display h-screen flex flex-col">
+
+<!-- Scanline overlay -->
+<div class="fixed inset-0 scanlines z-50"></div>
+
+<!-- Header -->
+<header class="fixed top-0 w-full z-40 flex justify-between items-center px-6 py-2.5 bg-void/90 backdrop-blur-xl border-b border-accent-cyan/15">
+  <div class="flex items-center gap-6">
+    <h1 class="text-xl font-bold tracking-[0.3em] text-white drop-shadow-[0_0_10px_rgba(0,251,251,0.5)] uppercase font-pixel text-sm">BASTION</h1>
+    <span class="text-[10px] text-muted tracking-widest uppercase font-display">DTG Agent Mission Control</span>
+  </div>
+  <div class="flex items-center gap-6">
+    <div class="flex items-center gap-2">
+      <div class="w-2 h-2 rounded-full bg-accent-green shadow-[0_0_8px_#44ff88] dot-pulse"></div>
+      <span class="text-xs text-accent-green font-pixel text-[8px]">FLEET 5/6</span>
+    </div>
+    <span class="text-[10px] text-dim font-mono tabular-nums" id="clock">--:--:--</span>
+  </div>
+</header>
+
+<!-- Main -->
+<main class="mt-[44px] flex-1 flex overflow-hidden">
+
+  <!-- Left: Agent Grid -->
+  <section class="flex-1 p-4 overflow-y-auto">
+    <div class="grid grid-cols-3 gap-3 h-full" id="agent-grid">
+    </div>
+  </section>
+
+  <!-- Right: Panels -->
+  <aside class="w-[340px] flex flex-col gap-3 p-3 pl-0 overflow-hidden">
+    <!-- Status Panel -->
+    <div class="flex-1 bg-surface border border-dim/20 clipped overflow-hidden flex flex-col">
+      <div class="px-4 py-2.5 border-b border-dim/15 flex items-center gap-2">
+        <span class="material-symbols-outlined text-accent-cyan text-sm">monitoring</span>
+        <span class="text-[10px] text-accent-cyan tracking-[0.2em] uppercase font-display font-bold">Agent Status</span>
+      </div>
+      <div class="flex-1 overflow-y-auto p-3 space-y-1" id="status-list">
+      </div>
+    </div>
+
+    <!-- Activity Log -->
+    <div class="h-[280px] bg-surface border border-dim/20 clipped overflow-hidden flex flex-col">
+      <div class="px-4 py-2.5 border-b border-dim/15 flex items-center gap-2">
+        <span class="material-symbols-outlined text-accent-cyan text-sm">terminal</span>
+        <span class="text-[10px] text-accent-cyan tracking-[0.2em] uppercase font-display font-bold">Activity Log</span>
+      </div>
+      <div class="flex-1 overflow-y-auto p-3 font-mono text-[11px] space-y-1.5" id="activity-log">
+      </div>
+    </div>
+  </aside>
+
+</main>
+
+<script type="module">
+const BASE = (location.pathname.endsWith('/') ? location.pathname : location.pathname + '/');
+
+const AGENTS = [
+  { name: 'Cody', role: 'Mission Control', status: 'working', task: 'Fleet monitoring', progress: 100, color: 'green', hex: '#44ff88', sprite: 'cody' },
+  { name: 'Lake', role: 'Research & Intel', status: 'working', task: 'Scanning news feeds', progress: 72, color: 'blue', hex: '#4488ff', sprite: 'lake' },
+  { name: 'Goku', role: 'Coder & Builder', status: 'idle', task: 'Awaiting tasks', progress: 0, color: 'orange', hex: '#ff6644', sprite: 'goku' },
+  { name: 'FallingCave', role: 'AWS & Deploy', status: 'online', task: 'Monitoring infra', progress: 45, color: 'amber', hex: '#ffaa00', sprite: 'fallingcave' },
+  { name: 'Blockhead', role: 'Tencent VPS', status: 'offline', task: 'Standby', progress: 0, color: 'purple', hex: '#aa66ff', sprite: 'blockhead' },
+  { name: 'Fish', role: 'NemoClaw / GPU', status: 'online', task: 'Local inference', progress: 30, color: 'pink', hex: '#ff66aa', sprite: 'fish' },
+];
+
+const STATUS_MAP = { online: 'ONLINE', working: 'WORKING', idle: 'IDLE', offline: 'OFFLINE', error: 'ERROR' };
+const STATUS_DOT = { online: 'bg-accent-green shadow-[0_0_6px_#44ff88]', working: 'bg-yellow-400 shadow-[0_0_6px_#facc15]', idle: 'bg-accent-blue shadow-[0_0_6px_#4488ff]', offline: 'bg-gray-600', error: 'bg-red-500 shadow-[0_0_6px_#ef4444]' };
+
+// Build agent pods
+const grid = document.getElementById('agent-grid');
+AGENTS.forEach((a, i) => {
+  const isOffline = a.status === 'offline';
+  grid.innerHTML += `
+    <div class="pod group relative ${isOffline ? 'opacity-40' : ''}">
+      <div class="h-full bg-surface-low p-0.5">
+        <div class="h-full bg-surface p-4 border pod-border border-accent-${a.color}/30 hover:border-accent-${a.color}/80 transition-all clipped relative flex flex-col glow-${a.color}">
+          <!-- ID tag -->
+          <div class="absolute top-2 right-3 text-[8px] text-accent-${a.color}/50 font-mono tracking-widest">ID_${String(i+1).padStart(2,'0')}</div>
+          <!-- Header -->
+          <div class="flex items-start gap-3 mb-3">
+            <!-- Sprite -->
+            <div class="w-20 h-20 bg-void border border-accent-${a.color}/20 relative overflow-hidden shrink-0 flex items-center justify-center">
+              <img src="${BASE}sprites/${a.sprite}.png" alt="${a.name}" class="agent-sprite h-[72px] w-auto object-contain" />
+              <div class="absolute inset-0 bg-accent-${a.color}/5"></div>
+            </div>
+            <!-- Info -->
+            <div class="flex flex-col flex-1 min-w-0">
+              <h3 class="text-sm font-bold text-white tracking-tight uppercase">${a.name}</h3>
+              <span class="text-[9px] text-muted uppercase tracking-wider">${a.role}</span>
+              <div class="flex items-center gap-1.5 mt-2">
+                <div class="w-1.5 h-1.5 rounded-full ${STATUS_DOT[a.status]} ${!isOffline ? 'dot-pulse' : ''}"></div>
+                <span class="text-[9px] text-accent-${a.color} font-mono uppercase">${STATUS_MAP[a.status]}</span>
+              </div>
+            </div>
+          </div>
+          <!-- Task -->
+          <div class="mt-auto">
+            <div class="text-[9px] text-muted mb-1 truncate">${a.task}</div>
+            <div class="flex justify-between text-[8px] text-dim mb-0.5">
+              <span>PROGRESS</span><span>${a.progress}%</span>
+            </div>
+            <div class="h-1 w-full bg-void overflow-hidden">
+              <div class="h-full bg-accent-${a.color} shadow-[0_0_6px_${a.hex}]" style="width:${a.progress}%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+});
+
+// Build status list
+const statusList = document.getElementById('status-list');
+AGENTS.forEach(a => {
+  statusList.innerHTML += `
+    <div class="flex items-center gap-3 py-2 px-2 hover:bg-surface-low/50 transition-all group/row">
+      <div class="w-1.5 h-1.5 rounded-full shrink-0 ${STATUS_DOT[a.status]}"></div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-white">${a.name}</span>
+          <span class="text-[8px] text-accent-${a.color} font-mono">${STATUS_MAP[a.status]}</span>
+        </div>
+        <div class="text-[9px] text-muted truncate">${a.task}</div>
+        <div class="h-0.5 w-full bg-void mt-1.5 overflow-hidden">
+          <div class="h-full bg-accent-${a.color}/60" style="width:${a.progress}%"></div>
+        </div>
+      </div>
+    </div>`;
+});
+
+// Build activity log
+const logs = [
+  { t: '14:32', a: 'Lake', c: 'text-accent-blue', m: 'Research: AI dashboard innovations' },
+  { t: '14:28', a: 'Cody', c: 'text-accent-green', m: 'Fleet health check — all systems nominal' },
+  { t: '14:15', a: 'Claude', c: 'text-accent-cyan', m: 'Bastion v0.4 deployed to GitHub Pages' },
+  { t: '14:02', a: 'Lake', c: 'text-accent-blue', m: 'Agent collaboration workflow research done' },
+  { t: '13:55', a: 'Goku', c: 'text-accent-orange', m: 'Awaiting code review from Claude' },
+  { t: '13:40', a: 'Fish', c: 'text-accent-pink', m: 'Inference batch 47 complete (312 tokens/s)' },
+  { t: '13:22', a: 'Cody', c: 'text-accent-green', m: 'Bastion Protocol deployed to workspace' },
+  { t: '13:10', a: 'FallingCave', c: 'text-accent-amber', m: 'AWS health: all instances green' },
+  { t: '12:58', a: 'Lake', c: 'text-accent-blue', m: 'Pixel art animation research complete' },
+];
+const logEl = document.getElementById('activity-log');
+logs.forEach(l => {
+  logEl.innerHTML += `
+    <div class="flex gap-2 leading-tight">
+      <span class="text-dim shrink-0 tabular-nums">${l.t}</span>
+      <span class="${l.c} shrink-0 font-semibold">${l.a}</span>
+      <span class="text-gray-400 truncate">${l.m}</span>
+    </div>`;
+});
+
+// Clock
+setInterval(() => {
+  const d = new Date();
+  document.getElementById('clock').textContent =
+    d.toLocaleTimeString('en-US', { hour12: false }) + ' // UPTIME 442:12:' + String(d.getSeconds()).padStart(2,'0');
+}, 1000);
+</script>
+</body>
 </html>
