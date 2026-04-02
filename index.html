@@ -945,9 +945,34 @@ function drawSprite(ctx, agentId, state, x, y) {
   ctx.ellipse(x + spriteW/2, y + spriteH + 2, spriteW * 0.35, 4, 0, 0, Math.PI * 2);
   ctx.fill();
 
+  // Working status aura pulse — radial glow halo around active agents
+  if (!isOffline && (state === 'working' || state === 'online')) {
+    const pulse = (Math.sin(frame * 0.07) + 1) / 2;
+    const color = AGENTS[agentId].color;
+    const rgb = hexToRgb(color);
+    const auraCx = x + spriteW / 2;
+    const auraCy = y + spriteH / 2;
+    const aura = ctx.createRadialGradient(auraCx, auraCy, spriteW * 0.3, auraCx, auraCy, spriteW * 0.75 + pulse * 10);
+    aura.addColorStop(0, `rgba(${rgb.r},${rgb.g},${rgb.b},${0.18 + pulse * 0.14})`);
+    aura.addColorStop(1, `rgba(${rgb.r},${rgb.g},${rgb.b},0)`);
+    ctx.fillStyle = aura;
+    ctx.fillRect(x - 16, y - 8, spriteW + 32, spriteH + 24);
+  }
+
   // Draw sprite
   if (spriteCache[key]) {
     ctx.drawImage(spriteCache[key], x, y + Math.round(bob));
+  }
+
+  // Sub-pixel breathing highlight on chest (slow pulse simulates inhale/exhale)
+  if (!isOffline) {
+    const breathe = (Math.sin(frame * 0.04) + 1) / 2;
+    const color = AGENTS[agentId].color;
+    const rgb = hexToRgb(color);
+    ctx.globalAlpha = breathe * 0.07;
+    ctx.fillStyle = `rgb(${rgb.r},${rgb.g},${rgb.b})`;
+    ctx.fillRect(x + 10 * PX, y + 17 * PX + Math.round(bob), 6 * PX, 3 * PX);
+    ctx.globalAlpha = 1;
   }
 
   // Eye blink overlay
@@ -1183,6 +1208,21 @@ function drawGokuScene(ctx, state) {
   // Anvil highlight
   ctx.fillStyle = '#666';
   ctx.fillRect(152,121,4,3);
+
+  // Hot metal billet on anvil when working — glows orange-to-yellow with heat cycle
+  if (state === 'working' || state === 'online') {
+    const heatCycle = (Math.sin(frame * 0.12) + 1) / 2;
+    const metalG = Math.floor(80 + heatCycle * 120);
+    ctx.fillStyle = `rgb(255,${metalG},0)`;
+    ctx.fillRect(158, 117, 26, 4);
+    ctx.fillStyle = `rgba(255,${Math.min(255, metalG + 40)},0,0.65)`;
+    ctx.fillRect(159, 116, 24, 2);
+    const mg = ctx.createRadialGradient(171, 119, 2, 171, 119, 22);
+    mg.addColorStop(0, `rgba(255,160,0,${0.28 + heatCycle * 0.22})`);
+    mg.addColorStop(1, 'transparent');
+    ctx.fillStyle = mg;
+    ctx.fillRect(149, 105, 44, 30);
+  }
 
   // Tools on wall
   ctx.fillStyle = '#555';
@@ -1473,13 +1513,23 @@ function drawFishScene(ctx, state) {
       ctx.fillStyle = '#111';
       ctx.fillRect(tx+2,80,46,30);
     } else {
-      const colors = ['rgba(6,182,212,0.3)','rgba(34,197,94,0.25)','rgba(168,85,247,0.25)'];
-      for (let msg=0;msg<4;msg++) {
-        const my = 83+msg*7+((frame*0.2+ti*20)%7<3?1:0);
-        const mw = 12+(msg*7+ti*3)%20;
-        const side = msg%2===0?tx+4:tx+44-mw;
-        ctx.fillStyle = colors[msg%3];
-        ctx.fillRect(side,my,mw,4);
+      const chatColors = ['rgba(6,182,212,0.45)','rgba(34,197,94,0.4)','rgba(168,85,247,0.4)'];
+      const scrollOffset = (frame * 0.22 + ti * 25) % 7;
+      for (let msg = 0; msg < 5; msg++) {
+        const my = 82 + msg * 7 - scrollOffset;
+        if (my < 81 || my > 108) continue;
+        const mw = 10 + (msg * 6 + ti * 5) % 22;
+        const side = msg % 2 === 0 ? tx + 3 : tx + 45 - mw;
+        ctx.fillStyle = chatColors[msg % 3];
+        ctx.fillRect(side, my, mw, 4);
+        // Pixel dots within bar simulate text characters
+        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        for (let dx = 2; dx < mw - 1; dx += 4) ctx.fillRect(side + dx, my + 1, 2, 2);
+      }
+      // New message notification ping flash
+      if (ti === 0 && (frame + 60) % 140 < 8) {
+        ctx.fillStyle = `rgba(6,182,212,${0.5 - ((frame + 60) % 140) * 0.062})`;
+        ctx.fillRect(tx + 2, 80, 46, 2);
       }
     }
     ctx.fillStyle = '#1a1a1a';
