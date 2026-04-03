@@ -190,7 +190,7 @@ body:not(.chat-open) main{transition:margin-right 0.25s ease}
 
 <script>
 const B=location.pathname.endsWith('/')?location.pathname:location.pathname+'/';
-const API='https://agentpc1.tail93ed18.ts.net';
+const API=location.hostname==='stephen395.github.io'?'https://agentpc1.tail93ed18.ts.net':'';
 let syncStatus='unknown'; // synced | local | error | unknown
 
 // ===== AGENTS =====
@@ -544,8 +544,8 @@ function saveRequests(r){localStorage.setItem('bastion_workflow_requests',JSON.s
   fetch(API+'/api/requests/sync',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(r)}).catch(()=>{});
 }
 function fetchRequests(){
-  fetch(API+'/api/requests').then(r=>r.json()).then(data=>{
-    if(Array.isArray(data)&&data.length){localStorage.setItem('bastion_workflow_requests',JSON.stringify(data));if(currentTab==='workflow')renderContent();}
+  fetch(API+'/api/requests',{cache:'no-store'}).then(r=>r.json()).then(data=>{
+    if(Array.isArray(data)){localStorage.setItem('bastion_workflow_requests',JSON.stringify(data));if(currentTab==='workflow')renderContent();}
   }).catch(()=>{});
 }
 let wfRequests=loadRequests();
@@ -572,23 +572,17 @@ function applyPipelineData(data){
   if(currentTab==='workflow')renderContent();
 }
 function fetchPipeline(){
-  fetch(API+'/api/pipeline').then(r=>{if(!r.ok)throw new Error(r.status);return r.json()}).then(applyPipelineData)
+  fetch(API+'/api/pipeline',{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(r.status);return r.json()}).then(applyPipelineData)
   .catch(()=>{
-    // Fallback: try static pipeline.json shipped with dashboard
-    fetch('pipeline.json').then(r=>{if(!r.ok)throw new Error(r.status);return r.json()}).then(data=>{
-      if(!pipelineLastFetched)applyPipelineData(data);
-    }).catch(()=>{
-      // Final fallback: localStorage cache
+    // Only use cache if we've NEVER successfully fetched
+    if(!pipelineLastFetched){
       try{const c=JSON.parse(localStorage.getItem('bastion_pipeline_cache'));
-        if(c&&!pipelineLastFetched){PIPELINE_RESEARCH=c.research||[];PIPELINE_BUILDS=c.builds||[];PIPELINE_TRASHED=c.trashed||[];if(currentTab==='workflow')renderContent()}
+        if(c){PIPELINE_RESEARCH=c.research||[];PIPELINE_BUILDS=c.builds||[];PIPELINE_TRASHED=c.trashed||[];if(currentTab==='workflow')renderContent()}
       }catch{}
-    });
+    }
   });
 }
-// Load cached data immediately, then fetch live
-try{const c=JSON.parse(localStorage.getItem('bastion_pipeline_cache'));
-  if(c){PIPELINE_RESEARCH=c.research||[];PIPELINE_BUILDS=c.builds||[];PIPELINE_TRASHED=c.trashed||[];}
-}catch{}
+// NO stale cache on load — wait for API
 
 // Heartbeat tracking — last activity timestamps per pipeline stage
 const PIPELINE_HEARTBEATS={
@@ -627,20 +621,22 @@ function renderWorkflow(){
   const queued=reqs.filter(r=>r.status==='queued');
   const building=reqs.filter(r=>r.status==='building');
   const testing=reqs.filter(r=>r.status==='testing');
-  const done=reqs.filter(r=>r.status==='done'||r.status==='failed');
+  const done=reqs.filter(r=>r.status==='done');
+  const failed=reqs.filter(r=>r.status==='failed');
+  const trashed=reqs.filter(r=>r.status==='trashed');
   const activeTrashed=PIPELINE_TRASHED.filter(t=>new Date(t.expiresAt)>new Date());
 
   document.getElementById('content').innerHTML=`
   <div style="display:flex;flex-direction:column;gap:10px">
-    <!-- STATS BAR -->
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+    <!-- STATS BAR — real numbers from request queue -->
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
       <div class="glass" style="padding:12px 14px;display:flex;align-items:center;gap:10px">
-        <span class="material-symbols-outlined" style="font-size:22px;color:var(--blue)">science</span>
-        <div><div style="font-size:18px;font-weight:700;color:var(--blue)">${PIPELINE_RESEARCH.length}</div><div style="font-size:10px;color:var(--text3)">Research Filed</div></div>
+        <span class="material-symbols-outlined" style="font-size:22px;color:var(--cyan)">queue</span>
+        <div><div style="font-size:18px;font-weight:700;color:var(--cyan)">${queued.length}</div><div style="font-size:10px;color:var(--text3)">Queued</div></div>
       </div>
       <div class="glass" style="padding:12px 14px;display:flex;align-items:center;gap:10px">
         <span class="material-symbols-outlined" style="font-size:22px;color:var(--purple)">code</span>
-        <div><div style="font-size:18px;font-weight:700;color:var(--purple)">${PIPELINE_BUILDS.length}</div><div style="font-size:10px;color:var(--text3)">Builds Today</div></div>
+        <div><div style="font-size:18px;font-weight:700;color:var(--purple)">${building.length}</div><div style="font-size:10px;color:var(--text3)">Building</div></div>
       </div>
       <div class="glass" style="padding:12px 14px;display:flex;align-items:center;gap:10px">
         <span class="material-symbols-outlined" style="font-size:22px;color:var(--orange)">bug_report</span>
@@ -648,65 +644,70 @@ function renderWorkflow(){
       </div>
       <div class="glass" style="padding:12px 14px;display:flex;align-items:center;gap:10px">
         <span class="material-symbols-outlined" style="font-size:22px;color:var(--green)">check_circle</span>
-        <div><div style="font-size:18px;font-weight:700;color:var(--green)">${done.length}</div><div style="font-size:10px;color:var(--text3)">Completed</div></div>
+        <div><div style="font-size:18px;font-weight:700;color:var(--green)">${done.length}</div><div style="font-size:10px;color:var(--text3)">Done</div></div>
+      </div>
+      <div class="glass" style="padding:12px 14px;display:flex;align-items:center;gap:10px">
+        <span class="material-symbols-outlined" style="font-size:22px;color:var(--red)">error</span>
+        <div><div style="font-size:18px;font-weight:700;color:var(--red)">${failed.length}</div><div style="font-size:10px;color:var(--text3)">Failed</div></div>
       </div>
     </div>
 
-    <!-- PIPELINE KANBAN -->
+    <!-- PIPELINE KANBAN — driven by request queue status -->
     <div class="pipeline">
-      <!-- RESEARCH COLUMN -->
+      <!-- QUEUED COLUMN -->
       <div class="pipeline-col">
-        <div class="pipeline-col-head" style="background:rgba(59,130,246,0.1);color:var(--blue)"><span class="material-symbols-outlined" style="font-size:14px">science</span>Research (Lake)<div class="heartbeat-dot ${hbStatus('research')}" title="${hbLabel('research')}"></div></div>
-        ${PIPELINE_RESEARCH.map(r=>`
+        <div class="pipeline-col-head" style="background:rgba(6,182,212,0.1);color:var(--cyan)"><span class="material-symbols-outlined" style="font-size:14px">queue</span>Queued<span class="mono" style="font-size:10px;margin-left:4px">(${queued.length})</span></div>
+        ${queued.length?queued.map(r=>`
           <div class="pipeline-card pc-blue">
-            <div style="font-weight:600;color:var(--text);margin-bottom:3px">${r.topic}</div>
-            <div style="font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace">${r.file}</div>
-          </div>`).join('')}
-      </div>
-      <!-- BUILD COLUMN -->
-      <div class="pipeline-col">
-        <div class="pipeline-col-head" style="background:rgba(168,85,247,0.1);color:var(--purple)"><span class="material-symbols-outlined" style="font-size:14px">code</span>Build (Claude Code)<div class="heartbeat-dot ${hbStatus('build')}" title="${hbLabel('build')}"></div></div>
-        ${PIPELINE_BUILDS.map(b=>`
-          <div class="pipeline-card pc-purple${b.status==='active'?' building':''}">
-            <div style="font-weight:600;color:var(--text);margin-bottom:3px">${b.title}</div>
+            <div style="font-weight:600;color:var(--text);margin-bottom:3px;font-size:11px">${r.title}</div>
             <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace">${(b.files||[]).join(', ')}</span>
-              <span style="font-size:9px;color:var(--text3)">${timeAgo(b.time)}</span>
+              <span style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--text3)"><span class="material-symbols-outlined" style="font-size:10px">${srcIcon(r.source)}</span>${r.source}</span>
+              <span style="font-size:9px;color:var(--text3)">${timeAgo(r.createdAt)}</span>
             </div>
-          </div>`).join('')}
-        ${building.map(r=>`
+          </div>`).join(''):'<div style="padding:20px;text-align:center;font-size:11px;color:var(--text3)">Queue empty</div>'}
+      </div>
+      <!-- BUILDING COLUMN -->
+      <div class="pipeline-col">
+        <div class="pipeline-col-head" style="background:rgba(168,85,247,0.1);color:var(--purple)"><span class="material-symbols-outlined" style="font-size:14px">code</span>Building<span class="mono" style="font-size:10px;margin-left:4px">(${building.length})</span></div>
+        ${building.length?building.map(r=>`
           <div class="pipeline-card pc-purple building">
-            <div style="font-weight:600;color:var(--text);margin-bottom:3px">${r.title}</div>
-            <div style="font-size:9px;color:var(--purple)">Building now...</div>
-          </div>`).join('')}
+            <div style="font-weight:600;color:var(--text);margin-bottom:3px;font-size:11px">${r.title}</div>
+            <div style="font-size:9px;color:var(--purple)">In progress... ${timeAgo(r.createdAt)}</div>
+          </div>`).join(''):'<div style="padding:20px;text-align:center;font-size:11px;color:var(--text3)">Nothing building</div>'}
       </div>
       <!-- TEST COLUMN -->
       <div class="pipeline-col">
-        <div class="pipeline-col-head" style="background:rgba(249,115,22,0.1);color:var(--orange)"><span class="material-symbols-outlined" style="font-size:14px">bug_report</span>Test (Goku)<div class="heartbeat-dot ${hbStatus('test')}" title="${hbLabel('test')}"></div></div>
+        <div class="pipeline-col-head" style="background:rgba(249,115,22,0.1);color:var(--orange)"><span class="material-symbols-outlined" style="font-size:14px">bug_report</span>Testing<span class="mono" style="font-size:10px;margin-left:4px">(${testing.length})</span></div>
         ${testing.length?testing.map(r=>`
           <div class="pipeline-card pc-orange">
-            <div style="font-weight:600;color:var(--text);margin-bottom:3px">${r.title}</div>
+            <div style="font-weight:600;color:var(--text);margin-bottom:3px;font-size:11px">${r.title}</div>
             <div style="font-size:9px;color:var(--orange)">Testing... ${timeAgo(r.createdAt)}</div>
           </div>`).join(''):'<div style="padding:20px;text-align:center;font-size:11px;color:var(--text3)">No active tests</div>'}
       </div>
       <!-- DONE COLUMN -->
       <div class="pipeline-col">
-        <div class="pipeline-col-head" style="background:rgba(34,197,94,0.1);color:var(--green)"><span class="material-symbols-outlined" style="font-size:14px">check_circle</span>Done<div class="heartbeat-dot ${hbStatus('done')}" title="${hbLabel('done')}"></div></div>
-        ${done.length?done.map(r=>`
-          <div class="pipeline-card ${r.status==='done'?'pc-green':'pc-red'}">
-            <div style="font-weight:600;color:var(--text);margin-bottom:3px">${r.title}</div>
-            <div style="font-size:9px;color:${r.status==='done'?'var(--green)':'var(--red)'}">${r.status==='done'?'WORKED':'FAILED'}${r.result?' — '+r.result.slice(0,60):''}</div>
-          </div>`).join(''):'<div style="padding:20px;text-align:center;font-size:11px;color:var(--text3)">No results yet</div>'}
+        <div class="pipeline-col-head" style="background:rgba(34,197,94,0.1);color:var(--green)"><span class="material-symbols-outlined" style="font-size:14px">check_circle</span>Done<span class="mono" style="font-size:10px;margin-left:4px">(${done.length+failed.length})</span></div>
+        ${done.map(r=>`
+          <div class="pipeline-card pc-green">
+            <div style="font-weight:600;color:var(--text);margin-bottom:3px;font-size:11px">${r.title}</div>
+            <div style="font-size:9px;color:var(--green)">WORKED${r.result?' — '+r.result.slice(0,60):''}</div>
+          </div>`).join('')}
+        ${failed.map(r=>`
+          <div class="pipeline-card pc-red">
+            <div style="font-weight:600;color:var(--text);margin-bottom:3px;font-size:11px">${r.title}</div>
+            <div style="font-size:9px;color:var(--red)">FAILED${r.result?' — '+r.result.slice(0,60):''}</div>
+          </div>`).join('')}
+        ${!done.length&&!failed.length?'<div style="padding:20px;text-align:center;font-size:11px;color:var(--text3)">No results yet</div>':''}
       </div>
     </div>
 
-    <!-- REQUEST QUEUE -->
+    <!-- REQUEST QUEUE — full list -->
     <div class="glass" style="padding:0;overflow:hidden">
       <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
         <div style="display:flex;align-items:center;gap:8px">
           <span class="material-symbols-outlined" style="font-size:16px;color:var(--purple)">list_alt</span>
-          <span style="font-size:12px;font-weight:700">Request Queue</span>
-          <span class="mono" style="font-size:10px;color:var(--text3)">${reqs.length} items</span>
+          <span style="font-size:12px;font-weight:700">All Requests</span>
+          <span class="mono" style="font-size:10px;color:var(--text3)">${reqs.length} total</span>
         </div>
         <button class="btn btn-sm btn-primary" onclick="openAddRequest()"><span class="material-symbols-outlined" style="font-size:12px;vertical-align:-2px">add</span> Add Request</button>
       </div>
@@ -717,10 +718,10 @@ function renderWorkflow(){
         ${reqs.map(r=>`<div class="req-row">
           <span style="color:var(--text);font-weight:500">${r.title}</span>
           <span style="display:flex;align-items:center;gap:3px;color:var(--text3)"><span class="material-symbols-outlined" style="font-size:12px">${srcIcon(r.source)}</span>${r.source}</span>
-          <span class="badge badge-${r.status==='queued'?'new':r.status==='building'?'active':r.status==='testing'?'paused':r.status==='done'?'completed':'critical'}">${r.status}</span>
+          <span class="badge badge-${r.status==='queued'?'new':r.status==='building'?'active':r.status==='testing'?'paused':r.status==='done'?'completed':r.status==='trashed'?'archived':'critical'}">${r.status}</span>
           <span class="mono" style="color:var(--text3)">${timeAgo(r.createdAt)}</span>
         </div>`).join('')}
-        ${!reqs.length?'<div style="padding:16px;text-align:center;font-size:11px;color:var(--text3)">No requests queued</div>':''}
+        ${!reqs.length?'<div style="padding:16px;text-align:center;font-size:11px;color:var(--text3)">No requests — run /bastionreview to triage research</div>':''}
       </div>
     </div>
 
